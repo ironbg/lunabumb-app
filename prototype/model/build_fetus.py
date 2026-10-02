@@ -393,23 +393,25 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
             return E + back * u * H + up_e * v * H + n_e * w * H
 
         soft = 1 - smoothstep(10, 15, g)          # before ~14 weeks the ear is a low mound on the head
+        detail = smoothstep(12, 18, g)            # the folds come in gradually; earlier a smooth rounded shell
         add("earRoot" + s, Ellipsoid(ep(-0.3, -0.05, 0.0), np.array([0.22, 0.72, 0.2]) * H, frame), (0.3 + 0.5 * soft) * H)
-        add("earPlate" + s, Ellipsoid(ep(0.12, 0.0, 0.17), np.array([0.6, 1.0, 0.12]) * H, frame), (0.25 + 0.6 * soft) * H)
+        add("earPlate" + s, Ellipsoid(ep(0.12, 0.0, 0.17), np.array([0.6, 1.0, 0.12 + 0.08 * (1 - detail)]) * H, frame), (0.25 + 0.6 * soft) * H)
         rim_w = 0.2 + 0.12 * curl
         rim = [(-0.12, 0.04, 0.2), (-0.28, 0.45, rim_w), (-0.08, 0.9, rim_w), (0.34, 0.9, rim_w),
                (0.64, 0.5, rim_w), (0.7, 0.0, 0.92 * rim_w), (0.52, -0.48, 0.65 * rim_w)]
         rr = (0.085 + 0.035 * curl) * H
         add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [0.55 * rr, 0.85 * rr, rr, rr, rr, 0.95 * rr, 0.8 * rr], 0.1 * H)
-        ah_w = 0.2 + 0.08 * curl
-        ar = (0.05 + 0.03 * curl) * H
+        ah_w = (0.2 + 0.08 * curl) * (0.6 + 0.4 * detail)
+        ar = (0.05 + 0.03 * curl) * H * (0.25 + 0.75 * detail)
         anti = [(0.12, -0.4, 0.85 * ah_w), (0.33, -0.04, ah_w), (0.34, 0.3, ah_w), (0.18, 0.62, 0.9 * ah_w)]
         add_chain(add, "earAntihelix" + s, [ep(*p) for p in anti], [0.9 * ar, ar, ar, 0.8 * ar], 0.1 * H)
         add_chain(add, "earCrus" + s, [ep(0.32, 0.28, ah_w), ep(0.12, 0.42, 0.95 * ah_w), ep(-0.06, 0.46, 0.9 * ah_w)],
                   [0.9 * ar, 0.8 * ar, 0.65 * ar], 0.1 * H)
         add("earLobule" + s, Ellipsoid(ep(0.2, -0.72, 0.12), np.array([0.3, 0.26, 0.11]) * H, frame), 0.2 * H)
-        sub("earConcha" + s, Ellipsoid(ep(-0.02, -0.12, 0.42), np.array([0.3, 0.36, 0.3]) * H, frame), 0.08 * H)
-        add("earTragus" + s, Ellipsoid(ep(-0.36, -0.2, 0.24), np.array([0.11, 0.15, 0.1]) * H, frame), 0.1 * H)
-        add("earAntitragus" + s, Ellipsoid(ep(0.12, -0.5, 0.25), np.array([0.1, 0.08, 0.08]) * H, frame), 0.1 * H)
+        sub("earConcha" + s, Ellipsoid(ep(-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), np.array([0.3, 0.36, 0.3]) * H * (0.8 + 0.2 * detail), frame),
+            (0.08 + 0.06 * (1 - detail)) * H)
+        add("earTragus" + s, Ellipsoid(ep(-0.36, -0.2, 0.24), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail), frame), 0.1 * H)
+        add("earAntitragus" + s, Ellipsoid(ep(0.12, -0.5, 0.25), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail), frame), 0.1 * H)
         if s == "L":
             anchor = ep(0.1, 0.05, 0.4)
     return anchor
@@ -528,20 +530,20 @@ def build(g, overrides=None, sex=None, grow=1.0):
     br = table(BACK_R, g)
     add("backUpper", RoundCone(j["backTop"], j["backMid"], br, br * 1.05), 0.06)
     add("backLower", RoundCone(j["backMid"], j["backLow"], br * 1.05, br), 0.06)
-    # Buttocks: two rounded masses that stay distinct (tighter blend), parted by the gluteal cleft
-    gr = table(GLUT_R, g) + 0.014 * fat
+    # Buttocks: two soft, fairly flat masses tucked under the pelvis, parted by the gluteal cleft
+    gr = 0.8 * table(GLUT_R, g) + 0.008 * fat
+    glut_shift = vec(0, 0.012, 0.008)
     for s in "LR":
-        c = j["glut" + s] + vec(0, -0.006, -0.012)
-        add("glut" + s, Ellipsoid(c, np.array([0.92, 1.0, 0.95]) * gr), 0.032 + 0.012 * (1 - feat))
+        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.95, 0.88, 0.72]) * gr), 0.042 + 0.012 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
     cleft = 0.0055 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
     if cleft > 0:
         # follow the valley between the buttocks, from the sacrum round to the perineum
         torso = [op for op in ops if op.group == "torso"]
-        gc = 0.5 * (j["glutL"] + j["glutR"]) + vec(0, -0.006, -0.012)
+        gc = 0.5 * (j["glutL"] + j["glutR"]) + glut_shift
         pts = []
-        for th in np.radians(np.linspace(38, -75, 9)):
+        for th in np.radians(np.linspace(28, -75, 9)):
             d = vec(0, math.sin(th), -math.cos(th))
             t = 0.0
             while eval_group(torso, (gc + d * t)[None])[0] < 0 and t < 0.3:
@@ -602,15 +604,27 @@ def build(g, overrides=None, sex=None, grow=1.0):
         up = unit(vec(0, 1, 0) - f * f[1])
         side = np.cross(up, f)
         Lf = foot_len
-        add("foot" + s, Ellipsoid(A + f * 0.3 * Lf - up * 0.2 * Lf, (0.2 * Lf, 0.15 * Lf, 0.48 * Lf), np.stack([side, up, f], axis=1)), 0.025)
-        add("heel" + s, Ellipsoid(A - f * 0.08 * Lf - up * 0.2 * Lf, np.full(3, 0.17 * Lf)), 0.03)
+        F = np.stack([side, up, f], axis=1)
         # big toe sits on the medial side (towards +x for the left foot)
         medial = side if (side[0] > 0) == (s == "L") else -side
-        toe_r = (0.085, 0.062, 0.056, 0.05, 0.044)
-        toe_off = (0.13, 0.03, -0.05, -0.12, -0.18)
+        add("foot" + s, Ellipsoid(A + f * 0.22 * Lf - up * 0.2 * Lf, np.array([0.18, 0.12, 0.38]) * Lf, F), 0.025)
+        # forefoot: wide and thin, sloping down to the toes
+        add("footBall" + s, Ellipsoid(A + f * 0.48 * Lf - up * 0.25 * Lf - medial * 0.02 * Lf, np.array([0.21, 0.085, 0.15]) * Lf, F), 0.02)
+        add("heel" + s, Ellipsoid(A - f * 0.08 * Lf - up * 0.2 * Lf, np.full(3, 0.17 * Lf)), 0.03)
+        # Toes: short and plump, side by side on the sole, the big toe wider with a small gap
+        # after it, the others getting shorter along an arc and curling slightly down
+        toe_len = (0.19, 0.17, 0.155, 0.14, 0.125)
+        toe_rad = (0.058, 0.04, 0.037, 0.034, 0.031)
+        toe_off = (0.118, 0.01, -0.067, -0.138, -0.203)
+        toe_back = (0.0, 0.015, 0.04, 0.07, 0.105)
+        splay = (0.0, 0.02, 0.05, 0.09, 0.13)
+        sole = 0.33 * Lf
         for i in range(5):
-            c = A + f * (0.76 - 0.03 * i) * Lf - up * 0.2 * Lf + medial * toe_off[i] * Lf
-            add(f"toe{i}{s}", Ellipsoid(c, np.full(3, toe_r[i] * Lf * (0.55 + 0.45 * feat))), 0.006 + 0.012 * (1 - feat))
+            r = toe_rad[i] * Lf * (0.75 + 0.25 * feat)
+            base = A + f * (0.52 - toe_back[i]) * Lf + up * (r - sole) + medial * toe_off[i] * Lf
+            d = unit(f - up * 0.08 - medial * splay[i])
+            tip = base + d * toe_len[i] * Lf * (0.5 + 0.5 * feat)
+            add(f"toe{i}{s}", RoundCone(base, tip, r, 0.92 * r), 0.006 + 0.012 * (1 - feat))
 
     # --- head and face ------------------------------------------------------
     S = j["skull"]
@@ -1117,12 +1131,13 @@ class GlbWriter:
             fh.write(struct.pack("<II", len(binary), 0x004E4942) + binary)
 
 
-def finalize_glb(src, dst, basis, tris, extra_targets):
+def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None):
     """Repack a gltfpack-ed GLB: morph targets that only move part of the body (kick, wave)
     become sparse, and extra_targets [(name, neutral_positions, delta, normals)] are added as
     sparse targets; their normal deltas take the shaped surface's normals relative to the
-    neutral mesh normals. basis and tris are the mesh in build order; the
-    GLB's vertices are matched to them by position."""
+    neutral mesh normals. normal_fix {target name: (normals, weight)} blends better normals
+    into existing targets where weight > 0. basis, tris and all per-vertex arrays are in
+    build order; the GLB's vertices are matched to them by position."""
     from scipy.spatial import cKDTree
     gltf, binary = read_glb(src)
     mesh = gltf["meshes"][0]
@@ -1137,6 +1152,7 @@ def finalize_glb(src, dst, basis, tris, extra_targets):
     if dist.max() > 2e-3:
         raise RuntimeError(f"GLB vertices don't match the basis (max distance {dist.max():.4f})")
 
+    base_n = accessor_array(gltf, binary, prim["attributes"]["NORMAL"]).astype(np.float64) / 127
     out = GlbWriter()
     attributes = {name: out.dense(accessor_array(gltf, binary, i), meta[i]) for name, i in prim["attributes"].items()}
     indices = out.dense(accessor_array(gltf, binary, prim["indices"]).ravel()[:, None], meta[prim["indices"]], indices=True)
@@ -1153,8 +1169,16 @@ def finalize_glb(src, dst, basis, tris, extra_targets):
         return {k: out.sparse(arrays[k], metas[k], where, index_view) for k in arrays}
 
     targets, names = [], list(mesh.get("extras", {}).get("targetNames", []))
-    for t in prim.get("targets", []):
-        targets.append(add_target({k: accessor_array(gltf, binary, i) for k, i in t.items()}, {k: meta[i] for k, i in t.items()}))
+    for name, t in zip(list(names), prim.get("targets", [])):
+        arrays = {k: accessor_array(gltf, binary, i) for k, i in t.items()}
+        if normal_fix and name in normal_fix and "NORMAL" in arrays:
+            n_fix, w = normal_fix[name][0][order], normal_fix[name][1][order]
+            n_old = base_n + arrays["NORMAL"] / 127
+            n_new = w[:, None] * n_fix + (1 - w[:, None]) * n_old
+            n_new /= np.maximum(np.linalg.norm(n_new, axis=1, keepdims=True), 1e-9)
+            sel = w > 0
+            arrays["NORMAL"][sel] = np.clip(np.round((n_new[sel] - base_n[sel]) * 127), -127, 127).astype(np.int8)
+        targets.append(add_target(arrays, {k: meta[i] for k, i in t.items()}))
 
     pos_meta = meta[prim["targets"][0]["POSITION"]]
     nrm_meta = meta[prim["targets"][0]["NORMAL"]]
@@ -1271,6 +1295,14 @@ def main():
         print(f"  {label}: mean |sdf| {err.mean():.5f}, max {err.max():.4f}")
         return moved
 
+    A, deg = adjacency(edges, len(basis))
+    # Around the ears: in the small early weeks the ear's vertices crowd together, so they get
+    # extra relaxation along the surface and smoothed normals
+    ear_dist = np.min([op.shape.sdf(basis) for op in ear_ops], axis=0)
+    ear_idx = np.flatnonzero(ear_dist < 0.05)
+    ear_w = 1 - np.array([smoothstep(0.03, 0.05, x) for x in ear_dist[ear_idx]])
+    normal_fix = {}
+
     obj.shape_key_add(name="Basis", from_mix=False)
     rig = {"weeks": list(RIG_WEEKS), "anchors": {}, "center": center.tolist()}
     built = {g: build(g) for g in RIG_WEEKS}
@@ -1284,6 +1316,18 @@ def main():
         for g in chain:
             ops_g = built[g][0]
             prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=14 if g < 16 else 4)
+            if g < 16:
+                # enough iterations for the surface Laplacian to unfold the crowded early ear
+                prev = relax_masked(ops_g, prev, A, deg, ear_idx, ear_w, iterations=100 if g < 10 else 40)
+                n_mesh = vertex_normals(prev, tris)
+                n_sdf = gradient(ops_g, prev[ear_idx], eps=0.002)
+                n_sdf /= np.maximum(np.linalg.norm(n_sdf, axis=1, keepdims=True), 1e-9)
+                n_fix = n_mesh.copy()
+                blend = 0.5 * n_sdf + 0.5 * n_mesh[ear_idx]
+                n_fix[ear_idx] = blend / np.maximum(np.linalg.norm(blend, axis=1, keepdims=True), 1e-9)
+                weight_full = np.zeros(len(basis))
+                weight_full[ear_idx] = ear_w
+                normal_fix[f"W{g}"] = (n_fix, weight_full)
             prev_ops = ops_g
             neutral[g] = prev
             add_shape_key(obj, f"W{g}", prev - center)
@@ -1295,7 +1339,6 @@ def main():
             rig[name] = (anchors_a["foot" + name[-1]] - center).round(5).tolist()
 
     # Sex keys, grown onto each week's neutral body inside the groin region
-    A, deg = adjacency(edges, len(basis))
     r = np.linalg.norm(basis - groin, axis=1)
     region = np.flatnonzero(r < 0.085)
     weight = 1 - np.array([smoothstep(0.06, 0.085, x) for x in r[region]])
@@ -1374,7 +1417,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         packed = os.path.join(tmp, "packed.glb")
         subprocess.run(shlex.split(args.gltfpack) + ["-i", raw, "-o", packed, "-kn", "-ke"], check=True)
-        n = finalize_glb(packed, args.out, basis - center, tris, sex_targets)
+        n = finalize_glb(packed, args.out, basis - center, tris, sex_targets, normal_fix)
     print(f"wrote {args.out} ({os.path.getsize(args.out) / 1e6:.2f} MB, {n} verts) and {args.rig} in {time.time() - t0:.1f}s")
 
 
