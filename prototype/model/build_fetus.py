@@ -8,12 +8,14 @@ Pipeline
      subtractions for small creases (eyelids, mouth, nostrils, ear concha,
      gluteal cleft).
   3. Marching cubes on the week-24 sculpt, cleaned up and decimated in Blender,
-     keeping more vertices in the ears and the groin. This is the basis mesh.
+     keeping more vertices in the ears, face and groin. This is the basis mesh.
   4. Growth shape keys (W8 ... W40): the basis vertices are carried to each week
      by blending per-primitive frame mappings, then projected onto that week's
      SDF surface. All keys share one topology, so they morph smoothly.
-  5. Action shape keys (KICK_L, KICK_R, WAVE_L) built the same way from posed
-     skeletons at week 24.
+  5. Action shape keys (KICK_L, KICK_R with half-way KICK_*_MID keys, WAVE_L)
+     built the same way from posed skeletons at week 24; kicks are joint
+     rotations at the hip, knee and ankle. Only the moving limb is relaxed,
+     so these keys are sparse.
   6. Sex keys (SEX_8, SEX_12, F16 ... F40, M16 ... M40): external genitals grown
      out of each week's neutral body in steps, as deltas on that body.
   7. Ambient occlusion and soft skin tints computed from the SDF and stored as
@@ -417,6 +419,51 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
     return anchor
 
 
+def add_face(add, sub, at, HR, R, feat, fat):
+    """Cheeks, chin, closed eyes, a small button nose and lips, in head units (R).
+    feat (0-1) is how formed the face is: early on the features are small and soft.
+    Returns the eyelid lines (for darkening the lash line in the vertex colours)."""
+    fs = 0.45 + 0.55 * feat
+    soft = 1 + 0.6 * (1 - feat)           # blend radii: features melt into the face early on
+    cheek = (0.22 + 0.13 * fat) * R * fs
+    for sx, s in ((-1, "L"), (1, "R")):
+        add("cheek" + s, Ellipsoid(at(0.4 * sx, -0.52, 0.6), np.full(3, cheek)), 0.15 * R)
+    add("chin", Ellipsoid(at(0, -0.87, 0.66), np.array([0.17, 0.15, 0.17]) * R, HR), 0.12 * R)
+
+    # Closed eyes: the lid bulges over the eyeball, a soft upper fold, and the lash line
+    # curving gently down at the outer corner
+    lid_lines = []
+    for sx, s in ((-1, "L"), (1, "R")):
+        add("eye" + s, Ellipsoid(at(0.32 * sx, -0.21, 0.81 + 0.03 * fs), np.array([0.17, 0.12, 0.1 * fs]) * R, HR), 0.07 * R * soft)
+        add("eyeFold" + s, Ellipsoid(at(0.31 * sx, -0.165, 0.86 + 0.02 * fs), np.array([0.15, 0.055, 0.05 * fs]) * R, HR), 0.04 * R * soft)
+        line = [at(0.18 * sx, -0.238, 0.905), at(0.27 * sx, -0.252, 0.925), at(0.37 * sx, -0.247, 0.905), at(0.46 * sx, -0.222, 0.85)]
+        lash = Chain([RoundCone(line[i], line[i + 1], 0.011 * R, 0.011 * R) for i in range(3)])
+        if feat > 0.3:
+            sub("eyeLine" + s, lash, 0.012 * R * soft)
+            sub("eyeCorner" + s, Ellipsoid(at(0.165 * sx, -0.24, 0.88), np.full(3, 0.022 * R * feat)), 0.015 * R)
+        lid_lines.append(lash)
+
+    # Nose: low flat bridge, round tip, soft alae, small nostrils
+    add("noseBridge", RoundCone(at(0, -0.2, 0.86), at(0, -0.37, 0.93), 0.055 * R * fs, 0.075 * R * fs), 0.06 * R * soft)
+    add("noseTip", Ellipsoid(at(0, -0.41, 0.94 + 0.04 * fs), np.array([0.08, 0.07, 0.065]) * R * fs, HR), 0.05 * R * soft)
+    for sx, s in ((-1, "L"), (1, "R")):
+        add("noseAla" + s, Ellipsoid(at(0.08 * sx, -0.455, 0.9 + 0.02 * fs), np.array([0.055, 0.045, 0.05]) * R * fs, HR), 0.05 * R * soft)
+    for sx, s in ((-1, "L"), (1, "R")):
+        sub("nostril" + s, Ellipsoid(at(0.048 * sx, -0.5, 0.94 + 0.02 * fs), np.array([0.022, 0.012, 0.02]) * R * fs * feat, HR), 0.01 * R)
+
+    # Mouth: philtrum, upper lip with a cupid's bow, full lower lip, a curved mouth line
+    sub("lipPhiltrum", RoundCone(at(0, -0.5, 0.955), at(0, -0.6, 0.94), 0.018 * R * feat, 0.022 * R * feat), 0.03 * R)
+    add("lipUpperC", Ellipsoid(at(0, -0.632, 0.875), np.array([0.05, 0.042, 0.05]) * R * fs, HR), 0.05 * R * soft)
+    for sx, s in ((-1, "L"), (1, "R")):
+        add("lipUpper" + s, Ellipsoid(at(0.072 * sx, -0.642, 0.855), np.array([0.085, 0.042, 0.05]) * R * fs, HR), 0.05 * R * soft)
+    add("lipLower", Ellipsoid(at(0, -0.73, 0.845), np.array([0.11, 0.048, 0.06]) * R * fs, HR), 0.05 * R * soft)
+    crease = max(0.008 * R, 0.0014) * feat
+    mouth = [at(-0.145, -0.692, 0.815), at(-0.08, -0.686, 0.865), at(0, -0.684, 0.885), at(0.08, -0.686, 0.865), at(0.145, -0.692, 0.815)]
+    sub("mouth", Chain([RoundCone(mouth[i], mouth[i + 1], crease, crease) for i in range(4)]), 0.012 * R)
+    sub("chinSulcus", Ellipsoid(at(0, -0.795, 0.87), np.array([0.1, 0.02, 0.03]) * R * feat, HR), 0.03 * R)
+    return lid_lines
+
+
 def genital_frame(ops, j):
     """Pubic point on the skin, between the thighs, plus a frame: X across the body,
     U up the belly, N out of the skin."""
@@ -601,7 +648,7 @@ def build(g, overrides=None, sex=None, grow=1.0):
         add("shin" + s, RoundCone(j["kn" + s], j["an" + s], kn_r, an_r), 0.02)
         A = j["an" + s]
         f = unit(j["toe" + s] - A)
-        up = unit(vec(0, 1, 0) - f * f[1])
+        up = foot_up(j, s, f)
         side = np.cross(up, f)
         Lf = foot_len
         F = np.stack([side, up, f], axis=1)
@@ -610,7 +657,8 @@ def build(g, overrides=None, sex=None, grow=1.0):
         add("foot" + s, Ellipsoid(A + f * 0.22 * Lf - up * 0.2 * Lf, np.array([0.18, 0.12, 0.38]) * Lf, F), 0.025)
         # forefoot: wide and thin, sloping down to the toes
         add("footBall" + s, Ellipsoid(A + f * 0.48 * Lf - up * 0.25 * Lf - medial * 0.02 * Lf, np.array([0.21, 0.085, 0.15]) * Lf, F), 0.02)
-        add("heel" + s, Ellipsoid(A - f * 0.08 * Lf - up * 0.2 * Lf, np.full(3, 0.17 * Lf)), 0.03)
+        # the heel carries the foot's frame, so it turns with the foot when the leg moves
+        add("heel" + s, Ellipsoid(A - f * 0.08 * Lf - up * 0.2 * Lf, np.full(3, 0.17 * Lf), F), 0.03)
         # Toes: short and plump, side by side on the sole, the big toe wider with a small gap
         # after it, the others getting shorter along an arc and curling slightly down
         toe_len = (0.19, 0.17, 0.155, 0.14, 0.125)
@@ -645,24 +693,8 @@ def build(g, overrides=None, sex=None, grow=1.0):
     add("neck", RoundCone(j["neck"], head_top, table(NECK_R, g), table(NECK_R, g) * 0.95), 0.06)
     add("cranium", Ellipsoid(at(0, 0.04, -0.06), (0.9 * R, 0.97 * R, 1.06 * R), HR), 0.05)
     add("face", Ellipsoid(at(0, -0.42, 0.4), (0.66 * R, 0.52 * R, 0.52 * R), HR), 0.22 * R)
-    fs = 0.45 + 0.55 * feat
-    cheek = (0.22 + 0.13 * fat) * R * fs
-    for sx, s in ((-1, "L"), (1, "R")):
-        add("cheek" + s, Ellipsoid(at(0.4 * sx, -0.52, 0.6), np.full(3, cheek)), 0.15 * R)
-    add("chin", Ellipsoid(at(0, -0.86, 0.62), np.full(3, 0.19 * R)), 0.12 * R)
-    add("nose", RoundCone(at(0, -0.2, 0.9), at(0, -0.42, 0.9 + 0.12 * fs), 0.07 * R * fs, 0.105 * R * fs), 0.07 * R)
-    for sx, s in ((-1, "L"), (1, "R")):
-        add("eye" + s, Ellipsoid(at(0.33 * sx, -0.18, 0.84), (0.17 * R, 0.1 * R * fs, 0.08 * R * fs), HR), 0.06 * R)
+    lid_lines = add_face(add, sub, at, HR, R, feat, fat)
     ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat)
-    add("lipUpper", Ellipsoid(at(0, -0.64, 0.86), (0.17 * R, 0.06 * R * fs, 0.07 * R * fs), HR), 0.06 * R)
-    add("lipLower", Ellipsoid(at(0, -0.75, 0.83), (0.13 * R, 0.07 * R * fs, 0.07 * R * fs), HR), 0.06 * R)
-
-    crease = max(0.024 * R, 0.0038) * feat
-    for sx, s in ((-1, "L"), (1, "R")):
-        sub("nostril" + s, Ellipsoid(at(0.065 * sx, -0.48, 1.0 + 0.1 * fs), np.full(3, max(0.04 * R, 0.004) * feat)), 0.02 * R)
-    sub("mouth", RoundCone(at(-0.12, -0.695, 0.9), at(0.12, -0.695, 0.9), crease * 0.9, crease * 0.9), 0.02 * R)
-
-    lid_lines = [RoundCone(at(0.21 * sx, -0.215, 0.925), at(0.45 * sx, -0.185, 0.835), 0.004, 0.004) for sx in (-1, 1)]
     anchors = {
         "head": at(-0.25, 0.45, 0.6),
         "ear": ear_anchor,
@@ -1209,16 +1241,41 @@ GROWTH_WEEKS = (8, 12, 16, 20, 28, 32, 36, 40)
 RIG_WEEKS = (8, 12, 16, 20, 24, 28, 32, 36, 40)
 
 
-def kick_pose(side):
-    """Shin straightens forward, foot points."""
+def axis_rotation(axis, angle):
+    """Rotation matrix about a unit axis (Rodrigues)."""
+    a = unit(axis)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * K @ K
+
+
+def foot_up(j, s, f):
+    """The foot's up direction: from the pose when it sets one (a kick), else from the world."""
+    u = j.get("footUp" + s, vec(0, 1, 0))
+    return unit(u - f * np.dot(u, f))
+
+
+# Joint angles of a full kick, degrees: hip extension, knee extension, ankle pointing
+KICK_ANGLES = {"L": (16, 55, 18), "R": (10, 62, 18)}
+
+
+def kick_pose(side, amount=1.0):
+    """A kick from the hip and knee: the thigh swings down a little, the knee straightens and
+    the foot moves with the shin, pointing slightly. Built from joint rotations, so the shin
+    keeps its length and the ankle doesn't kink."""
+    hip_deg, knee_deg, ankle_deg = (math.radians(a) * amount for a in KICK_ANGLES[side])
+
     def pose(j):
-        kn, an, toe = j["kn" + side], j["an" + side], j["toe" + side]
-        shin = np.linalg.norm(an - kn)
-        foot = np.linalg.norm(toe - an)
-        knee = kn + vec(0, -0.02, 0.03)
-        direction = vec(-0.45, -0.55, 0.75) if side == "L" else vec(0.3, -0.35, 1.0)
-        ankle = knee + unit(direction) * shin
-        return {"kn" + side: knee, "an" + side: ankle, "toe" + side: ankle + unit(vec(0, -0.55, 1.0)) * foot}
+        hip, kn, an, toe = j["hip" + side], j["kn" + side], j["an" + side], j["toe" + side]
+        thigh, shin, foot = kn - hip, an - kn, toe - an
+        up = foot_up(j, side, unit(foot))
+        hinge = unit(np.cross(thigh, shin))            # knee axis, normal to the leg's plane
+        R_hip = axis_rotation(vec(1, 0, 0), hip_deg)    # knee swings down and forward
+        R_knee = axis_rotation(R_hip @ hinge, -knee_deg) @ R_hip      # shin opens away from the thigh
+        R_ankle = axis_rotation(R_knee @ hinge, ankle_deg) @ R_knee   # toes point a little
+        knee = hip + R_hip @ thigh
+        ankle = knee + R_knee @ shin
+        return {"kn" + side: knee, "an" + side: ankle, "toe" + side: ankle + R_ankle @ foot,
+                "footUp" + side: R_ankle @ up}
     return pose
 
 
@@ -1250,7 +1307,7 @@ def main():
     ap.add_argument("--raw", help="Blender export before gltfpack (default: next to --out, .raw.glb)")
     ap.add_argument("--gltfpack", default="npx --yes gltfpack", help="gltfpack command")
     ap.add_argument("--h", type=float, default=0.0026, help="grid spacing for marching cubes")
-    ap.add_argument("--tris", type=int, default=27000, help="triangle budget outside the ears and groin")
+    ap.add_argument("--tris", type=int, default=26000, help="triangle budget outside the ears, face and groin")
     args = ap.parse_args(argv)
     raw = args.raw or args.out.replace(".glb", ".raw.glb")
     t0 = time.time()
@@ -1276,7 +1333,13 @@ def main():
         r = np.linalg.norm(p - groin, axis=1)
         return (r >= 0.045) & (r < 0.085)
 
-    obj = blender_mesh(verts, faces, args.tris, details=((near_ears, 0.4), (groin_core, 1.0), (groin_ring, 0.5)))
+    face_ops = [op for op in base_ops if op.name.startswith(("eye", "nose", "lip", "mouth", "nostril", "chin"))]
+
+    def near_face(p):
+        return (np.min([op.shape.sdf(p) for op in face_ops], axis=0) < 0.006) & ~near_ears(p)
+
+    obj = blender_mesh(verts, faces, args.tris,
+                       details=((near_ears, 0.4), (near_face, 0.6), (groin_core, 1.0), (groin_ring, 0.5)))
     basis, tris, normals = read_mesh(obj)
     basis = project(base_ops, basis, iterations=2, max_step=0.004)
     write_positions(obj, basis)
@@ -1296,11 +1359,13 @@ def main():
         return moved
 
     A, deg = adjacency(edges, len(basis))
-    # Around the ears: in the small early weeks the ear's vertices crowd together, so they get
-    # extra relaxation along the surface and smoothed normals
-    ear_dist = np.min([op.shape.sdf(basis) for op in ear_ops], axis=0)
-    ear_idx = np.flatnonzero(ear_dist < 0.05)
-    ear_w = 1 - np.array([smoothstep(0.03, 0.05, x) for x in ear_dist[ear_idx]])
+    # Around the ears, face and neck: in the small early weeks these detailed areas shrink and
+    # their vertices crowd together, so they get extra relaxation along the surface and
+    # smoothed normals
+    neck_ops = [op for op in base_ops if op.name == "neck"]
+    early_dist = np.min([op.shape.sdf(basis) for op in ear_ops + face_ops + neck_ops], axis=0)
+    ear_idx = np.flatnonzero(early_dist < 0.05)
+    ear_w = 1 - np.array([smoothstep(0.03, 0.05, x) for x in early_dist[ear_idx]])
     normal_fix = {}
 
     obj.shape_key_add(name="Basis", from_mix=False)
@@ -1332,10 +1397,35 @@ def main():
             neutral[g] = prev
             add_shape_key(obj, f"W{g}", prev - center)
 
-    for name, overrides in (("KICK_L", kick_pose("L")), ("KICK_R", kick_pose("R")), ("WAVE_L", wave_pose())):
+    def solve_local(source_ops, source, target_ops, label, relax_steps=6):
+        """Like solve, but only the moving limb is relaxed and everything else stays exactly
+        where it was, so the morph target is sparse."""
+        moved = carry(source_ops, target_ops, source)
+        moved = project(target_ops, moved, iterations=6)
+        delta = laplacian_smooth_delta(moved - source, edges, len(basis), iterations=3)
+        moved = project(target_ops, source + delta, iterations=3, max_step=0.01)
+        core = np.linalg.norm(moved - source, axis=1) > 2e-4
+        ring = np.where(core, 0, 99)
+        frontier = core.copy()
+        for r in range(1, 5):     # rings around the moving part, for a soft edge
+            frontier = (A @ frontier.astype(float) > 0) & (ring == 99)
+            ring[frontier] = r
+        region = ring < 99
+        moved[~region] = source[~region]
+        idx = np.flatnonzero(region)
+        weight = np.clip(1 - (ring[idx] - 1) / 3, 0, 1)
+        moved = relax_masked(target_ops, moved, A, deg, idx, weight, iterations=relax_steps)
+        err = np.abs(eval_sdf(target_ops, moved[idx]))
+        print(f"  {label}: {len(idx)} verts, mean |sdf| {err.mean():.5f}, max {err.max():.4f}")
+        return moved
+
+    # Kicks have a half-way key too, so the leg follows its arc instead of a straight line
+    actions = (("KICK_L_MID", kick_pose("L", 0.5)), ("KICK_L", kick_pose("L")),
+               ("KICK_R_MID", kick_pose("R", 0.5)), ("KICK_R", kick_pose("R")), ("WAVE_L", wave_pose()))
+    for name, overrides in actions:
         ops_a, anchors_a = build(BASE_WEEK, overrides)
-        add_shape_key(obj, name, solve(base_ops, basis, ops_a, name, relax_steps=3) - center)
-        if name.startswith("KICK"):
+        add_shape_key(obj, name, solve_local(base_ops, basis, ops_a, name) - center)
+        if name in ("KICK_L", "KICK_R"):
             rig[name] = (anchors_a["foot" + name[-1]] - center).round(5).tolist()
 
     # Sex keys, grown onto each week's neutral body inside the groin region
@@ -1373,8 +1463,8 @@ def main():
         ao = 0.5 * ao + 0.5 * (A @ ao) / deg
     warm = np.zeros(len(basis))
     by_name = {op.name: op for op in base_ops}
-    for name, amount in (("cheekL", 0.55), ("cheekR", 0.55), ("lipUpper", 0.8), ("lipLower", 0.8), ("nose", 0.35),
-                         ("toe0L", 0.4), ("toe0R", 0.4)):
+    for name, amount in (("cheekL", 0.55), ("cheekR", 0.55), ("lipUpperC", 0.8), ("lipUpperL", 0.8), ("lipUpperR", 0.8),
+                         ("lipLower", 0.8), ("noseTip", 0.35), ("toe0L", 0.4), ("toe0R", 0.4)):
         if name in by_name:
             warm = np.maximum(warm, amount * np.exp(-np.maximum(by_name[name].shape.sdf(basis), 0) / 0.006))
     for s in "LR":
