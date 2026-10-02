@@ -752,8 +752,12 @@ const WEEKS = [
   [40, 'a small watermelon', 'малка диня', 51.2, 3462],
 ];
 
-// Typical fetal heart rate by gestational week (beats per minute)
-const HEART_RATE = [[8, 165], [9, 170], [14, 155], [20, 147], [30, 142], [40, 138]];
+// Typical embryonic/fetal heart rate by gestational week (beats per minute).
+// Weeks 6-10: medians from a 30,416-pregnancy IVF cohort (BMC Pregnancy Childbirth 2020); later: usual clinical range.
+const HEART_RATE = [[6, 117], [7, 146], [8, 172], [9, 175], [10, 173], [11, 165], [14, 155], [20, 148], [30, 142], [40, 138]];
+
+// How see-through the skin is: thin, translucent and red early on, thicker with fat towards term
+const TRANSLUCENCY = [[6, 1.0], [8, 1.0], [12, 0.85], [16, 0.7], [20, 0.6], [25, 0.45], [30, 0.32], [34, 0.26], [40, 0.22]];
 
 function interpTable(table, x) {
   if (x <= table[0][0]) return table[0][1];
@@ -957,7 +961,8 @@ const MODES = {
     wall: { center: '#5a2b4e', edge: '#1a1533', caustic: '#ffd2ad', amount: 0.5 },
     shell: { rim: '#f6c8b5', glow: '#ffe6a3', intensity: 1.0 },
     particles: 1.0, stars: 1.0,
-    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.28, heart: '#ff7a5c', heartStrength: 0.9 },
+    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.12, heart: '#ff7a5c', heartStrength: 0.9,
+      sss: '#ff5a3a', translucency: 1.0, wrap: 0.4, wrapTint: '#ff8a68' },
     placenta: '#a4465c',
     lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
     vignette: 0.6, grain: 0.035,
@@ -968,7 +973,8 @@ const MODES = {
     wall: { center: '#7a3236', edge: '#22100f', caustic: '#ffcba3', amount: 0.22 },
     shell: { rim: '#f2a993', glow: '#ffcfb5', intensity: 0.5 },
     particles: 0.4, stars: 0.35,
-    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.14, heart: '#ff6a55', heartStrength: 0.35 },
+    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.35,
+      sss: '#ff3c24', translucency: 0.9, wrap: 0.4, wrapTint: '#ff6a50' },
     placenta: '#8c2f3d',
     lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4 },
     vignette: 0.5, grain: 0.02,
@@ -979,7 +985,8 @@ const MODES = {
     wall: { center: '#0b0703', edge: '#000000', caustic: '#000000', amount: 0.0 },
     shell: { rim: '#000000', glow: '#000000', intensity: 0.0 },
     particles: 0.0, stars: 0.0,
-    baby: { color: '#d9cfc4', roughness: 0.75, sheen: 0.2, sheenColor: '#ffffff', iridescence: 0.0, clearcoat: 0.0, rim: '#ffffff', rimStrength: 0.04, heart: '#000000', heartStrength: 0.0 },
+    baby: { color: '#d9cfc4', roughness: 0.75, sheen: 0.2, sheenColor: '#ffffff', iridescence: 0.0, clearcoat: 0.0, rim: '#ffffff', rimStrength: 0.04, heart: '#000000', heartStrength: 0.0,
+      sss: '#fff0dc', translucency: 0.5, wrap: 0.3, wrapTint: '#ffffff' },
     placenta: '#6a6058',
     lights: { hemi: 0.25, key: 0.5, back: 0.3, head: 2.0, env: 0.12 },
     vignette: 0.0, grain: 0.0,
@@ -1058,6 +1065,7 @@ try {
   throw err;
 }
 window.__lunaReady = true;
+// ACES kept on purpose: side-by-side tests showed AgX washing this scene out and Neutral over-saturating the skin
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 
@@ -1394,6 +1402,14 @@ const babyUniforms = {
   uHeartColor: { value: new THREE.Color('#ff8f73') },
   uRimColor: { value: new THREE.Color('#ffc9b0') },
   uRimStrength: { value: 0.42 },
+  uTranslucency: { value: 0.5 },
+  uSssColor: { value: new THREE.Color('#ff5a3a') },
+  uSssDistortion: { value: 0.3 },
+  uSssPower: { value: 2.5 },
+  uSssScale: { value: 1.8 },
+  uSssAmbient: { value: 0.04 },
+  uWrap: { value: 0.5 },
+  uWrapTint: { value: new THREE.Color('#ff8a68') },
 };
 const babyMaterial = new THREE.MeshPhysicalMaterial({
   color: '#f2b5a1', roughness: 0.46, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ffe6a3'),
@@ -1409,6 +1425,39 @@ babyMaterial.onBeforeCompile = (shader) => {
       uniform vec3 uHeartColor;
       uniform vec3 uRimColor;
       uniform float uRimStrength;`)
+    .replace('#include <color_fragment>', `
+      #if defined( USE_COLOR_ALPHA )
+        // the sculpted model stores local body thickness in the vertex colour alpha
+        diffuseColor.rgb *= vColor.rgb;
+        sssThickness = vColor.a;
+      #elif defined( USE_COLOR )
+        diffuseColor *= vColor;
+      #endif`)
+    .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>
+      uniform float uTranslucency;
+      uniform vec3 uSssColor;
+      uniform float uSssDistortion;
+      uniform float uSssPower;
+      uniform float uSssScale;
+      uniform float uSssAmbient;
+      uniform float uWrap;
+      uniform vec3 uWrapTint;
+      float sssThickness = 0.5;
+
+      void RE_Direct_Skin( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {
+        RE_Direct_Physical( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+        // Light bleeding past the terminator with a warm tint: a cheap stand-in for pre-integrated skin
+        float nl = dot( geometryNormal, directLight.direction );
+        float wrapped = saturate( ( nl + uWrap ) / ( 1.0 + uWrap ) ) - saturate( nl );
+        reflectedLight.directDiffuse += wrapped * directLight.color * BRDF_Lambert( material.diffuseContribution ) * uWrapTint;
+        // Translucency (Barré-Brisebois & Bouchard, GDC 2011): light passing through thin parts towards the viewer
+        vec3 scatterDir = directLight.direction + geometryNormal * uSssDistortion;
+        float scatter = pow( saturate( dot( geometryViewDir, -scatterDir ) ), uSssPower ) * uSssScale;
+        float thin = pow( 1.0 - sssThickness, 1.5 );
+        reflectedLight.directDiffuse += ( scatter + uSssAmbient ) * thin * uTranslucency * directLight.color * uSssColor;
+      }
+      #undef RE_Direct
+      #define RE_Direct RE_Direct_Skin`)
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       {
         // Glow from the heart, scattered through the skin, plus a warm translucent rim
@@ -2041,6 +2090,9 @@ function applyMode(mode) {
     }
     babyUniforms.uRimColor.value.set(m.baby.rim);
     babyUniforms.uRimStrength.value = m.baby.rimStrength;
+    babyUniforms.uSssColor.value.set(m.baby.sss);
+    babyUniforms.uWrap.value = m.baby.wrap;
+    babyUniforms.uWrapTint.value.set(m.baby.wrapTint);
     babyUniforms.uHeartColor.value.set(m.baby.heart);
   }
 
@@ -2637,6 +2689,18 @@ const qSway = new THREE.Quaternion();
 const zAxis = new THREE.Vector3(0, 0, 1);
 const yAxis = new THREE.Vector3(0, 1, 0);
 const heartWorld = new THREE.Vector3();
+const camRight = new THREE.Vector3();
+const camUp = new THREE.Vector3();
+const camBack = new THREE.Vector3();
+
+// Key light from the viewer's side; back light behind the baby so thin parts glow (contre-jour)
+function placeLights() {
+  camera.updateMatrixWorld();
+  camera.matrixWorld.extractBasis(camRight, camUp, camBack);
+  const t = controls.target;
+  keyLight.position.copy(t).addScaledVector(camBack, 4).addScaledVector(camUp, 5).addScaledVector(camRight, 2.5);
+  backLight.position.copy(t).addScaledVector(camBack, -6).addScaledVector(camUp, 2.2).addScaledVector(camRight, -1.4);
+}
 
 function sceneSize(ga) {
   return 1.25 + 2.15 * Math.pow(THREE.MathUtils.clamp((ga - 8) / 32, 0, 1), 0.85);
@@ -2734,7 +2798,9 @@ renderer.setAnimationLoop((timestamp) => {
   const bpm = interpTable(HEART_RATE, ga);
   const pulse = heartPulse(now, bpm);
   $('bpm').classList.toggle('beat', pulse > 0.6);
+  placeLights();
   if (m.baby) {
+    babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency;
     babyAnchor('heart', heartWorld);
     babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
     babyUniforms.uHeartR.value = 0.13 * S;

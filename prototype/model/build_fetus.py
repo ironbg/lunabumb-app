@@ -604,6 +604,18 @@ def relax(ops, p, edges, iterations=4, lam=0.5):
     return p
 
 
+def local_thickness(ops, p, nrm, max_t=0.3, iterations=48):
+    """Distance through the body along the inward normal (sphere tracing inside the SDF).
+    Thin parts (ears, fingers, toes, nose) come out small; the trunk and head large."""
+    t = np.full(len(p), 0.002)
+    done = np.zeros(len(p), dtype=bool)
+    for _ in range(iterations):
+        d = eval_sdf(ops, p - nrm * t[:, None])
+        done |= d > 0
+        t = np.where(done, t, np.minimum(t + np.maximum(-d, 0.002), max_t))
+    return t
+
+
 def ambient_occlusion(ops, p, nrm, steps=5, dist=0.012):
     occ = np.zeros(len(p))
     weight = 1.0
@@ -694,10 +706,11 @@ def add_shape_key(obj, name, p):
     sk.value = 0.0
 
 
-def set_colors(obj, rgb):
+def set_colors(obj, rgb, alpha):
+    """Vertex colour: RGB = skin shading detail, A = normalised local thickness (for translucency)."""
     me = obj.data
     attr = me.color_attributes.new(name="Color", type="FLOAT_COLOR", domain="POINT")
-    rgba = np.concatenate([rgb, np.ones((len(rgb), 1))], axis=1)
+    rgba = np.concatenate([rgb, alpha[:, None]], axis=1)
     attr.data.foreach_set("color", rgba.ravel())
     me.color_attributes.active_color = attr
 
@@ -817,7 +830,9 @@ def main():
     shade = (0.55 + 0.45 * ao) * (1 - 0.32 * lid)
     rgb = np.stack([shade, shade * (1 - 0.1 * warm), shade * (1 - 0.13 * warm)], axis=1)
     rgb = rgb * np.array([1.0, 0.97, 0.96]) ** (1 - ao)[:, None]
-    set_colors(obj, np.clip(rgb, 0, 1))
+    thickness = local_thickness(base_ops, basis, normals)
+    print(f"thickness: min {thickness.min():.4f}, median {np.median(thickness):.4f}, max {thickness.max():.4f}")
+    set_colors(obj, np.clip(rgb, 0, 1), np.clip(thickness / 0.12, 0, 1))
 
     import bpy
     bpy.ops.export_scene.gltf(
