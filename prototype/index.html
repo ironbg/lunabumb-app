@@ -706,6 +706,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /* =========================================================================
    Pregnancy data (approximate population averages, for illustration)
@@ -1431,6 +1432,7 @@ function buildBabyMesh(res) {
   }
   babyMesh = new MarchingCubes(res, babyMaterial, false, false, 70000);
   babyMesh.isolation = 80;
+  babyMesh.visible = !gltfBaby.ready;
   babyRes = res;
   babyRoot.add(babyMesh);
   babyDirty = true;
@@ -1490,6 +1492,111 @@ function poseToWorld(p, out) {
   return babyMesh.localToWorld(out);
 }
 
+/* ---------- Sculpted model (glTF), replaces the metaball body once it loads ----------
+   Built offline by model/build_fetus.py: one mesh, growth morph targets W8 ... W40
+   around a week-24 basis, plus KICK_L, KICK_R and WAVE_L. Units are crown–rump
+   lengths in the same pose space as above, centred on the body. */
+
+const GROWTH_WEEKS = [8, 12, 16, 20, 24, 28, 32, 36, 40];
+const gltfBaby = { ready: false, group: new THREE.Group(), mesh: null, dict: null, rig: null, material: null };
+gltfBaby.group.visible = false;
+babyRoot.add(gltfBaby.group);
+
+async function loadSculptedBaby() {
+  try {
+    const [gltf, rig] = await Promise.all([
+      new GLTFLoader().loadAsync('models/fetus.glb'),
+      fetch('models/fetus-rig.json').then((r) => {
+        if (!r.ok) throw new Error(`rig: HTTP ${r.status}`);
+        return r.json();
+      }),
+    ]);
+    let mesh = null;
+    gltf.scene.traverse((o) => { if (o.isMesh) mesh = o; });
+    if (!mesh || !mesh.morphTargetDictionary) throw new Error('model has no morph targets');
+    const material = babyMaterial.clone();
+    material.vertexColors = true;
+    material.onBeforeCompile = babyMaterial.onBeforeCompile;
+    mesh.material = material;
+    mesh.frustumCulled = false;
+    gltfBaby.group.add(gltf.scene);
+    Object.assign(gltfBaby, { mesh, dict: mesh.morphTargetDictionary, rig, material, ready: true });
+    gltfBaby.group.visible = true;
+    if (babyMesh) babyMesh.visible = false;
+    applyMode(state.mode);
+  } catch (err) {
+    console.warn('Sculpted model unavailable, keeping the procedural body.', err);
+  }
+}
+
+function updateGltfBaby(ga, now) {
+  const inf = gltfBaby.mesh.morphTargetInfluences;
+  const dict = gltfBaby.dict;
+  inf.fill(0);
+  const g = THREE.MathUtils.clamp(ga, 8, 40);
+  let i = GROWTH_WEEKS.findIndex((w) => w > g);
+  if (i === -1) i = GROWTH_WEEKS.length - 1;
+  const w0 = GROWTH_WEEKS[i - 1];
+  const w1 = GROWTH_WEEKS[i];
+  const t = (g - w0) / (w1 - w0);
+  if (w0 !== 24) inf[dict[`W${w0}`]] += 1 - t;
+  if (w1 !== 24) inf[dict[`W${w1}`]] += t;
+  // movements were sculpted at 24 weeks; fade them in through the second trimester
+  const grown = THREE.MathUtils.smoothstep(g, 12, 20);
+  const ek = envelope(motion.kick, now);
+  if (ek > 0) inf[dict[`KICK_${motion.kick.side}`]] = ek * grown;
+  const ew = envelope(motion.wave, now);
+  if (ew > 0) inf[dict.WAVE_L] = ew * grown * (0.85 + 0.15 * Math.sin((now - motion.wave.t0) * 13));
+}
+
+function rigPoint(name, ga, out) {
+  const weeks = gltfBaby.rig.weeks;
+  const pts = gltfBaby.rig.anchors[name];
+  const g = THREE.MathUtils.clamp(ga, weeks[0], weeks[weeks.length - 1]);
+  let i = weeks.findIndex((w) => w > g);
+  if (i === -1) i = weeks.length - 1;
+  const t = (g - weeks[i - 1]) / (weeks[i] - weeks[i - 1]);
+  const a = pts[i - 1];
+  const b = pts[i];
+  return out.set(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
+}
+
+// World position of a named point on the baby: head, ear, heart, hand, knee, navel, footL, footR
+function babyAnchor(name, out) {
+  if (gltfBaby.ready) {
+    rigPoint(name, gaOf(state.days), out);
+    return gltfBaby.group.localToWorld(out);
+  }
+  switch (name) {
+    case 'head': {
+      const sk = pose.skull;
+      return poseToWorld(v1.set(sk.p.x - 0.25 * sk.r, sk.p.y + 0.45 * sk.r, sk.p.z + 0.55 * sk.r), out);
+    }
+    case 'ear': return poseToWorld(v1.copy(pose.earL.p).setX(pose.earL.p.x - 0.01), out);
+    case 'heart': {
+      const ch = pose.chest;
+      return poseToWorld(v1.set(ch.p.x - 0.04, ch.p.y + 0.02, ch.p.z + ch.r * 0.55), out);
+    }
+    case 'hand': return poseToWorld(pose.haL.p, out);
+    case 'knee': return poseToWorld(pose.knL.p, out);
+    case 'navel': {
+      const b = pose.belly;
+      return poseToWorld(v1.set(b.p.x, b.p.y - 0.03, b.p.z + b.r * 0.92), out);
+    }
+    case 'footL': return poseToWorld(pose.toL.p, out);
+    default: return poseToWorld(pose.toR.p, out);
+  }
+}
+
+// Where a kicking foot ends up (for the ripple and sparks)
+function kickFoot(side, out) {
+  if (gltfBaby.ready) {
+    const k = gltfBaby.rig[`KICK_${side}`];
+    return gltfBaby.group.localToWorld(out.set(k[0], k[1], k[2]));
+  }
+  return poseToWorld(pose[`to${side}`].p, out);
+}
+
 /* =========================================================================
    Umbilical cord (rebuilt as a tube that sways in the fluid)
    ========================================================================= */
@@ -1508,9 +1615,7 @@ const babyCenter = new THREE.Vector3();
 
 function updateCord(now, S) {
   const pts = cordCurve.points;
-  const belly = pose.belly;
-  v1.set(belly.p.x, belly.p.y - 0.03, belly.p.z + belly.r * 0.92);
-  poseToWorld(v1, navel);
+  babyAnchor('navel', navel);
   babyRoot.getWorldPosition(babyCenter);
   const out = v2.copy(navel).sub(babyCenter).normalize();
   pts[0].copy(navel);
@@ -1909,12 +2014,15 @@ function applyMode(mode) {
   if (m.placenta) placentaMaterial.color.set(m.placenta);
 
   if (m.baby) {
-    babyMaterial.color.set(m.baby.color);
-    babyMaterial.roughness = m.baby.roughness;
-    babyMaterial.sheen = m.baby.sheen;
-    babyMaterial.sheenColor.set(m.baby.sheenColor);
-    babyMaterial.iridescence = m.baby.iridescence;
-    babyMaterial.clearcoat = m.baby.clearcoat;
+    for (const mat of [babyMaterial, gltfBaby.material]) {
+      if (!mat) continue;
+      mat.color.set(m.baby.color);
+      mat.roughness = m.baby.roughness;
+      mat.sheen = m.baby.sheen;
+      mat.sheenColor.set(m.baby.sheenColor);
+      mat.iridescence = m.baby.iridescence;
+      mat.clearcoat = m.baby.clearcoat;
+    }
     babyUniforms.uRimColor.value.set(m.baby.rim);
     babyUniforms.uRimStrength.value = m.baby.rimStrength;
     babyUniforms.uHeartColor.value.set(m.baby.heart);
@@ -2119,17 +2227,11 @@ const toCamera = new THREE.Vector3();
 const outward = new THREE.Vector3();
 
 function updateHotspotAnchors() {
-  const sk = pose.skull;
-  v1.set(sk.p.x - 0.25 * sk.r, sk.p.y + 0.45 * sk.r, sk.p.z + 0.55 * sk.r);
-  poseToWorld(v1, hotspotWorld.head);
-  v1.copy(pose.earL.p);
-  v1.x -= 0.01;
-  poseToWorld(v1, hotspotWorld.ear);
-  const ch = pose.chest;
-  v1.set(ch.p.x - 0.04, ch.p.y + 0.02, ch.p.z + ch.r * 0.55);
-  poseToWorld(v1, hotspotWorld.heart);
-  poseToWorld(pose.haL.p, hotspotWorld.hand);
-  poseToWorld(pose.knL.p, hotspotWorld.legs);
+  babyAnchor('head', hotspotWorld.head);
+  babyAnchor('ear', hotspotWorld.ear);
+  babyAnchor('heart', hotspotWorld.heart);
+  babyAnchor('hand', hotspotWorld.hand);
+  babyAnchor('knee', hotspotWorld.legs);
 }
 
 function updateHotspots() {
@@ -2263,7 +2365,7 @@ let frameTan = 0.3;
 
 // Distance at which the baby fills a comfortable part of the visible area
 function preferredDistance(S) {
-  return (0.78 * S) / frameTan;
+  return (0.7 * S) / frameTan;
 }
 
 function resize() {
@@ -2362,7 +2464,7 @@ function triggerKick(amp, logged) {
   }
   motion.kick = { t0: now, dur: 0.75, amp, side };
   setTimeout(() => {
-    poseToWorld(pose['to' + side].p, footWorld);
+    kickFoot(side, footWorld);
     rippleAt(footWorld);
     if (logged) spawnSparks(footWorld, 10);
   }, 280);
@@ -2568,6 +2670,7 @@ renderer.setAnimationLoop((timestamp) => {
 
   // Baby transform: size, slow sway, and the turn to head-down between weeks 30 and 36
   babyMesh.scale.setScalar(S / (2 * K));
+  gltfBaby.group.scale.setScalar(S);
   const flipTarget = 0.2 + (Math.PI - 0.35) * THREE.MathUtils.smoothstep(ga, 30, 36);
   flip += (flipTarget - flip) * Math.min(1, rawDt * 3);
   qFlip.setFromAxisAngle(zAxis, flip);
@@ -2576,9 +2679,13 @@ renderer.setAnimationLoop((timestamp) => {
   babyRoot.position.y = reduce ? 0 : Math.sin(now * 0.5) * 0.04 * S;
   babyRoot.updateMatrixWorld(true);
 
-  if (!m.moon && (babyDirty || motionActive(now))) {
-    rebuildBaby(ga, now);
-    babyDirty = false;
+  if (!m.moon) {
+    if (gltfBaby.ready) {
+      updateGltfBaby(ga, now);
+    } else if (babyDirty || motionActive(now)) {
+      rebuildBaby(ga, now);
+      babyDirty = false;
+    }
   }
 
   // Moon: grows and waxes from a thin crescent to full
@@ -2612,9 +2719,7 @@ renderer.setAnimationLoop((timestamp) => {
   const pulse = heartPulse(now, bpm);
   $('bpm').classList.toggle('beat', pulse > 0.6);
   if (m.baby) {
-    const ch = pose.chest;
-    v1.set(ch.p.x - 0.03, ch.p.y + 0.03, ch.p.z + 0.04);
-    poseToWorld(v1, heartWorld);
+    babyAnchor('heart', heartWorld);
     babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
     babyUniforms.uHeartR.value = 0.13 * S;
     babyUniforms.uPulse.value = (0.12 + pulse) * m.baby.heartStrength;
@@ -2642,6 +2747,7 @@ $('loader-text').textContent = STR[state.lang].loading;
 updateStaticCopy();
 applyTier(state.quality === 'auto' ? detectTier() : Number(state.quality));
 camera.position.set(0.35, 0.18, 1).normalize().multiplyScalar(preferredDistance(sceneSize(gaOf(state.days))));
+loadSculptedBaby();
 </script>
 </body>
 </html>
