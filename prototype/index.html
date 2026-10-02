@@ -1,0 +1,2647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lunabump Luna View</title>
+<style>
+  /* Layout: full-bleed night scene; week heading top-left, tool rail on the right, glass control dock at the bottom */
+  :root {
+    --night: #16152B;
+    --night-deep: #0E0D1F;
+    --text: #F3F0FF;
+    --muted: #A9A6C2;
+    --ink: #2A2740;
+    --violet: #B9AEF0;
+    --peach: #F6C8B5;
+    --star: #FFE6A3;
+    --glass: rgba(22, 21, 43, 0.58);
+    --glass-strong: rgba(22, 21, 43, 0.86);
+    --line: rgba(185, 174, 240, 0.22);
+    --track: rgba(243, 240, 255, 0.16);
+    --focus: #FFE6A3;
+    --display: 'Lora', Georgia, 'Times New Roman', serif;
+    --body: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --dock-h: 210px;
+    --gutter: max(16px, env(safe-area-inset-left, 0px));
+    color-scheme: dark;
+  }
+
+  html { height: 100%; box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--night);
+    color: var(--text);
+    font: 400 15px/1.45 var(--body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] { display: none !important; }
+  button, select, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  #scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    background: var(--night);
+  }
+
+  .scrim {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: calc(env(safe-area-inset-top, 0px) + 230px);
+    background: linear-gradient(to bottom, rgba(14, 13, 31, 0.78), rgba(14, 13, 31, 0.42) 55%, rgba(14, 13, 31, 0));
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--gutter) 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .topbar > * { pointer-events: auto; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand svg { width: 30px; height: 30px; flex: none; }
+  .brand-name { font: 600 19px/1 var(--display); letter-spacing: 0.01em; }
+  .brand-view {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 9px;
+    white-space: nowrap;
+  }
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+  .seg-mini {
+    display: flex;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .seg-mini button {
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .seg-mini button[aria-pressed="true"] { background: var(--violet); color: var(--ink); }
+  .quality {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .quality option { background: var(--night); color: var(--text); }
+  .fps { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; }
+
+  /* ---------- Week heading ---------- */
+  .hero {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 62px);
+    left: var(--gutter);
+    right: 84px;
+    pointer-events: none;
+    z-index: 3;
+    text-shadow: 0 1px 18px rgba(14, 13, 31, 0.8);
+  }
+  .hero-week { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .hero-week h1 {
+    margin: 0;
+    font: 600 clamp(34px, 7vw, 52px)/1.02 var(--display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .hero-day { font: italic 500 clamp(17px, 3.6vw, 22px)/1 var(--display); color: var(--peach); }
+  .hero-sub {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    color: #D3CFE6;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .bpm { display: inline-flex; align-items: center; gap: 6px; color: var(--peach); }
+  .bpm svg { width: 14px; height: 14px; }
+  .bpm.beat svg { transform: scale(1.18); }
+  .bpm svg { transition: transform 90ms ease-out; }
+
+  .scan-label {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 66px);
+    right: var(--gutter);
+    z-index: 3;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: #E9C08A;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  /* ---------- Tool rail ---------- */
+  .rail {
+    position: fixed;
+    right: var(--gutter);
+    bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 26px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 4;
+  }
+  .tool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    width: 64px;
+  }
+  .tool-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .tool-icon svg { width: 22px; height: 22px; }
+  .tool-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(14, 13, 31, 0.55);
+  }
+  .tool[aria-pressed="true"] .tool-icon { background: rgba(185, 174, 240, 0.3); border-color: var(--violet); }
+  .tool[aria-pressed="true"] .tool-label { color: var(--text); }
+  .tool:focus-visible { outline: none; }
+  .tool:focus-visible .tool-icon { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* ---------- Dock ---------- */
+  .dock {
+    position: fixed;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    max-width: 640px;
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 16px 14px;
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    z-index: 4;
+  }
+  .size-row { display: flex; align-items: center; gap: 12px; }
+  .size-text { flex: 1; min-width: 0; }
+  .size-fruit { font-size: 17px; font-weight: 600; line-height: 1.25; }
+  .size-meta {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    background: var(--star);
+    border-radius: 999px;
+    padding: 2px 8px;
+  }
+  .kick {
+    flex: none;
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    border: 0;
+    border-radius: 18px;
+    padding: 10px 16px 8px;
+    background: var(--peach);
+    color: var(--ink);
+    box-shadow: 0 6px 24px rgba(246, 200, 181, 0.25);
+    transition: transform 120ms ease;
+  }
+  .kick:active { transform: scale(0.96); }
+  .kick-label { font-size: 15px; font-weight: 700; line-height: 1.1; }
+  .kick-count { font-size: 12px; font-weight: 600; opacity: 0.75; font-variant-numeric: tabular-nums; }
+
+  .timeline { display: grid; gap: 6px; }
+  .timeline input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 26px;
+    margin: 0;
+    background: transparent;
+    --fill: 50%;
+  }
+  .timeline input::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 6px;
+    background: linear-gradient(to right, var(--violet) 0 var(--fill), var(--track) var(--fill) 100%);
+  }
+  .timeline input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -8px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--star);
+    box-shadow: 0 0 0 5px rgba(255, 230, 163, 0.18), 0 0 18px rgba(255, 230, 163, 0.75);
+  }
+  .timeline input::-moz-range-track { height: 6px; border-radius: 6px; background: var(--track); }
+  .timeline input::-moz-range-progress { height: 6px; border-radius: 6px; background: var(--violet); }
+  .timeline input::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--star);
+    box-shadow: 0 0 0 5px rgba(255, 230, 163, 0.18), 0 0 18px rgba(255, 230, 163, 0.75);
+  }
+  /* Ticks are inset by the thumb radius so trimester borders line up with the thumb's travel */
+  .trimesters { display: flex; padding: 0 11px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .trimesters span { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trimesters span + span { border-left: 1px solid var(--line); }
+  .trimesters .t1 { flex: 0 0 18.75%; }
+  .trimesters .t2 { flex: 0 0 43.75%; }
+  .trimesters .t3 { flex: 0 0 37.5%; }
+
+  .modes {
+    display: flex;
+    background: rgba(14, 13, 31, 0.5);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .modes button {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    padding: 8px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .modes button[aria-checked="true"] { background: var(--violet); color: var(--ink); }
+  .disclaimer { margin: -4px 0 0; font-size: 11px; color: var(--muted); text-align: center; opacity: 0.85; }
+
+  /* ---------- Hotspots ---------- */
+  .hotspots { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .hotspot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    border: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
+    transition: opacity 200ms ease;
+  }
+  .hotspot::before {
+    content: "";
+    position: absolute;
+    inset: 11px;
+    border-radius: 50%;
+    background: var(--star);
+    box-shadow: 0 0 12px rgba(255, 230, 163, 0.9);
+  }
+  .hotspot::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 230, 163, 0.7);
+    animation: ring 2.4s ease-out infinite;
+  }
+  .hotspot[aria-expanded="true"]::before { background: var(--peach); }
+  .hotspot.behind { opacity: 0.35; }
+  .hotspot-tip {
+    position: absolute;
+    left: 50%;
+    top: -26px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--glass-strong);
+    border: 1px solid var(--line);
+    opacity: 0;
+    transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .hotspot:hover .hotspot-tip, .hotspot:focus-visible .hotspot-tip { opacity: 1; }
+  @keyframes ring {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  .info {
+    position: fixed;
+    left: var(--gutter);
+    right: calc(var(--gutter) + 76px);
+    top: calc(env(safe-area-inset-top, 0px) + 160px);
+    max-width: 360px;
+    padding: 16px 18px 16px;
+    background: var(--glass-strong);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 6;
+  }
+  .info-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .info h2 { margin: 0; font: 600 19px/1.2 var(--display); text-wrap: balance; }
+  .info-week { margin-top: 2px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--peach); }
+  .info p { margin: 10px 0 0; font-size: 14px; color: var(--text); max-width: 60ch; }
+  .icon-btn {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: transparent;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  /* ---------- Toast, loader, modal ---------- */
+  .toast {
+    position: fixed;
+    left: var(--gutter);
+    bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px) + 26px);
+    max-width: calc(100% - var(--gutter) - 96px);
+    padding: 9px 16px;
+    border-radius: 16px;
+    background: var(--glass-strong);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 8;
+    transition: opacity 250ms ease;
+  }
+  .toast.fade { opacity: 0; }
+
+  .loader {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--night);
+    z-index: 1;
+    transition: opacity 600ms ease;
+  }
+  .loader.done { opacity: 0; pointer-events: none; }
+  .loader-inner { display: grid; justify-items: center; gap: 14px; color: var(--muted); font-size: 14px; text-align: center; padding: 0 24px; }
+  .loader svg { width: 54px; height: 54px; animation: breathe 2.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.08); opacity: 0.75; } }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 16px);
+    background: rgba(10, 9, 24, 0.9);
+    z-index: 10;
+  }
+  .modal-panel {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    width: min(420px, 100%);
+    max-height: 100%;
+  }
+  .modal-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .modal-head h2 { margin: 0; font: 600 20px/1.2 var(--display); }
+  .modal img {
+    width: auto;
+    max-width: 100%;
+    max-height: 68vh;
+    aspect-ratio: 9 / 16;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--night-deep);
+    object-fit: cover;
+  }
+  .modal-meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+  .modal-hint { margin: 0; font-size: 13px; color: var(--text); text-align: center; }
+
+  .fallback {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 0 24px;
+    text-align: center;
+    color: var(--text);
+    background: var(--night);
+    z-index: 20;
+  }
+
+  @media (max-width: 520px) {
+    .brand-view, .fps { display: none; }
+    .trimesters .range { display: none; }
+  }
+  @media (max-width: 420px) {
+    .modes button { padding: 8px 2px; letter-spacing: -0.01em; }
+  }
+  @media (max-width: 380px) {
+    .modes button { font-size: 12px; }
+    .kick { padding: 9px 12px 7px; }
+  }
+  @media (max-height: 640px) {
+    .tool-label { display: none; }
+    .rail { gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hotspot::after, .loader svg { animation: none; }
+    .toast, .loader { transition: none; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Sofia+Sans:wght@400;500;600;700&display=swap">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="scene" role="img" aria-label="3D view of your baby at week 24, day 3: curled up in the womb, about 30 cm long, the size of an ear of corn."></canvas>
+
+<div class="scrim" aria-hidden="true"></div>
+
+<div class="loader" id="loader">
+  <div class="loader-inner">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <defs><mask id="loader-mask"><rect width="64" height="64" fill="#fff"/><circle cx="42" cy="24" r="22" fill="#000"/></mask></defs>
+      <circle cx="30" cy="32" r="24" fill="#F6C8B5" mask="url(#loader-mask)"/>
+      <circle cx="38" cy="38" r="5" fill="#FFE6A3"/>
+    </svg>
+    <span id="loader-text">Loading Luna View…</span>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <defs><mask id="logo-mask"><rect width="32" height="32" fill="#fff"/><circle cx="21" cy="12" r="11" fill="#000"/></mask></defs>
+      <circle cx="15" cy="16" r="12" fill="#F6C8B5" mask="url(#logo-mask)"/>
+      <circle cx="19" cy="19" r="2.6" fill="#FFE6A3"/>
+    </svg>
+    <span class="brand-name">Lunabump</span>
+    <span class="brand-view" id="brand-view">Luna View · Prototype</span>
+  </div>
+  <div class="top-actions">
+    <span class="fps" id="fps" aria-hidden="true"></span>
+    <label class="visually-hidden" for="quality" id="quality-label" hidden>Quality</label>
+    <select class="quality" id="quality" aria-labelledby="quality-label">
+      <option value="auto">Auto</option>
+      <option value="0">Lite</option>
+      <option value="1">Standard</option>
+      <option value="2">High</option>
+      <option value="3">Ultra</option>
+    </select>
+    <div class="seg-mini" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-bg" aria-pressed="false">BG</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-week">
+    <h1 id="week-title">Week 24</h1>
+    <span class="hero-day" id="week-day">Day 3</span>
+  </div>
+  <div class="hero-sub">
+    <span id="days-to-go">109 days to go · 2nd trimester</span>
+    <span class="bpm" id="bpm">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.4 2.5.2.3.6.3.8 0 .8-1.4 2.3-2.5 4.4-2.5 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
+      <span id="bpm-text">~146 bpm</span>
+    </span>
+  </div>
+</section>
+
+<div class="scan-label" id="scan-label" hidden>4D · GA 24w3d</div>
+
+<div class="hotspots" id="hotspots"></div>
+
+<aside class="info" id="info" role="dialog" aria-labelledby="info-title" hidden>
+  <div class="info-head">
+    <div>
+      <h2 id="info-title">Heart &amp; lungs</h2>
+      <div class="info-week" id="info-week">Week 24</div>
+    </div>
+    <button type="button" class="icon-btn" id="info-close" aria-label="Close">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <p id="info-body"></p>
+</aside>
+
+<nav class="rail" aria-label="Scene tools">
+  <button type="button" class="tool" id="tool-explore" aria-pressed="true">
+    <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></span>
+    <span class="tool-label" id="label-explore">Explore</span>
+  </button>
+  <button type="button" class="tool" id="tool-listen" aria-pressed="false">
+    <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12h4l2-5 3.5 10 2.5-7 1.5 2h5.5"/></svg></span>
+    <span class="tool-label" id="label-listen">Listen</span>
+  </button>
+  <button type="button" class="tool" id="tool-portrait">
+    <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M8.5 16.5c1-2 2.2-3 3.5-3s2.5 1 3.5 3" stroke-linecap="round"/><circle cx="12" cy="9.5" r="2"/></svg></span>
+    <span class="tool-label" id="label-portrait">Portrait</span>
+  </button>
+  <button type="button" class="tool" id="tool-play" aria-pressed="false">
+    <span class="tool-icon" id="play-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5z"/></svg></span>
+    <span class="tool-label" id="label-play">Time-lapse</span>
+  </button>
+</nav>
+
+<footer class="dock" id="dock">
+  <div class="size-row">
+    <div class="size-text">
+      <div class="size-fruit" id="size-fruit">Size of an ear of corn</div>
+      <div class="size-meta">
+        <span id="size-numbers">≈ 30 cm · 600 g</span>
+        <span id="size-kind">crown–heel</span>
+        <span class="pill" id="head-down" hidden>Head-down</span>
+      </div>
+    </div>
+    <button type="button" class="kick" id="kick">
+      <span class="kick-label" id="kick-label">Log kick</span>
+      <span class="kick-count" id="kick-count">0 today</span>
+    </button>
+  </div>
+  <div class="timeline">
+    <input type="range" id="timeline" min="56" max="280" step="1" value="171" aria-label="Pregnancy week" aria-valuetext="Week 24, day 3">
+    <div class="trimesters" aria-hidden="true">
+      <span class="t1"><b id="tri-1">1st</b><span class="range"> · 8–13</span></span>
+      <span class="t2"><b id="tri-2">2nd</b><span class="range"> · 14–27</span></span>
+      <span class="t3"><b id="tri-3">3rd</b><span class="range"> · 28–40</span></span>
+    </div>
+  </div>
+  <div class="modes" role="radiogroup" aria-label="Visual mode" id="modes">
+    <button type="button" role="radio" data-mode="dreamy" aria-checked="true">Dreamy</button>
+    <button type="button" role="radio" data-mode="realistic" aria-checked="false">Realistic</button>
+    <button type="button" role="radio" data-mode="us" aria-checked="false">4D scan</button>
+    <button type="button" role="radio" data-mode="moon" aria-checked="false">Moon</button>
+  </div>
+  <p class="disclaimer" id="disclaimer">Artistic visualisation for a prototype. Not a medical image.</p>
+</footer>
+
+<div class="toast fade" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h2 id="modal-title">Weekly Moon Portrait</h2>
+      <button type="button" class="icon-btn" id="modal-close" aria-label="Close">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <img id="portrait-img" alt="">
+    <div class="modal-meta" id="portrait-meta"></div>
+    <p class="modal-hint" id="portrait-hint">Long-press or right-click the image to save it.</p>
+  </div>
+</div>
+
+<div class="fallback" id="fallback" hidden></div>
+
+<script>
+  // If the 3D engine can't load (offline, blocked CDN), say so instead of spinning forever.
+  setTimeout(function () {
+    if (!window.__lunaReady) {
+      var el = document.getElementById('loader-text');
+      if (el) el.textContent = document.documentElement.lang === 'bg'
+        ? '3D двигателят не се зареди. Провери връзката и презареди страницата.'
+        : "The 3D engine didn't load. Check your connection and reload the page.";
+    }
+  }, 15000);
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =========================================================================
+   Pregnancy data (approximate population averages, for illustration)
+   ========================================================================= */
+
+const FIRST_DAY = 56;   // 8 weeks + 0 days
+const LAST_DAY = 280;   // 40 weeks + 0 days (due date)
+
+// week, EN size, BG size, length in cm (crown–rump until week 19, crown–heel from week 20), weight in g
+const WEEKS = [
+  [8, 'a raspberry', 'малина', 1.6, 1],
+  [9, 'a cherry', 'череша', 2.3, 2],
+  [10, 'a strawberry', 'ягода', 3.1, 4],
+  [11, 'a fig', 'смокиня', 4.1, 7],
+  [12, 'a lime', 'лайм', 5.4, 14],
+  [13, 'a lemon', 'лимон', 7.4, 23],
+  [14, 'a peach', 'праскова', 8.7, 43],
+  [15, 'an apple', 'ябълка', 10.1, 70],
+  [16, 'an avocado', 'авокадо', 11.6, 100],
+  [17, 'a pear', 'круша', 13.0, 140],
+  [18, 'a bell pepper', 'чушка', 14.2, 190],
+  [19, 'a mango', 'манго', 15.3, 240],
+  [20, 'a banana', 'банан', 25.6, 300],
+  [21, 'a carrot', 'морков', 26.7, 360],
+  [22, 'a papaya', 'папая', 27.8, 430],
+  [23, 'a grapefruit', 'грейпфрут', 28.9, 501],
+  [24, 'an ear of corn', 'кочан царевица', 30.0, 600],
+  [25, 'a cauliflower', 'карфиол', 32.0, 660],
+  [26, 'a zucchini', 'тиквичка', 33.9, 760],
+  [27, 'a head of lettuce', 'маруля', 35.8, 875],
+  [28, 'an eggplant', 'патладжан', 37.6, 1005],
+  [29, 'a butternut squash', 'мускатна тиква', 38.8, 1153],
+  [30, 'a cabbage', 'зелка', 39.9, 1319],
+  [31, 'a coconut', 'кокосов орех', 41.1, 1502],
+  [32, 'a pineapple', 'ананас', 42.4, 1702],
+  [33, 'a cantaloupe', 'пъпеш канталупа', 43.7, 1918],
+  [34, 'a bunch of Swiss chard', 'връзка манголд', 45.0, 2146],
+  [35, 'a bunch of celery', 'връзка целина', 46.2, 2383],
+  [36, 'a honeydew melon', 'пъпеш', 47.4, 2622],
+  [37, 'a leek', 'стрък праз', 48.6, 2859],
+  [38, 'a pumpkin', 'тиква', 49.8, 3083],
+  [39, 'a winter melon', 'зимен пъпеш', 50.7, 3288],
+  [40, 'a small watermelon', 'малка диня', 51.2, 3462],
+];
+
+// Typical fetal heart rate by gestational week (beats per minute)
+const HEART_RATE = [[8, 165], [9, 170], [14, 155], [20, 147], [30, 142], [40, 138]];
+
+function interpTable(table, x) {
+  if (x <= table[0][0]) return table[0][1];
+  for (let i = 1; i < table.length; i++) {
+    const [x1, y1] = table[i];
+    if (x <= x1) {
+      const [x0, y0] = table[i - 1];
+      return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+    }
+  }
+  return table[table.length - 1][1];
+}
+
+/* =========================================================================
+   Copy (English is the source language, Bulgarian is the first translation)
+   ========================================================================= */
+
+const STR = {
+  en: {
+    locale: 'en-GB',
+    week: (w) => `Week ${w}`,
+    day: (d) => `Day ${d}`,
+    daysToGo: (n) => (n === 0 ? 'Due date today' : n === 1 ? '1 day to go' : `${n} days to go`),
+    trimester: (t) => `${['1st', '2nd', '3rd'][t - 1]} trimester`,
+    triShort: ['1st', '2nd', '3rd'],
+    bpm: (n) => `~${n} bpm`,
+    sizeOf: (f) => `Size of ${f}`,
+    cm: 'cm', g: 'g', kg: 'kg',
+    crownRump: 'crown–rump',
+    crownHeel: 'crown–heel',
+    headDown: 'Head-down',
+    modes: { dreamy: 'Dreamy', realistic: 'Realistic', us: '4D scan', moon: 'Moon' },
+    modeGroup: 'Visual mode',
+    kick: 'Log kick',
+    kicksToday: (n) => `${n} today`,
+    tools: { explore: 'Explore', listen: 'Listen', portrait: 'Portrait', play: 'Time-lapse', pause: 'Pause' },
+    toolGroup: 'Scene tools',
+    language: 'Language',
+    quality: 'Quality',
+    tiers: ['Lite', 'Standard', 'High', 'Ultra'],
+    auto: (name) => `Auto · ${name}`,
+    brandView: 'Luna View · Prototype',
+    disclaimer: 'Artistic visualisation for a prototype. Not a medical image.',
+    timeline: 'Pregnancy week',
+    timelineValue: (w, d) => `Week ${w}, day ${d}`,
+    toastKick: (n) => `Kick logged · ${n} today`,
+    toastListen: 'Heartbeat sound is a simulation, not a recording.',
+    toastQuality: (name) => `Switched to ${name} quality to keep motion smooth`,
+    portraitTitle: 'Weekly Moon Portrait',
+    portraitHint: 'Long-press or right-click the image to save it.',
+    portraitAlt: (w, d) => `Portrait of your baby at week ${w}, day ${d}`,
+    close: 'Close',
+    loading: 'Loading Luna View…',
+    noWebgl: "This browser can't show the 3D scene. Try a recent version of Chrome, Safari, Edge or Firefox.",
+    sceneAlt: (w, d, len, fruit) => `3D view of your baby at week ${w}, day ${d}: curled up in the womb, about ${len} long, the size of ${fruit}.`,
+    moonAlt: (w) => `A glowing moon that grows with your pregnancy, now at week ${w}.`,
+    scan: (w, d) => `4D · GA ${w}w${d}d`,
+    tagline: 'Watch your little moon grow.',
+    hotspots: {
+      head: {
+        title: 'Face & brain',
+        stages: [
+          [8, 'The eyes are moving from the sides of the head toward the front, and the tip of the nose is forming.'],
+          [12, 'Facial muscles work now: your baby can squint, frown and make little grimaces.'],
+          [20, 'The eyelids stay closed until about weeks 26–28, then they open and your baby starts to blink.'],
+          [28, 'The brain is growing fast. At birth the head will measure about 34–35 cm around.'],
+        ],
+      },
+      ear: {
+        title: 'Hearing',
+        stages: [
+          [14, 'The ears are moving into place on the sides of the head.'],
+          [18, 'Around weeks 18–20 the inner ear is developed enough for the first sounds.'],
+          [24, 'Your baby can hear your voice and your heartbeat, and may react to loud noises.'],
+        ],
+      },
+      heart: {
+        title: 'Heart & lungs',
+        lead: (bpm) => `The heart beats about ${bpm} times a minute, nearly twice as fast as yours at rest.`,
+        stages: [
+          [8, 'The lungs are branching like a tiny tree.'],
+          [24, 'The lungs start making surfactant, which will help them inflate after birth.'],
+          [32, 'Breathing movements are getting more regular as the lungs mature.'],
+        ],
+      },
+      hand: {
+        title: 'Hands',
+        stages: [
+          [8, 'Fingers are separating from small, paddle-shaped hands.'],
+          [11, 'The hands can open and close, and fingernails are starting to grow.'],
+          [17, 'Fingerprints are forming. They are finished by about week 19 and belong to your baby alone.'],
+          [24, 'A strong grasp reflex: your baby sometimes holds the umbilical cord.'],
+        ],
+      },
+      legs: {
+        title: 'Legs & kicks',
+        stages: [
+          [8, 'Your baby has been moving since about week 7–8, but the movements are still too small to feel.'],
+          [16, 'First movements are usually felt between weeks 16 and 22. Tap Log kick when you feel one.'],
+          [28, 'With less room, kicks turn into rolls and stretches. Learn your baby\'s usual pattern, and if movements slow down or change, contact your maternity unit right away.'],
+        ],
+      },
+    },
+  },
+  bg: {
+    locale: 'bg-BG',
+    week: (w) => `Седмица ${w}`,
+    day: (d) => `Ден ${d}`,
+    daysToGo: (n) => (n === 0 ? 'Терминът е днес' : n === 1 ? 'Остава 1 ден' : `Остават ${n} дни`),
+    trimester: (t) => `${['I', 'II', 'III'][t - 1]} триместър`,
+    triShort: ['I', 'II', 'III'],
+    bpm: (n) => `~${n} уд/мин`,
+    sizeOf: (f) => `Колкото ${f}`,
+    cm: 'см', g: 'г', kg: 'кг',
+    crownRump: 'теме–седалище',
+    crownHeel: 'теме–пета',
+    headDown: 'С главата надолу',
+    modes: { dreamy: 'Мечта', realistic: 'Реален', us: 'Видеозон', moon: 'Луна' },
+    modeGroup: 'Визуален режим',
+    kick: 'Ритник',
+    kicksToday: (n) => `${n} днес`,
+    tools: { explore: 'Разгледай', listen: 'Слушай', portrait: 'Портрет', play: 'Таймлапс', pause: 'Пауза' },
+    toolGroup: 'Инструменти за сцената',
+    language: 'Език',
+    quality: 'Качество',
+    tiers: ['Лек', 'Стандартен', 'Висок', 'Ултра'],
+    auto: (name) => `Авто · ${name}`,
+    brandView: 'Luna View · Прототип',
+    disclaimer: 'Художествена визуализация за прототип. Не е медицинско изображение.',
+    timeline: 'Седмица на бременността',
+    timelineValue: (w, d) => `Седмица ${w}, ден ${d}`,
+    toastKick: (n) => `Ритникът е записан · ${n} днес`,
+    toastListen: 'Звукът на сърцето е симулация, а не запис.',
+    toastQuality: (name) => `Качеството е сменено на „${name}“ за плавна анимация`,
+    portraitTitle: 'Седмичен лунен портрет',
+    portraitHint: 'Задръж пръст или кликни с десен бутон върху изображението, за да го запазиш.',
+    portraitAlt: (w, d) => `Портрет на бебето в седмица ${w}, ден ${d}`,
+    close: 'Затвори',
+    loading: 'Зареждане на Luna View…',
+    noWebgl: 'Този браузър не може да покаже 3D сцената. Опитай с нова версия на Chrome, Safari, Edge или Firefox.',
+    sceneAlt: (w, d, len, fruit) => `3D изглед на бебето в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}, колкото ${fruit}.`,
+    moonAlt: (w) => `Светеща луна, която расте заедно с бременността, сега в седмица ${w}.`,
+    scan: (w, d) => `4D · ${w} г.с. + ${d} д.`,
+    tagline: 'Гледай как расте твоята малка луна.',
+    hotspots: {
+      head: {
+        title: 'Лице и мозък',
+        stages: [
+          [8, 'Очите се придвижват от страните на главата към лицето, оформя се връхчето на носа.'],
+          [12, 'Лицевите мускули вече работят: бебето може да присвива очи, да се мръщи и да прави малки гримаси.'],
+          [20, 'Клепачите остават затворени до около 26–28 седмица, след това се отварят и бебето започва да мига.'],
+          [28, 'Мозъкът расте бързо. При раждането обиколката на главата ще е около 34–35 см.'],
+        ],
+      },
+      ear: {
+        title: 'Слух',
+        stages: [
+          [14, 'Ушите се придвижват към мястото си отстрани на главата.'],
+          [18, 'Около 18–20 седмица вътрешното ухо е достатъчно развито за първите звуци.'],
+          [24, 'Бебето чува гласа ти и сърцето ти и може да реагира на силни звуци.'],
+        ],
+      },
+      heart: {
+        title: 'Сърце и бели дробове',
+        lead: (bpm) => `Сърцето бие около ${bpm} пъти в минута, почти двойно по-бързо от твоето в покой.`,
+        stages: [
+          [8, 'Белите дробове се разклоняват като малко дърво.'],
+          [24, 'Белите дробове започват да образуват сърфактант, който ще им помогне да се разгънат след раждането.'],
+          [32, 'Дихателните движения стават по-редовни, докато белите дробове узряват.'],
+        ],
+      },
+      hand: {
+        title: 'Ръчички',
+        stages: [
+          [8, 'Пръстчетата се отделят от малките лопатовидни ръчички.'],
+          [11, 'Ръчичките се отварят и затварят, започват да растат ноктенца.'],
+          [17, 'Оформят се отпечатъците на пръстите. Готови са около 19 седмица и са само на твоето бебе.'],
+          [24, 'Силен хватателен рефлекс: бебето понякога хваща пъпната връв.'],
+        ],
+      },
+      legs: {
+        title: 'Крачета и ритници',
+        stages: [
+          [8, 'Бебето се движи от около 7–8 седмица, но движенията още са твърде малки, за да се усетят.'],
+          [16, 'Първите движения обикновено се усещат между 16 и 22 седмица. Натисни „Ритник“, когато усетиш.'],
+          [28, 'С по-малко място ритниците стават превъртания и протягания. Опознай обичайния им модел, а ако движенията намалеят или се променят, веднага се свържи с родилното отделение.'],
+        ],
+      },
+    },
+  },
+};
+
+/* =========================================================================
+   Visual modes and quality tiers
+   ========================================================================= */
+
+const MODES = {
+  dreamy: {
+    bg: '#16152B', exposure: 0.9,
+    bloom: { strength: 0.6, radius: 0.55, threshold: 0.72 },
+    wall: { center: '#5a2b4e', edge: '#1a1533', caustic: '#ffd2ad', amount: 0.5 },
+    shell: { rim: '#f6c8b5', glow: '#ffe6a3', intensity: 1.0 },
+    particles: 1.0, stars: 1.0,
+    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.28, heart: '#ff7a5c', heartStrength: 0.9 },
+    placenta: '#a4465c',
+    lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
+    vignette: 0.6, grain: 0.035,
+  },
+  realistic: {
+    bg: '#120f1c', exposure: 0.95,
+    bloom: { strength: 0.2, radius: 0.35, threshold: 0.85 },
+    wall: { center: '#7a3236', edge: '#22100f', caustic: '#ffcba3', amount: 0.22 },
+    shell: { rim: '#f2a993', glow: '#ffcfb5', intensity: 0.5 },
+    particles: 0.4, stars: 0.35,
+    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.14, heart: '#ff6a55', heartStrength: 0.35 },
+    placenta: '#8c2f3d',
+    lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4 },
+    vignette: 0.5, grain: 0.02,
+  },
+  us: {
+    bg: '#000000', exposure: 1.1,
+    bloom: null,
+    wall: { center: '#0b0703', edge: '#000000', caustic: '#000000', amount: 0.0 },
+    shell: { rim: '#000000', glow: '#000000', intensity: 0.0 },
+    particles: 0.0, stars: 0.0,
+    baby: { color: '#d9cfc4', roughness: 0.75, sheen: 0.2, sheenColor: '#ffffff', iridescence: 0.0, clearcoat: 0.0, rim: '#ffffff', rimStrength: 0.04, heart: '#000000', heartStrength: 0.0 },
+    placenta: '#6a6058',
+    lights: { hemi: 0.25, key: 0.5, back: 0.3, head: 2.0, env: 0.12 },
+    vignette: 0.0, grain: 0.0,
+    scan: true,
+  },
+  moon: {
+    bg: '#100f24', exposure: 1.0,
+    bloom: { strength: 0.55, radius: 0.6, threshold: 0.78 },
+    wall: { center: '#2b2656', edge: '#110f26', caustic: '#c9c0ff', amount: 0.35 },
+    shell: { rim: '#b9aef0', glow: '#ffe6a3', intensity: 0.55 },
+    particles: 1.0, stars: 1.2,
+    baby: null,
+    placenta: null,
+    lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
+    vignette: 0.6, grain: 0.03,
+    moon: true,
+  },
+};
+
+const TIERS = [
+  { pr: 1.0, mc: 34, particles: 260, stars: 700, iter: 3, msaa: 0, cordEvery: 3 },
+  { pr: 1.5, mc: 44, particles: 650, stars: 1100, iter: 4, msaa: 2, cordEvery: 2 },
+  { pr: 2.0, mc: 56, particles: 1300, stars: 1600, iter: 5, msaa: 4, cordEvery: 1 },
+  { pr: 3.0, mc: 68, particles: 2400, stars: 2400, iter: 5, msaa: 4, cordEvery: 1 },
+];
+
+/* =========================================================================
+   State
+   ========================================================================= */
+
+const reduceMotionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const state = {
+  days: 171,
+  mode: 'dreamy',
+  lang: 'en',
+  quality: 'auto',
+  tier: 2,
+  kicks: 0,
+  explore: true,
+  listening: false,
+  playing: false,
+  activeHotspot: null,
+};
+
+try {
+  const saved = JSON.parse(localStorage.getItem('lunabump.lunaView') || '{}');
+  if (saved.lang in STR) state.lang = saved.lang;
+  if (saved.mode in MODES) state.mode = saved.mode;
+  if (['auto', '0', '1', '2', '3'].includes(saved.quality)) state.quality = saved.quality;
+} catch (err) { /* storage unavailable: keep defaults */ }
+
+function persist() {
+  try {
+    localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality }));
+  } catch (err) { /* storage unavailable */ }
+}
+
+const $ = (id) => document.getElementById(id);
+const t = () => STR[state.lang];
+const gaOf = (days) => days / 7;
+const weekOf = (days) => Math.floor(days / 7);
+const dayOf = (days) => days % 7;
+
+/* =========================================================================
+   Renderer, scene, camera
+   ========================================================================= */
+
+const canvas = $('scene');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+} catch (err) {
+  $('loader').hidden = true;
+  $('fallback').textContent = STR[state.lang].noWebgl;
+  $('fallback').hidden = false;
+  throw err;
+}
+window.__lunaReady = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(MODES.dreamy.bg);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+
+const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 220);
+camera.position.set(2.4, 1.1, 7.6);
+scene.add(camera);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.enablePan = false;
+controls.minDistance = 1.4;
+controls.maxDistance = 40;
+controls.rotateSpeed = 0.6;
+controls.zoomSpeed = 0.8;
+controls.autoRotateSpeed = 0.45;
+controls.target.set(0, 0, 0);
+
+let lastInteraction = -10;
+let userDistanceOverride = false;
+let distanceAtStart = 0;
+controls.addEventListener('start', () => {
+  lastInteraction = elapsed;
+  controls.autoRotate = false;
+  distanceAtStart = camera.position.distanceTo(controls.target);
+});
+controls.addEventListener('end', () => {
+  lastInteraction = elapsed;
+  const dist = camera.position.distanceTo(controls.target);
+  if (Math.abs(dist - distanceAtStart) > 0.04 * distanceAtStart) userDistanceOverride = true;
+});
+
+/* ---------- Lights ---------- */
+const hemi = new THREE.HemisphereLight(0xffe6d8, 0x2b2350, 0.85);
+scene.add(hemi);
+const keyLight = new THREE.DirectionalLight(0xffd2b8, 1.5);
+keyLight.position.set(3, 6, 4);
+scene.add(keyLight);
+const backLight = new THREE.DirectionalLight(0xffe6a3, 2.4);
+backLight.position.set(-5, 2.5, -6);
+scene.add(backLight);
+const headLight = new THREE.DirectionalLight(0xffffff, 0.35);
+headLight.position.set(0, 0, 0);
+headLight.target.position.set(0, 0, -1);
+camera.add(headLight);
+camera.add(headLight.target);
+
+/* =========================================================================
+   Womb: inner wall with caustics + glowing membrane shell
+   ========================================================================= */
+
+const WOMB = new THREE.Vector3(2.8, 3.2, 2.8);
+const wombGeometry = new THREE.SphereGeometry(1, 96, 64);
+
+const wallMaterial = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: {
+    uTime: { value: 0 },
+    uAmount: { value: 0.5 },
+    uIter: { value: 5 },
+    uCenter: { value: new THREE.Color() },
+    uEdge: { value: new THREE.Color() },
+    uCaustic: { value: new THREE.Color() },
+  },
+  vertexShader: /* glsl */`
+    varying vec3 vObj;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+    void main() {
+      vObj = position;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vNormalV = normalize(normalMatrix * normal);
+      vViewDir = normalize(-mv.xyz);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uTime;
+    uniform float uAmount;
+    uniform int uIter;
+    uniform vec3 uCenter;
+    uniform vec3 uEdge;
+    uniform vec3 uCaustic;
+    varying vec3 vObj;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+
+    // Tileable water caustics (after the classic "joltz0r" shader)
+    float caustic(vec2 uv, float time) {
+      vec2 p = mod(uv * 6.28318, 6.28318) - 250.0;
+      vec2 i = p;
+      float c = 1.0;
+      float inten = 0.005;
+      int steps = 0;
+      for (int n = 0; n < 5; n++) {
+        if (n >= uIter) break;
+        float tt = time * (1.0 - (3.5 / float(n + 1)));
+        i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+        c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
+        steps++;
+      }
+      c /= float(max(steps, 1));
+      c = 1.17 - pow(c, 1.4);
+      return pow(abs(c), 8.0);
+    }
+
+    void main() {
+      float facing = abs(dot(normalize(vNormalV), normalize(vViewDir)));
+      vec3 base = mix(uEdge, uCenter, pow(facing, 1.4));
+      vec3 n = normalize(vObj);
+      vec3 w = abs(n);
+      w /= (w.x + w.y + w.z);
+      float time = uTime * 0.32;
+      float c = 0.0;
+      if (uAmount > 0.001) {
+        c = caustic(vObj.xy * 0.34 + 0.5, time) * w.z
+          + caustic(vObj.zy * 0.34 + 0.5, time + 3.0) * w.x
+          + caustic(vObj.xz * 0.34 + 0.5, time + 7.0) * w.y;
+      }
+      vec3 col = base + uCaustic * c * uAmount * (0.3 + 0.7 * facing);
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+const wombWall = new THREE.Mesh(wombGeometry, wallMaterial);
+wombWall.scale.copy(WOMB);
+scene.add(wombWall);
+
+const shellMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: {
+    uTime: { value: 0 },
+    uRim: { value: new THREE.Color() },
+    uGlow: { value: new THREE.Color() },
+    uIntensity: { value: 1 },
+    uRippleDir: { value: new THREE.Vector3(0, 0, 1) },
+    uRippleT: { value: 99 },
+  },
+  vertexShader: /* glsl */`
+    uniform float uTime;
+    uniform vec3 uRippleDir;
+    uniform float uRippleT;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+    varying vec3 vObj;
+    varying float vRipple;
+    void main() {
+      vec3 n = normalize(position);
+      float ang = acos(clamp(dot(n, normalize(uRippleDir)), -1.0, 1.0));
+      float wave = sin(ang * 24.0 - uRippleT * 13.0) * exp(-uRippleT * 2.0) * exp(-ang * 2.6);
+      vec3 pos = position + n * (wave * 0.028 + sin(uTime * 0.5) * 0.006);
+      vRipple = max(wave, 0.0);
+      vObj = n;
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      vNormalV = normalize(normalMatrix * normal);
+      vViewDir = normalize(-mv.xyz);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uTime;
+    uniform vec3 uRim;
+    uniform vec3 uGlow;
+    uniform float uIntensity;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+    varying vec3 vObj;
+    varying float vRipple;
+    void main() {
+      float f = 1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir)));
+      float rim = pow(f, 2.6);
+      float m = 0.5 + 0.5 * sin(vObj.x * 9.0 + uTime * 0.2) * sin(vObj.y * 7.0 - uTime * 0.15) * sin(vObj.z * 8.0 + 1.3);
+      vec3 col = uRim * rim * (0.75 + 0.25 * m) + uGlow * (0.035 + 0.03 * m);
+      col += uGlow * vRipple * 1.5;
+      gl_FragColor = vec4(col * uIntensity, 1.0);
+    }
+  `,
+});
+const wombShell = new THREE.Mesh(wombGeometry, shellMaterial);
+wombShell.scale.copy(WOMB).multiplyScalar(1.003);
+scene.add(wombShell);
+
+/* ---------- Placenta (fundal, the most common position) ---------- */
+const PLACENTA_ARC = 0.5;      // angular radius of the placenta on the wall
+const PLACENTA_DEPTH = 0.07;   // inward bulge at its centre (unit-sphere space)
+const placentaUnit = new THREE.Vector3(0.28, 0.9, -0.34).normalize();
+const placentaGeometry = new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, PLACENTA_ARC);
+{
+  const pos = placentaGeometry.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const k = Math.max(0, 1 - Math.acos(THREE.MathUtils.clamp(v.y, -1, 1)) / PLACENTA_ARC);
+    v.multiplyScalar(0.985 - PLACENTA_DEPTH * Math.pow(k, 0.7));
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  placentaGeometry.computeVertexNormals();
+}
+const placentaMaterial = new THREE.MeshPhysicalMaterial({
+  color: MODES.dreamy.placenta, roughness: 0.55, sheen: 0.6, sheenColor: new THREE.Color('#ffb3a0'),
+  emissive: new THREE.Color('#3a0f1c'), emissiveIntensity: 0.5, side: THREE.DoubleSide,
+});
+const placentaGroup = new THREE.Group();
+placentaGroup.scale.copy(WOMB);
+scene.add(placentaGroup);
+const placenta = new THREE.Mesh(placentaGeometry, placentaMaterial);
+placenta.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placentaUnit);
+placentaGroup.add(placenta);
+const cordEnd = placentaUnit.clone().multiplyScalar(0.985 - PLACENTA_DEPTH).multiply(WOMB);
+const placentaNormal = new THREE.Vector3(
+  cordEnd.x / (WOMB.x * WOMB.x), cordEnd.y / (WOMB.y * WOMB.y), cordEnd.z / (WOMB.z * WOMB.z),
+).normalize();
+
+/* =========================================================================
+   Baby: procedural metaball body (MarchingCubes), morphed day by day
+   ========================================================================= */
+
+// Key poses in "crown–rump units" (CRL = 1). y up, z = front of the baby, x = baby's right side.
+// [x, y, z, radius]; a radius of 0 means the part doesn't exist yet at that age.
+const POSE_8 = {
+  pelvis: [0, -0.31, -0.02, 0.12], glutL: [-0.04, -0.34, -0.06, 0.07], glutR: [0.04, -0.34, -0.06, 0.07],
+  belly: [0, -0.17, 0.08, 0.17], chest: [0, -0.05, 0.02, 0.16], shoulders: [0, 0.04, -0.07, 0.14], neck: [0, 0.1, 0.0, 0.12],
+  skull: [0, 0.28, 0.1, 0.24], face: [0, 0.17, 0.22, 0.14], cheekL: [-0.08, 0.16, 0.22, 0], cheekR: [0.08, 0.16, 0.22, 0],
+  nose: [0, 0.18, 0.33, 0], chin: [0, 0.07, 0.21, 0.08], earL: [-0.2, 0.24, 0.08, 0], earR: [0.2, 0.24, 0.08, 0],
+  tail: [0, -0.42, 0.05, 0.05],
+  shL: [-0.12, 0.0, 0.04, 0.05], elL: [-0.15, -0.06, 0.12, 0.04], wrL: [-0.12, -0.04, 0.2, 0.035], haL: [-0.11, -0.02, 0.24, 0.04],
+  shR: [0.12, 0.0, 0.04, 0.05], elR: [0.15, -0.06, 0.12, 0.04], wrR: [0.12, -0.04, 0.2, 0.035], haR: [0.11, -0.02, 0.24, 0.04],
+  hipL: [-0.09, -0.28, 0.02, 0.06], knL: [-0.13, -0.3, 0.12, 0.045], anL: [-0.11, -0.33, 0.2, 0.035], toL: [-0.1, -0.33, 0.25, 0.035],
+  hipR: [0.09, -0.28, 0.02, 0.06], knR: [0.13, -0.3, 0.12, 0.045], anR: [0.11, -0.33, 0.2, 0.035], toR: [0.1, -0.33, 0.25, 0.035],
+};
+const POSE_20 = {
+  pelvis: [0, -0.3, -0.04, 0.115], glutL: [-0.06, -0.33, -0.07, 0.08], glutR: [0.06, -0.33, -0.07, 0.08],
+  belly: [0, -0.12, 0.04, 0.13], chest: [0, 0.07, 0.01, 0.125], shoulders: [0, 0.18, -0.03, 0.1], neck: [0, 0.25, 0.03, 0.07],
+  skull: [0, 0.4, 0.07, 0.16], face: [0, 0.35, 0.165, 0.1], cheekL: [-0.06, 0.33, 0.18, 0.035], cheekR: [0.06, 0.33, 0.18, 0.035],
+  nose: [0, 0.36, 0.255, 0.018], chin: [0, 0.27, 0.185, 0.04], earL: [-0.155, 0.39, 0.06, 0.025], earR: [0.155, 0.39, 0.06, 0.025],
+  tail: [0, -0.38, 0, 0],
+  shL: [-0.11, 0.17, 0, 0.045], elL: [-0.14, 0, 0.12, 0.033], wrL: [-0.09, 0.15, 0.22, 0.027], haL: [-0.075, 0.21, 0.25, 0.03],
+  shR: [0.11, 0.17, 0, 0.045], elR: [0.14, 0.02, 0.12, 0.033], wrR: [0.05, 0.22, 0.26, 0.027], haR: [0.025, 0.27, 0.275, 0.03],
+  hipL: [-0.08, -0.27, 0.03, 0.065], knL: [-0.09, -0.08, 0.19, 0.045], anL: [0.03, -0.26, 0.2, 0.028], toL: [0, -0.29, 0.3, 0.025],
+  hipR: [0.08, -0.27, 0.03, 0.065], knR: [0.09, -0.08, 0.19, 0.045], anR: [-0.03, -0.25, 0.22, 0.028], toR: [0, -0.28, 0.32, 0.025],
+};
+const POSE_40 = {
+  pelvis: [0, -0.3, -0.04, 0.14], glutL: [-0.07, -0.33, -0.08, 0.1], glutR: [0.07, -0.33, -0.08, 0.1],
+  belly: [0, -0.12, 0.04, 0.165], chest: [0, 0.08, 0.01, 0.155], shoulders: [0, 0.2, -0.03, 0.12], neck: [0, 0.28, 0.03, 0.075],
+  skull: [0, 0.42, 0.06, 0.135], face: [0, 0.38, 0.15, 0.1], cheekL: [-0.065, 0.355, 0.165, 0.055], cheekR: [0.065, 0.355, 0.165, 0.055],
+  nose: [0, 0.385, 0.235, 0.022], chin: [0, 0.305, 0.17, 0.045], earL: [-0.135, 0.41, 0.05, 0.03], earR: [0.135, 0.41, 0.05, 0.03],
+  tail: [0, -0.38, 0, 0],
+  shL: [-0.13, 0.19, 0, 0.06], elL: [-0.16, 0.02, 0.12, 0.045], wrL: [-0.1, 0.18, 0.21, 0.035], haL: [-0.08, 0.24, 0.235, 0.04],
+  shR: [0.13, 0.19, 0, 0.06], elR: [0.16, 0.04, 0.12, 0.045], wrR: [0.05, 0.26, 0.24, 0.035], haR: [0.02, 0.31, 0.255, 0.04],
+  hipL: [-0.09, -0.27, 0.03, 0.085], knL: [-0.1, -0.08, 0.2, 0.058], anL: [0.03, -0.27, 0.21, 0.036], toL: [0, -0.3, 0.32, 0.032],
+  hipR: [0.09, -0.27, 0.03, 0.085], knR: [0.1, -0.08, 0.2, 0.058], anR: [-0.03, -0.26, 0.23, 0.036], toR: [0, -0.29, 0.34, 0.032],
+};
+const PART_NAMES = Object.keys(POSE_40);
+
+// Metaball grid mapping: pose point p (CRL units) -> grid coordinate 0.5 + (p - C) * K
+const K = 0.8;
+const C = new THREE.Vector3(0, 0.06, 0.06);
+const CHAIN_SHRINK = 0.87; // a chain of overlapping balls reads ~15% thicker than one ball
+
+const pose = {};
+for (const name of PART_NAMES) pose[name] = { p: new THREE.Vector3(), r: 0 };
+
+function computePose(ga, now) {
+  const a = ga <= 20 ? POSE_8 : POSE_20;
+  const b = ga <= 20 ? POSE_20 : POSE_40;
+  const k = ga <= 20 ? (ga - 8) / 12 : (ga - 20) / 20;
+  const s = THREE.MathUtils.clamp(k, 0, 1);
+  for (const name of PART_NAMES) {
+    const pa = a[name];
+    const pb = b[name];
+    pose[name].p.set(pa[0] + (pb[0] - pa[0]) * s, pa[1] + (pb[1] - pa[1]) * s, pa[2] + (pb[2] - pa[2]) * s);
+    pose[name].r = pa[3] + (pb[3] - pa[3]) * s;
+  }
+  applyMotion(now);
+}
+
+/* ---------- Movement: kicks, waves, spontaneous stretches ---------- */
+const motion = { kick: null, wave: null, nextSpontaneous: 8 };
+const v1 = new THREE.Vector3();
+const v2 = new THREE.Vector3();
+
+function envelope(m, now) {
+  if (!m) return 0;
+  const x = (now - m.t0) / m.dur;
+  if (x >= 1 || x < 0) return 0;
+  return Math.sin(Math.PI * x) * m.amp;
+}
+
+function applyMotion(now) {
+  const ek = envelope(motion.kick, now);
+  if (ek > 0) {
+    const side = motion.kick.side;
+    const kn = pose['kn' + side];
+    const an = pose['an' + side];
+    const to = pose['to' + side];
+    const shin = an.p.distanceTo(kn.p);
+    v1.set(side === 'L' ? -0.18 : 0.18, -0.3, 1).normalize();
+    v2.copy(kn.p).addScaledVector(v1, shin).sub(an.p).multiplyScalar(ek);
+    an.p.add(v2);
+    to.p.add(v2);
+    to.p.z += 0.03 * ek;
+    kn.p.y -= 0.03 * ek;
+    kn.p.z += 0.03 * ek;
+  }
+  const ew = envelope(motion.wave, now);
+  if (ew > 0) {
+    const osc = Math.sin((now - motion.wave.t0) * 13);
+    pose.elL.p.add(v1.set(-0.05, 0.03, 0.02).multiplyScalar(ew));
+    pose.wrL.p.add(v1.set(-0.07 + osc * 0.03, 0.1, 0.07).multiplyScalar(ew));
+    pose.haL.p.add(v1.set(-0.09 + osc * 0.05, 0.14, 0.08).multiplyScalar(ew));
+  }
+}
+
+function motionActive(now) {
+  return envelope(motion.kick, now) > 0 || envelope(motion.wave, now) > 0
+    || (motion.kick && now - motion.kick.t0 < motion.kick.dur + 0.05)
+    || (motion.wave && now - motion.wave.t0 < motion.wave.dur + 0.05);
+}
+
+/* ---------- Metaball mesh ---------- */
+const babyUniforms = {
+  uHeartPos: { value: new THREE.Vector3() },
+  uHeartR: { value: 0.3 },
+  uPulse: { value: 0 },
+  uHeartColor: { value: new THREE.Color('#ff8f73') },
+  uRimColor: { value: new THREE.Color('#ffc9b0') },
+  uRimStrength: { value: 0.42 },
+};
+const babyMaterial = new THREE.MeshPhysicalMaterial({
+  color: '#f2b5a1', roughness: 0.46, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ffe6a3'),
+  clearcoat: 0.35, clearcoatRoughness: 0.4, iridescence: 0.3, iridescenceIOR: 1.3,
+});
+babyMaterial.onBeforeCompile = (shader) => {
+  Object.assign(shader.uniforms, babyUniforms);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+      uniform vec3 uHeartPos;
+      uniform float uHeartR;
+      uniform float uPulse;
+      uniform vec3 uHeartColor;
+      uniform vec3 uRimColor;
+      uniform float uRimStrength;`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      {
+        // Glow from the heart, scattered through the skin, plus a warm translucent rim
+        float hd = length(-vViewPosition - uHeartPos) / uHeartR;
+        totalEmissiveRadiance += uHeartColor * exp(-hd * hd) * uPulse;
+        float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
+        totalEmissiveRadiance += uRimColor * rimF * uRimStrength;
+      }`);
+};
+
+const babyRoot = new THREE.Group();
+scene.add(babyRoot);
+let babyMesh = null;
+let babyRes = 0;
+let babyDirty = true;
+
+function buildBabyMesh(res) {
+  if (babyMesh) {
+    babyRoot.remove(babyMesh);
+    babyMesh.geometry.dispose();
+  }
+  babyMesh = new MarchingCubes(res, babyMaterial, false, false, 70000);
+  babyMesh.isolation = 80;
+  babyRes = res;
+  babyRoot.add(babyMesh);
+  babyDirty = true;
+}
+
+function addBall(p, r, kb) {
+  if (r <= 0.003) return;
+  const minR = 1.25 / babyRes;
+  const R = Math.max(r * K, minR);
+  const iso = babyMesh.isolation;
+  const sub = iso / (kb * kb - 1);
+  const strength = (iso + sub) * R * R;
+  babyMesh.addBall(0.5 + (p.x - C.x) * K, 0.5 + (p.y - C.y) * K, 0.5 + (p.z - C.z) * K, strength, sub);
+}
+
+const chainTmp = new THREE.Vector3();
+function chain(a, b, kb) {
+  const len = a.p.distanceTo(b.p);
+  const rMin = Math.max(Math.min(a.r, b.r), 0.012);
+  const n = Math.max(2, Math.min(14, Math.ceil(len / (0.5 * rMin))));
+  for (let i = 0; i <= n; i++) {
+    const s = i / n;
+    chainTmp.lerpVectors(a.p, b.p, s);
+    addBall(chainTmp, (a.r + (b.r - a.r) * s) * CHAIN_SHRINK, kb);
+  }
+}
+
+function rebuildBaby(ga, now) {
+  computePose(ga, now);
+  babyMesh.reset();
+  // Torso and head: soft, wide blending
+  for (const name of ['pelvis', 'glutL', 'glutR', 'belly', 'chest', 'shoulders', 'neck']) addBall(pose[name].p, pose[name].r, 1.8);
+  addBall(pose.skull.p, pose.skull.r, 1.7);
+  addBall(pose.face.p, pose.face.r, 1.6);
+  addBall(pose.cheekL.p, pose.cheekL.r, 1.5);
+  addBall(pose.cheekR.p, pose.cheekR.r, 1.5);
+  addBall(pose.chin.p, pose.chin.r, 1.5);
+  addBall(pose.nose.p, pose.nose.r, 1.3);
+  addBall(pose.earL.p, pose.earL.r, 1.25);
+  addBall(pose.earR.p, pose.earR.r, 1.25);
+  addBall(pose.tail.p, pose.tail.r, 1.5);
+  // Limbs: tighter blending so they stay distinct from the body
+  for (const s of ['L', 'R']) {
+    chain(pose['sh' + s], pose['el' + s], 1.4);
+    chain(pose['el' + s], pose['wr' + s], 1.4);
+    addBall(pose['ha' + s].p, pose['ha' + s].r, 1.45);
+    chain(pose['hip' + s], pose['kn' + s], 1.4);
+    chain(pose['kn' + s], pose['an' + s], 1.4);
+    chain(pose['an' + s], pose['to' + s], 1.4);
+  }
+  babyMesh.update();
+}
+
+// Pose point -> world position
+function poseToWorld(p, out) {
+  out.set((p.x - C.x) * 2 * K, (p.y - C.y) * 2 * K, (p.z - C.z) * 2 * K);
+  return babyMesh.localToWorld(out);
+}
+
+/* =========================================================================
+   Umbilical cord (rebuilt as a tube that sways in the fluid)
+   ========================================================================= */
+
+const cordMaterial = new THREE.MeshPhysicalMaterial({
+  vertexColors: true, roughness: 0.32, sheen: 0.6, sheenColor: new THREE.Color('#ffd9e2'), clearcoat: 0.6, clearcoatRoughness: 0.3,
+});
+const cord = new THREE.Mesh(new THREE.BufferGeometry(), cordMaterial);
+scene.add(cord);
+const cordCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+const cordBase = new THREE.Color('#eadfe6');
+const cordArtery = new THREE.Color('#9b93d8');
+const cordVein = new THREE.Color('#d98b9b');
+const navel = new THREE.Vector3();
+const babyCenter = new THREE.Vector3();
+
+function updateCord(now, S) {
+  const pts = cordCurve.points;
+  const belly = pose.belly;
+  v1.set(belly.p.x, belly.p.y - 0.03, belly.p.z + belly.r * 0.92);
+  poseToWorld(v1, navel);
+  babyRoot.getWorldPosition(babyCenter);
+  const out = v2.copy(navel).sub(babyCenter).normalize();
+  pts[0].copy(navel);
+  pts[1].copy(navel).addScaledVector(out, 0.45 * S);
+  pts[4].copy(cordEnd);
+  pts[3].copy(cordEnd).addScaledVector(placentaNormal, -0.7);
+  pts[2].lerpVectors(pts[1], pts[3], 0.5);
+  pts[2].x += Math.sin(now * 0.7) * 0.25;
+  pts[2].y += Math.cos(now * 0.5) * 0.18;
+  pts[2].z += Math.sin(now * 0.6 + 1.0) * 0.25;
+  // keep the middle of the cord from passing through the body
+  const d = pts[2].distanceTo(babyCenter);
+  if (d < 0.62 * S) pts[2].sub(babyCenter).setLength(0.62 * S).add(babyCenter);
+
+  const geo = new THREE.TubeGeometry(cordCurve, 90, 0.022 * S + 0.012, 10, false);
+  const uv = geo.attributes.uv;
+  const colors = new Float32Array(uv.count * 3);
+  for (let i = 0; i < uv.count; i++) {
+    const u = uv.getX(i);
+    const v = uv.getY(i);
+    const a = Math.sin(Math.PI * 2 * (v + u * 26));
+    const b = Math.sin(Math.PI * 2 * (v + 0.5 + u * 26));
+    const sa = THREE.MathUtils.smoothstep(a, 0.55, 0.95) * 0.75;
+    const sb = THREE.MathUtils.smoothstep(b, 0.6, 0.98) * 0.6;
+    colors[i * 3] = cordBase.r + (cordArtery.r - cordBase.r) * sa + (cordVein.r - cordBase.r) * sb;
+    colors[i * 3 + 1] = cordBase.g + (cordArtery.g - cordBase.g) * sa + (cordVein.g - cordBase.g) * sb;
+    colors[i * 3 + 2] = cordBase.b + (cordArtery.b - cordBase.b) * sa + (cordVein.b - cordBase.b) * sb;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  cord.geometry.dispose();
+  cord.geometry = geo;
+}
+
+/* =========================================================================
+   Floating particles, background stars, kick sparks
+   ========================================================================= */
+
+const particleMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: {
+    uTime: { value: 0 },
+    uSize: { value: 3.4 },
+    uPR: { value: 1 },
+    uOpacity: { value: 1 },
+    uColorA: { value: new THREE.Color('#ffe6a3') },
+    uColorB: { value: new THREE.Color('#f6c8b5') },
+  },
+  vertexShader: /* glsl */`
+    attribute float aSeed;
+    uniform float uTime;
+    uniform float uSize;
+    uniform float uPR;
+    varying float vTw;
+    varying float vMix;
+    void main() {
+      float s = aSeed * 6.28318;
+      vec3 p = position + vec3(sin(uTime * 0.13 + s * 3.1), sin(uTime * 0.11 + s * 1.7), cos(uTime * 0.09 + s * 2.3)) * 0.18;
+      vec4 mv = modelViewMatrix * vec4(p, 1.0);
+      gl_PointSize = uSize * uPR * (0.5 + aSeed) * (8.0 / -mv.z);
+      vTw = 0.55 + 0.45 * sin(uTime * (0.8 + aSeed * 1.6) + s * 5.0);
+      vMix = fract(aSeed * 7.13);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uOpacity;
+    uniform vec3 uColorA;
+    uniform vec3 uColorB;
+    varying float vTw;
+    varying float vMix;
+    void main() {
+      float d = length(gl_PointCoord - 0.5);
+      float a = smoothstep(0.5, 0.0, d);
+      a *= a;
+      gl_FragColor = vec4(mix(uColorA, uColorB, vMix) * a * vTw * uOpacity, 1.0);
+    }
+  `,
+});
+const particles = new THREE.Points(new THREE.BufferGeometry(), particleMaterial);
+scene.add(particles);
+
+function buildParticles(count) {
+  const pos = new Float32Array(count * 3);
+  const seed = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    let x, y, z;
+    do {
+      x = Math.random() * 2 - 1; y = Math.random() * 2 - 1; z = Math.random() * 2 - 1;
+    } while (x * x + y * y + z * z > 1);
+    pos[i * 3] = x * WOMB.x * 0.88;
+    pos[i * 3 + 1] = y * WOMB.y * 0.88;
+    pos[i * 3 + 2] = z * WOMB.z * 0.88;
+    seed[i] = Math.random();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  particles.geometry.dispose();
+  particles.geometry = geo;
+}
+
+const starMaterial = particleMaterial.clone();
+starMaterial.uniforms.uSize.value = 9;
+starMaterial.uniforms.uColorA.value = new THREE.Color('#ffffff');
+starMaterial.uniforms.uColorB.value = new THREE.Color('#b9aef0');
+const stars = new THREE.Points(new THREE.BufferGeometry(), starMaterial);
+scene.add(stars);
+
+function buildStars(count) {
+  const pos = new Float32Array(count * 3);
+  const seed = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    v1.randomDirection().multiplyScalar(45 + Math.random() * 35);
+    pos[i * 3] = v1.x; pos[i * 3 + 1] = v1.y; pos[i * 3 + 2] = v1.z;
+    seed[i] = Math.random() * 0.8;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  stars.geometry.dispose();
+  stars.geometry = geo;
+}
+
+const SPARKS = 36;
+const sparkPos = new Float32Array(SPARKS * 3);
+const sparkLife = new Float32Array(SPARKS);
+const sparkVel = Array.from({ length: SPARKS }, () => new THREE.Vector3());
+const sparkGeo = new THREE.BufferGeometry();
+sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+sparkGeo.setAttribute('aLife', new THREE.BufferAttribute(sparkLife, 1));
+const sparkMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  depthTest: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: { uPR: { value: 1 }, uColor: { value: new THREE.Color('#ffe6a3') } },
+  vertexShader: /* glsl */`
+    attribute float aLife;
+    uniform float uPR;
+    varying float vLife;
+    void main() {
+      vLife = aLife;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = 34.0 * uPR * aLife * (8.0 / -mv.z);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform vec3 uColor;
+    varying float vLife;
+    void main() {
+      vec2 d = gl_PointCoord - 0.5;
+      float core = smoothstep(0.5, 0.0, length(d));
+      float cross = max(0.0, 1.0 - abs(d.x) * 14.0) * max(0.0, 1.0 - abs(d.y) * 2.2)
+                  + max(0.0, 1.0 - abs(d.y) * 14.0) * max(0.0, 1.0 - abs(d.x) * 2.2);
+      gl_FragColor = vec4(uColor * (core * core * 1.6 + cross * 0.9) * vLife, 1.0);
+    }
+  `,
+});
+const sparks = new THREE.Points(sparkGeo, sparkMaterial);
+sparks.frustumCulled = false;
+scene.add(sparks);
+let sparkCursor = 0;
+
+function spawnSparks(origin, count) {
+  for (let i = 0; i < count; i++) {
+    const k = sparkCursor;
+    sparkCursor = (sparkCursor + 1) % SPARKS;
+    sparkPos[k * 3] = origin.x; sparkPos[k * 3 + 1] = origin.y; sparkPos[k * 3 + 2] = origin.z;
+    sparkVel[k].randomDirection().multiplyScalar(0.6 + Math.random() * 0.9);
+    sparkVel[k].y += 0.9;
+    sparkLife[k] = 1;
+  }
+}
+
+function updateSparks(dt) {
+  for (let k = 0; k < SPARKS; k++) {
+    if (sparkLife[k] <= 0) continue;
+    sparkLife[k] = Math.max(0, sparkLife[k] - dt / 1.5);
+    sparkVel[k].multiplyScalar(1 - 1.4 * dt);
+    sparkPos[k * 3] += sparkVel[k].x * dt;
+    sparkPos[k * 3 + 1] += sparkVel[k].y * dt;
+    sparkPos[k * 3 + 2] += sparkVel[k].z * dt;
+  }
+  sparkGeo.attributes.position.needsUpdate = true;
+  sparkGeo.attributes.aLife.needsUpdate = true;
+}
+
+/* =========================================================================
+   Abstract Moon mode: a moon that waxes from crescent to full
+   ========================================================================= */
+
+const moonMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uPhase: { value: 1.5 },
+    uTime: { value: 0 },
+    uColor: { value: new THREE.Color('#ffe6a3') },
+    uShade: { value: new THREE.Color('#b9aef0') },
+  },
+  vertexShader: /* glsl */`
+    varying vec3 vObj;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+    void main() {
+      vObj = position;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vNormalV = normalize(normalMatrix * normal);
+      vViewDir = normalize(-mv.xyz);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: /* glsl */`
+    uniform float uPhase;
+    uniform float uTime;
+    uniform vec3 uColor;
+    uniform vec3 uShade;
+    varying vec3 vObj;
+    varying vec3 vNormalV;
+    varying vec3 vViewDir;
+    float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    float noise(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash(i), hash(i + vec3(1, 0, 0)), f.x), mix(hash(i + vec3(0, 1, 0)), hash(i + vec3(1, 1, 0)), f.x), f.y),
+                 mix(mix(hash(i + vec3(0, 0, 1)), hash(i + vec3(1, 0, 1)), f.x), mix(hash(i + vec3(0, 1, 1)), hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+    }
+    float fbm(vec3 p) {
+      float v = 0.0;
+      float a = 0.5;
+      for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; }
+      return v;
+    }
+    void main() {
+      vec3 n = normalize(vNormalV);
+      vec3 L = normalize(vec3(sin(uPhase), 0.12, -cos(uPhase)));
+      float lit = smoothstep(-0.04, 0.22, dot(n, L));
+      float maria = fbm(vObj * 2.2);
+      float albedo = mix(0.55, 1.0, smoothstep(0.35, 0.7, maria));
+      float rim = pow(1.0 - abs(dot(n, normalize(vViewDir))), 3.0);
+      vec3 col = uColor * albedo * lit * 0.95 + uShade * 0.04 + uShade * rim * 0.25;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+});
+const moon = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), moonMaterial);
+moon.visible = false;
+scene.add(moon);
+
+/* =========================================================================
+   Post-processing
+   ========================================================================= */
+
+const FinishShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVignette: { value: 0.6 }, uGrain: { value: 0.03 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uVignette;
+    uniform float uGrain;
+    varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec2 d = vUv - 0.5;
+      c.rgb *= clamp(1.0 - uVignette * dot(d, d) * 2.2, 0.0, 1.0);
+      float g = hash(vUv * 1000.0 + fract(uTime) * 100.0) - 0.5;
+      c.rgb = max(c.rgb + g * uGrain * (0.25 + c.rgb), 0.0);
+      gl_FragColor = c;
+    }
+  `,
+};
+
+const ScanShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) } },
+  vertexShader: FinishShader.vertexShader,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform vec2 uRes;
+    varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec2 px = 1.5 / uRes;
+      vec3 c = texture2D(tDiffuse, vUv).rgb * 0.4;
+      c += texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb * 0.15;
+      c += texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb * 0.15;
+      c += texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb * 0.15;
+      c += texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb * 0.15;
+      float l = pow(dot(c, vec3(0.299, 0.587, 0.114)), 0.85);
+      float n = hash(floor(vUv * uRes / 2.0) + floor(uTime * 18.0));
+      l *= 0.8 + 0.4 * n;
+      vec3 col = mix(vec3(0.03, 0.015, 0.0), vec3(0.62, 0.36, 0.13), smoothstep(0.02, 0.45, l));
+      col = mix(col, vec3(1.0, 0.9, 0.7), smoothstep(0.45, 0.95, l));
+      vec2 q = (vUv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
+      col *= smoothstep(0.95, 0.3, length(q));
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+};
+
+let composer;
+let bloomPass;
+let finishPass;
+let scanPass;
+
+function buildComposer(tier) {
+  if (composer) {
+    composer.renderTarget1.dispose();
+    composer.renderTarget2.dispose();
+    bloomPass.dispose();
+  }
+  const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: TIERS[tier].msaa });
+  composer = new EffectComposer(renderer, rt);
+  composer.addPass(new RenderPass(scene, camera));
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.75, 0.6, 0.6);
+  composer.addPass(bloomPass);
+  finishPass = new ShaderPass(FinishShader);
+  composer.addPass(finishPass);
+  composer.addPass(new OutputPass());
+  scanPass = new ShaderPass(ScanShader);
+  composer.addPass(scanPass);
+}
+
+/* =========================================================================
+   Quality tiers
+   ========================================================================= */
+
+function detectTier() {
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  let tier = coarse ? 1 : 2;
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const gpu = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    if (/swiftshader|llvmpipe|software|basic render/i.test(gpu)) tier = 0;
+    else if (coarse && /apple gpu|adreno \(tm\) 7[3-9]\d|mali-g7[1-9]|immortalis/i.test(gpu)) tier = 2;
+  } catch (err) { /* keep heuristic tier */ }
+  return tier;
+}
+
+function tierName(i) { return t().tiers[i]; }
+
+function applyTier(tier) {
+  state.tier = tier;
+  const cfg = TIERS[tier];
+  const pr = Math.min(window.devicePixelRatio || 1, cfg.pr);
+  renderer.setPixelRatio(pr);
+  buildComposer(tier);
+  composer.setPixelRatio(pr);
+  buildBabyMesh(cfg.mc);
+  buildParticles(cfg.particles);
+  buildStars(cfg.stars);
+  wallMaterial.uniforms.uIter.value = cfg.iter;
+  particleMaterial.uniforms.uPR.value = pr;
+  starMaterial.uniforms.uPR.value = pr;
+  sparkMaterial.uniforms.uPR.value = pr;
+  applyMode(state.mode);
+  resize();
+  renderQualityOptions();
+}
+
+/* =========================================================================
+   Modes
+   ========================================================================= */
+
+function applyMode(mode) {
+  state.mode = mode;
+  const m = MODES[mode];
+  scene.background.set(m.bg);
+  renderer.toneMappingExposure = m.exposure;
+  wallMaterial.uniforms.uCenter.value.set(m.wall.center);
+  wallMaterial.uniforms.uEdge.value.set(m.wall.edge);
+  wallMaterial.uniforms.uCaustic.value.set(m.wall.caustic);
+  wallMaterial.uniforms.uAmount.value = m.wall.amount;
+  shellMaterial.uniforms.uRim.value.set(m.shell.rim);
+  shellMaterial.uniforms.uGlow.value.set(m.shell.glow);
+  shellMaterial.uniforms.uIntensity.value = m.shell.intensity;
+  wombShell.visible = m.shell.intensity > 0;
+  particleMaterial.uniforms.uOpacity.value = m.particles;
+  particles.visible = m.particles > 0;
+  starMaterial.uniforms.uOpacity.value = m.stars;
+  stars.visible = m.stars > 0;
+
+  const isMoon = !!m.moon;
+  babyRoot.visible = !isMoon;
+  cord.visible = !isMoon;
+  placenta.visible = !!m.placenta;
+  moon.visible = isMoon;
+  if (m.placenta) placentaMaterial.color.set(m.placenta);
+
+  if (m.baby) {
+    babyMaterial.color.set(m.baby.color);
+    babyMaterial.roughness = m.baby.roughness;
+    babyMaterial.sheen = m.baby.sheen;
+    babyMaterial.sheenColor.set(m.baby.sheenColor);
+    babyMaterial.iridescence = m.baby.iridescence;
+    babyMaterial.clearcoat = m.baby.clearcoat;
+    babyUniforms.uRimColor.value.set(m.baby.rim);
+    babyUniforms.uRimStrength.value = m.baby.rimStrength;
+    babyUniforms.uHeartColor.value.set(m.baby.heart);
+  }
+
+  hemi.intensity = m.lights.hemi;
+  keyLight.intensity = m.lights.key;
+  backLight.intensity = m.lights.back;
+  headLight.intensity = m.lights.head;
+  scene.environmentIntensity = m.lights.env;
+
+  bloomPass.enabled = !!m.bloom;
+  if (m.bloom) {
+    bloomPass.strength = m.bloom.strength;
+    bloomPass.radius = m.bloom.radius;
+    bloomPass.threshold = m.bloom.threshold;
+  }
+  finishPass.uniforms.uVignette.value = m.vignette;
+  finishPass.uniforms.uGrain.value = state.tier >= 2 ? m.grain : 0;
+  scanPass.enabled = !!m.scan;
+  $('scan-label').hidden = !m.scan;
+
+  for (const btn of document.querySelectorAll('#modes button')) {
+    btn.setAttribute('aria-checked', String(btn.dataset.mode === mode));
+    btn.tabIndex = btn.dataset.mode === mode ? 0 : -1;
+  }
+  if (isMoon) closeInfo();
+  updateLabels();
+}
+
+/* =========================================================================
+   Audio: simulated heartbeat with womb ambience (starts only on tap)
+   ========================================================================= */
+
+let audio = null;
+
+function startAudio() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return false;
+  const ctx = new Ctx();
+  const master = ctx.createGain();
+  master.gain.value = 0.0001;
+  master.connect(ctx.destination);
+
+  const len = ctx.sampleRate * 2;
+  const brown = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = brown.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) {
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+    data[i] = last * 3.5;
+  }
+  const white = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.3), ctx.sampleRate);
+  const wd = white.getChannelData(0);
+  for (let i = 0; i < wd.length; i++) wd[i] = Math.random() * 2 - 1;
+
+  const amb = ctx.createBufferSource();
+  amb.buffer = brown;
+  amb.loop = true;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 380;
+  const ambGain = ctx.createGain();
+  ambGain.gain.value = 0.28;
+  amb.connect(lp).connect(ambGain).connect(master);
+  amb.start();
+  master.gain.setValueAtTime(0.0001, ctx.currentTime);
+  master.gain.exponentialRampToValueAtTime(0.8, ctx.currentTime + 0.6);
+
+  const beats = [];
+  let next = ctx.currentTime + 0.15;
+  const schedule = () => {
+    while (next < ctx.currentTime + 0.3) {
+      const bpm = interpTable(HEART_RATE, gaOf(state.days));
+      whoosh(ctx, master, white, next);
+      beats.push(next);
+      next += 60 / bpm;
+    }
+  };
+  schedule();
+  const timer = setInterval(schedule, 60);
+  audio = { ctx, master, timer, beats, lastBeat: -1 };
+  return true;
+}
+
+function whoosh(ctx, master, white, at) {
+  const src = ctx.createBufferSource();
+  src.buffer = white;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(260, at);
+  bp.frequency.exponentialRampToValueAtTime(140, at + 0.18);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(0.9, at + 0.025);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.2);
+  src.connect(bp).connect(g).connect(master);
+  src.start(at);
+  src.stop(at + 0.25);
+
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(92, at);
+  osc.frequency.exponentialRampToValueAtTime(48, at + 0.12);
+  const og = ctx.createGain();
+  og.gain.setValueAtTime(0.0001, at);
+  og.gain.exponentialRampToValueAtTime(0.45, at + 0.015);
+  og.gain.exponentialRampToValueAtTime(0.0001, at + 0.14);
+  osc.connect(og).connect(master);
+  osc.start(at);
+  osc.stop(at + 0.16);
+}
+
+function stopAudio() {
+  if (!audio) return;
+  const { ctx, master, timer } = audio;
+  clearInterval(timer);
+  master.gain.cancelScheduledValues(ctx.currentTime);
+  master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+  master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+  setTimeout(() => ctx.close(), 400);
+  audio = null;
+}
+
+// Visual heartbeat: a "lub" and a softer "dub" within each beat
+function beatShape(phase) {
+  const g = (x, c, w) => Math.exp(-Math.pow((x - c) / w, 2));
+  return g(phase, 0, 0.07) + g(phase, 1, 0.07) + 0.55 * g(phase, 0.22, 0.07);
+}
+
+function heartPulse(now, bpm) {
+  if (reduceMotionQuery.matches) return 0.35;
+  if (audio) {
+    const tNow = audio.ctx.currentTime;
+    while (audio.beats.length && audio.beats[0] <= tNow) audio.lastBeat = audio.beats.shift();
+    if (audio.lastBeat < 0) return 0.1;
+    return beatShape((tNow - audio.lastBeat) * bpm / 60);
+  }
+  return beatShape((now * bpm / 60) % 1);
+}
+
+/* =========================================================================
+   Hotspots
+   ========================================================================= */
+
+const HOTSPOT_IDS = ['head', 'ear', 'heart', 'hand', 'legs'];
+const hotspotEls = {};
+const hotspotWorld = {};
+for (const id of HOTSPOT_IDS) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'hotspot';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', 'info');
+  const tip = document.createElement('span');
+  tip.className = 'hotspot-tip';
+  btn.appendChild(tip);
+  btn.addEventListener('click', () => (state.activeHotspot === id ? closeInfo() : openInfo(id)));
+  $('hotspots').appendChild(btn);
+  hotspotEls[id] = btn;
+  hotspotWorld[id] = new THREE.Vector3();
+}
+
+function hotspotAvailable(id, ga) {
+  if (id === 'ear') return ga >= 14;
+  return true;
+}
+
+function hotspotCopy(id) {
+  const ga = gaOf(state.days);
+  const h = t().hotspots[id];
+  let body = '';
+  for (const [week, text] of h.stages) if (ga >= week) body = text;
+  if (!body) body = h.stages[0][1];
+  if (id === 'heart') body = `${h.lead(Math.round(interpTable(HEART_RATE, ga)))} ${body}`;
+  return { title: h.title, body };
+}
+
+function openInfo(id) {
+  state.activeHotspot = id;
+  for (const key of HOTSPOT_IDS) hotspotEls[key].setAttribute('aria-expanded', String(key === id));
+  renderInfo();
+  $('info').hidden = false;
+}
+
+function closeInfo() {
+  state.activeHotspot = null;
+  for (const key of HOTSPOT_IDS) hotspotEls[key].setAttribute('aria-expanded', 'false');
+  $('info').hidden = true;
+}
+
+function renderInfo() {
+  if (!state.activeHotspot) return;
+  const copy = hotspotCopy(state.activeHotspot);
+  $('info-title').textContent = copy.title;
+  $('info-week').textContent = `${t().week(weekOf(state.days))} · ${t().day(dayOf(state.days))}`;
+  $('info-body').textContent = copy.body;
+}
+
+const projected = new THREE.Vector3();
+const toCamera = new THREE.Vector3();
+const outward = new THREE.Vector3();
+
+function updateHotspotAnchors() {
+  const sk = pose.skull;
+  v1.set(sk.p.x - 0.25 * sk.r, sk.p.y + 0.45 * sk.r, sk.p.z + 0.55 * sk.r);
+  poseToWorld(v1, hotspotWorld.head);
+  v1.copy(pose.earL.p);
+  v1.x -= 0.01;
+  poseToWorld(v1, hotspotWorld.ear);
+  const ch = pose.chest;
+  v1.set(ch.p.x - 0.04, ch.p.y + 0.02, ch.p.z + ch.r * 0.55);
+  poseToWorld(v1, hotspotWorld.heart);
+  poseToWorld(pose.haL.p, hotspotWorld.hand);
+  poseToWorld(pose.knL.p, hotspotWorld.legs);
+}
+
+function updateHotspots() {
+  const show = state.explore && !MODES[state.mode].moon;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  babyRoot.getWorldPosition(babyCenter);
+  for (const id of HOTSPOT_IDS) {
+    const el = hotspotEls[id];
+    const available = show && hotspotAvailable(id, gaOf(state.days));
+    if (!available) {
+      if (!el.hidden) el.hidden = true;
+      continue;
+    }
+    projected.copy(hotspotWorld[id]).project(camera);
+    if (projected.z > 1) { if (!el.hidden) el.hidden = true; continue; }
+    if (el.hidden) el.hidden = false;
+    el.style.transform = `translate3d(${((projected.x + 1) / 2) * w}px, ${((1 - projected.y) / 2) * h}px, 0)`;
+    outward.copy(hotspotWorld[id]).sub(babyCenter).normalize();
+    toCamera.copy(camera.position).sub(hotspotWorld[id]).normalize();
+    el.classList.toggle('behind', outward.dot(toCamera) < -0.2);
+  }
+  if (state.activeHotspot && (!show || !hotspotAvailable(state.activeHotspot, gaOf(state.days)))) closeInfo();
+}
+
+/* =========================================================================
+   Labels and copy
+   ========================================================================= */
+
+function formatNumber(value, digits) {
+  return new Intl.NumberFormat(t().locale, { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
+}
+
+function sizeNumbers(week) {
+  const row = WEEKS[week - 8];
+  const s = t();
+  const len = row[3] < 10 ? `${formatNumber(row[3], 1)} ${s.cm}` : `${formatNumber(Math.round(row[3]), 0)} ${s.cm}`;
+  const wt = row[4] >= 1000 ? `${formatNumber(row[4] / 1000, 1)} ${s.kg}` : `${formatNumber(row[4], 0)} ${s.g}`;
+  return { len, wt, fruit: state.lang === 'bg' ? row[2] : row[1], kind: week < 20 ? s.crownRump : s.crownHeel };
+}
+
+function updateLabels() {
+  const s = t();
+  const w = weekOf(state.days);
+  const d = dayOf(state.days);
+  const ga = gaOf(state.days);
+  const weekForSize = Math.min(Math.max(w, 8), 40);
+  const size = sizeNumbers(weekForSize);
+  const tri = w < 14 ? 1 : w < 28 ? 2 : 3;
+  const bpm = Math.round(interpTable(HEART_RATE, ga));
+
+  $('week-title').textContent = s.week(w);
+  $('week-day').textContent = s.day(d);
+  $('days-to-go').textContent = `${s.daysToGo(LAST_DAY - state.days)} · ${s.trimester(tri)}`;
+  $('bpm-text').textContent = s.bpm(bpm);
+  $('size-fruit').textContent = s.sizeOf(size.fruit);
+  $('size-numbers').textContent = `≈ ${size.len} · ${size.wt}`;
+  $('size-kind').textContent = size.kind;
+  $('head-down').textContent = s.headDown;
+  $('head-down').hidden = ga < 34 || !!MODES[state.mode].moon;
+  $('scan-label').textContent = s.scan(w, d);
+
+  const input = $('timeline');
+  input.value = String(state.days);
+  input.setAttribute('aria-valuetext', s.timelineValue(w, d));
+  input.style.setProperty('--fill', `${((state.days - FIRST_DAY) / (LAST_DAY - FIRST_DAY)) * 100}%`);
+
+  canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(w, d, size.len, size.fruit));
+  renderInfo();
+}
+
+function updateStaticCopy() {
+  const s = t();
+  document.documentElement.lang = state.lang;
+  $('lang-en').setAttribute('aria-pressed', String(state.lang === 'en'));
+  $('lang-bg').setAttribute('aria-pressed', String(state.lang === 'bg'));
+  $('lang-en').parentElement.setAttribute('aria-label', s.language);
+  $('brand-view').textContent = s.brandView;
+  $('quality-label').textContent = s.quality;
+  $('kick-label').textContent = s.kick;
+  $('kick-count').textContent = s.kicksToday(state.kicks);
+  $('label-explore').textContent = s.tools.explore;
+  $('label-listen').textContent = s.tools.listen;
+  $('label-portrait').textContent = s.tools.portrait;
+  $('label-play').textContent = state.playing ? s.tools.pause : s.tools.play;
+  document.querySelector('.rail').setAttribute('aria-label', s.toolGroup);
+  $('modes').setAttribute('aria-label', s.modeGroup);
+  for (const btn of document.querySelectorAll('#modes button')) btn.textContent = s.modes[btn.dataset.mode];
+  $('tri-1').textContent = s.triShort[0];
+  $('tri-2').textContent = s.triShort[1];
+  $('tri-3').textContent = s.triShort[2];
+  $('timeline').setAttribute('aria-label', s.timeline);
+  $('disclaimer').textContent = s.disclaimer;
+  $('portrait-hint').textContent = s.portraitHint;
+  $('modal-title').textContent = s.portraitTitle;
+  $('info-close').setAttribute('aria-label', s.close);
+  $('modal-close').setAttribute('aria-label', s.close);
+  for (const id of HOTSPOT_IDS) {
+    const title = s.hotspots[id].title;
+    hotspotEls[id].setAttribute('aria-label', title);
+    hotspotEls[id].firstChild.textContent = title;
+  }
+  renderQualityOptions();
+  updateLabels();
+}
+
+function renderQualityOptions() {
+  const select = $('quality');
+  const s = t();
+  for (const opt of select.options) {
+    opt.textContent = opt.value === 'auto' ? s.auto(tierName(state.tier)) : s.tiers[Number(opt.value)];
+  }
+  select.value = state.quality;
+}
+
+let toastTimer = 0;
+function toast(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.remove('fade');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('fade'), 2600);
+}
+
+/* =========================================================================
+   Layout: keep the baby centred in the space between heading and dock
+   ========================================================================= */
+
+let viewShift = 0;
+let frameTan = 0.3;
+
+// Distance at which the baby fills a comfortable part of the visible area
+function preferredDistance(S) {
+  return (0.78 * S) / frameTan;
+}
+
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  scanPass.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
+  const dock = $('dock').getBoundingClientRect();
+  const hero = document.querySelector('.hero').getBoundingClientRect();
+  document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
+  $('info').style.top = `${Math.round(hero.bottom + 14)}px`;
+  const visibleCenter = (hero.bottom + dock.top) / 2;
+  viewShift = Math.max(0, h / 2 - visibleCenter);
+  const fullH = h + 2 * viewShift;
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const visibleH = Math.max(140, dock.top - hero.bottom);
+  frameTan = Math.max(0.05, Math.min((tanHalf * visibleH) / fullH, (tanHalf * w * 0.82) / fullH));
+  camera.aspect = w / h;
+  if (viewShift > 1) camera.setViewOffset(w, h + 2 * viewShift, 0, 2 * viewShift, w, h);
+  else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+
+/* =========================================================================
+   Interaction
+   ========================================================================= */
+
+function setDays(days) {
+  const clamped = Math.round(THREE.MathUtils.clamp(days, FIRST_DAY, LAST_DAY));
+  if (clamped === state.days) return;
+  state.days = clamped;
+  babyDirty = true;
+  userDistanceOverride = false;
+  updateLabels();
+}
+
+$('timeline').addEventListener('input', (e) => {
+  if (state.playing) togglePlay(false);
+  setDays(Number(e.target.value));
+});
+
+for (const btn of document.querySelectorAll('#modes button')) {
+  btn.addEventListener('click', () => {
+    applyMode(btn.dataset.mode);
+    persist();
+  });
+}
+$('modes').addEventListener('keydown', (e) => {
+  const order = ['dreamy', 'realistic', 'us', 'moon'];
+  const i = order.indexOf(state.mode);
+  let next = -1;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % order.length;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i + order.length - 1) % order.length;
+  if (next < 0) return;
+  e.preventDefault();
+  applyMode(order[next]);
+  persist();
+  document.querySelector(`#modes button[data-mode="${order[next]}"]`).focus();
+});
+
+function setLang(lang) {
+  state.lang = lang;
+  persist();
+  updateStaticCopy();
+}
+$('lang-en').addEventListener('click', () => setLang('en'));
+$('lang-bg').addEventListener('click', () => setLang('bg'));
+
+$('quality').addEventListener('change', (e) => {
+  state.quality = e.target.value;
+  persist();
+  applyTier(state.quality === 'auto' ? detectTier() : Number(state.quality));
+  fpsWindow.frames = 0;
+  fpsWindow.time = 0;
+});
+
+$('kick').addEventListener('click', () => {
+  state.kicks += 1;
+  $('kick-count').textContent = t().kicksToday(state.kicks);
+  toast(t().toastKick(state.kicks));
+  triggerKick(1, true);
+  try { navigator.vibrate?.(25); } catch (err) { /* not supported */ }
+});
+
+const footWorld = new THREE.Vector3();
+function triggerKick(amp, logged) {
+  const now = elapsed;
+  const side = motion.kick && motion.kick.side === 'L' ? 'R' : 'L';
+  if (MODES[state.mode].moon) {
+    v1.copy(camera.position).normalize();
+    footWorld.copy(v1).multiplyScalar(moon.scale.x * 1.02);
+    rippleAt(v1.copy(camera.position));
+    spawnSparks(footWorld, logged ? 10 : 4);
+    return;
+  }
+  motion.kick = { t0: now, dur: 0.75, amp, side };
+  setTimeout(() => {
+    poseToWorld(pose['to' + side].p, footWorld);
+    rippleAt(footWorld);
+    if (logged) spawnSparks(footWorld, 10);
+  }, 280);
+}
+
+function rippleAt(world) {
+  shellMaterial.uniforms.uRippleDir.value.set(world.x / WOMB.x, world.y / WOMB.y, world.z / WOMB.z).normalize();
+  shellMaterial.uniforms.uRippleT.value = 0;
+}
+
+let lastTap = 0;
+canvas.addEventListener('pointerup', (e) => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const now = performance.now();
+  if (now - lastTap < 320) {
+    if (!MODES[state.mode].moon) motion.wave = { t0: elapsed, dur: 1.6, amp: 1 };
+    lastTap = 0;
+  } else {
+    lastTap = now;
+  }
+});
+
+$('tool-explore').addEventListener('click', () => {
+  state.explore = !state.explore;
+  $('tool-explore').setAttribute('aria-pressed', String(state.explore));
+  if (!state.explore) closeInfo();
+});
+
+$('tool-listen').addEventListener('click', () => {
+  if (state.listening) {
+    stopAudio();
+    state.listening = false;
+  } else {
+    state.listening = startAudio();
+    if (state.listening) toast(t().toastListen);
+  }
+  $('tool-listen').setAttribute('aria-pressed', String(state.listening));
+});
+
+function togglePlay(force) {
+  state.playing = typeof force === 'boolean' ? force : !state.playing;
+  if (state.playing && state.days >= LAST_DAY) setDays(FIRST_DAY);
+  playhead = state.days;
+  $('tool-play').setAttribute('aria-pressed', String(state.playing));
+  $('label-play').textContent = state.playing ? t().tools.pause : t().tools.play;
+  $('play-icon').innerHTML = state.playing
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5z"/></svg>';
+}
+$('tool-play').addEventListener('click', () => togglePlay());
+
+$('info-close').addEventListener('click', closeInfo);
+
+/* ---------- Weekly Moon Portrait ---------- */
+let portraitReturnFocus = null;
+
+async function capturePortrait() {
+  const big = state.tier >= 3 && renderer.capabilities.maxTextureSize >= 4096;
+  const W = big ? 1440 : 1080;
+  const H = big ? 2560 : 1920;
+  try { await document.fonts.load(`600 40px Lora`); await document.fonts.load(`600 40px "Sofia Sans"`); } catch (err) { /* fallback fonts */ }
+
+  const prevPR = renderer.getPixelRatio();
+  renderer.setPixelRatio(1);
+  renderer.setSize(W, H, false);
+  composer.setPixelRatio(1);
+  composer.setSize(W, H);
+  scanPass.uniforms.uRes.value.set(W, H);
+  camera.aspect = W / H;
+  camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+  composer.render(0);
+
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = H;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(renderer.domElement, 0, 0, W, H);
+  drawPortraitCaption(ctx, W, H);
+  const url = out.toDataURL('image/jpeg', 0.9);
+
+  renderer.setPixelRatio(prevPR);
+  composer.setPixelRatio(prevPR);
+  resize();
+
+  const s = t();
+  const img = $('portrait-img');
+  img.src = url;
+  img.alt = s.portraitAlt(weekOf(state.days), dayOf(state.days));
+  $('portrait-meta').textContent = `${W} × ${H} · ${s.modes[state.mode]}`;
+  portraitReturnFocus = document.activeElement;
+  $('modal').hidden = false;
+  $('modal-close').focus();
+}
+
+function drawPortraitCaption(ctx, W, H) {
+  const s = t();
+  const u = W / 1080;
+  const w = weekOf(state.days);
+  const size = sizeNumbers(Math.min(Math.max(w, 8), 40));
+  const grad = ctx.createLinearGradient(0, H * 0.62, 0, H);
+  grad.addColorStop(0, 'rgba(22, 21, 43, 0)');
+  grad.addColorStop(1, 'rgba(22, 21, 43, 0.88)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H * 0.6, W, H * 0.4);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#FFE6A3';
+  ctx.font = `700 ${34 * u}px "Sofia Sans", system-ui, sans-serif`;
+  ctx.fillText('LUNABUMP', 72 * u, H - 320 * u);
+  ctx.fillStyle = '#F3F0FF';
+  ctx.font = `600 ${118 * u}px Lora, Georgia, serif`;
+  ctx.fillText(s.week(w), 72 * u, H - 190 * u);
+  ctx.fillStyle = '#F6C8B5';
+  ctx.font = `500 ${44 * u}px "Sofia Sans", system-ui, sans-serif`;
+  ctx.fillText(`${s.day(dayOf(state.days))} · ${s.sizeOf(size.fruit)}`, 72 * u, H - 112 * u);
+  ctx.fillStyle = 'rgba(243, 240, 255, 0.62)';
+  ctx.font = `italic 500 ${32 * u}px Lora, Georgia, serif`;
+  ctx.fillText(s.tagline, 72 * u, H - 56 * u);
+}
+
+function closeModal() {
+  $('modal').hidden = true;
+  $('portrait-img').removeAttribute('src');
+  if (portraitReturnFocus) portraitReturnFocus.focus();
+}
+
+$('tool-portrait').addEventListener('click', () => { capturePortrait(); });
+$('modal-close').addEventListener('click', closeModal);
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!$('modal').hidden) closeModal();
+  else if (state.activeHotspot) closeInfo();
+});
+
+window.addEventListener('resize', resize);
+new ResizeObserver(resize).observe($('dock'));
+
+/* =========================================================================
+   Frame loop
+   ========================================================================= */
+
+const timer = new THREE.Timer();
+timer.connect(document);
+let elapsed = 0;
+const fpsWindow = { frames: 0, time: 0, slowWindows: 0 };
+let frame = 0;
+let loaded = false;
+let playhead = state.days;
+let flip = 0.2;
+const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+const qFlip = new THREE.Quaternion();
+const qSway = new THREE.Quaternion();
+const zAxis = new THREE.Vector3(0, 0, 1);
+const yAxis = new THREE.Vector3(0, 1, 0);
+const heartWorld = new THREE.Vector3();
+
+function sceneSize(ga) {
+  return 1.25 + 2.15 * Math.pow(THREE.MathUtils.clamp((ga - 8) / 32, 0, 1), 0.85);
+}
+
+function trackFps(dt) {
+  fpsWindow.frames += 1;
+  fpsWindow.time += dt;
+  if (fpsWindow.time < 2.5) return;
+  const fps = fpsWindow.frames / fpsWindow.time;
+  $('fps').textContent = `${Math.round(fps)} fps`;
+  fpsWindow.frames = 0;
+  fpsWindow.time = 0;
+  if (state.quality !== 'auto' || document.hidden) return;
+  fpsWindow.slowWindows = fps < 40 ? fpsWindow.slowWindows + 1 : 0;
+  if (fpsWindow.slowWindows >= 2 && state.tier > 0) {
+    fpsWindow.slowWindows = 0;
+    applyTier(state.tier - 1);
+    toast(t().toastQuality(tierName(state.tier)));
+  }
+}
+
+renderer.setAnimationLoop((timestamp) => {
+  timer.update(timestamp);
+  const rawDt = timer.getDelta();
+  const dt = Math.min(rawDt, 0.05);
+  elapsed = timer.getElapsed();
+  const now = elapsed;
+  const reduce = reduceMotionQuery.matches;
+  frame += 1;
+  trackFps(dt);
+
+  if (state.playing) {
+    playhead += dt * 18;
+    if (playhead >= LAST_DAY) { setDays(LAST_DAY); togglePlay(false); }
+    else setDays(Math.floor(playhead));
+  }
+  const ga = gaOf(state.days);
+  const S = sceneSize(ga);
+  const m = MODES[state.mode];
+
+  // Spontaneous little movements from the second trimester on
+  if (!reduce && !m.moon && ga >= 12 && now > motion.nextSpontaneous) {
+    triggerKick(0.55, false);
+    motion.nextSpontaneous = now + 9 + Math.random() * 9;
+  }
+
+  // Baby transform: size, slow sway, and the turn to head-down between weeks 30 and 36
+  babyMesh.scale.setScalar(S / (2 * K));
+  const flipTarget = 0.2 + (Math.PI - 0.35) * THREE.MathUtils.smoothstep(ga, 30, 36);
+  flip += (flipTarget - flip) * Math.min(1, rawDt * 3);
+  qFlip.setFromAxisAngle(zAxis, flip);
+  qSway.setFromAxisAngle(yAxis, reduce ? 0 : Math.sin(now * 0.3) * 0.06);
+  babyRoot.quaternion.copy(qSway).multiply(qFlip).multiply(qYaw);
+  babyRoot.position.y = reduce ? 0 : Math.sin(now * 0.5) * 0.04 * S;
+  babyRoot.updateMatrixWorld(true);
+
+  if (!m.moon && (babyDirty || motionActive(now))) {
+    rebuildBaby(ga, now);
+    babyDirty = false;
+  }
+
+  // Moon: grows and waxes from a thin crescent to full
+  const progress = THREE.MathUtils.clamp((ga - 8) / 32, 0, 1);
+  moon.scale.setScalar(0.55 + 1.15 * progress);
+  moon.rotation.y = now * 0.05;
+  moonMaterial.uniforms.uPhase.value = Math.PI * (0.18 + 0.82 * progress);
+
+  // Camera: frame the baby unless the viewer has zoomed by hand
+  const preferred = preferredDistance(S);
+  if (!userDistanceOverride && now - lastInteraction > 1) {
+    const dist = camera.position.distanceTo(controls.target);
+    const nextDist = dist + (preferred - dist) * Math.min(1, dt * 2.5);
+    camera.position.sub(controls.target).setLength(nextDist).add(controls.target);
+  }
+  controls.autoRotate = !reduce && now - lastInteraction > 8 && !state.playing;
+  controls.update(dt);
+
+  // Uniforms
+  const tt = reduce ? now * 0.25 : now;
+  wallMaterial.uniforms.uTime.value = tt;
+  shellMaterial.uniforms.uTime.value = tt;
+  shellMaterial.uniforms.uRippleT.value += dt;
+  particleMaterial.uniforms.uTime.value = tt;
+  starMaterial.uniforms.uTime.value = tt;
+  moonMaterial.uniforms.uTime.value = tt;
+  finishPass.uniforms.uTime.value = now;
+  scanPass.uniforms.uTime.value = now;
+
+  const bpm = interpTable(HEART_RATE, ga);
+  const pulse = heartPulse(now, bpm);
+  $('bpm').classList.toggle('beat', pulse > 0.6);
+  if (m.baby) {
+    const ch = pose.chest;
+    v1.set(ch.p.x - 0.03, ch.p.y + 0.03, ch.p.z + 0.04);
+    poseToWorld(v1, heartWorld);
+    babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
+    babyUniforms.uHeartR.value = 0.13 * S;
+    babyUniforms.uPulse.value = (0.12 + pulse) * m.baby.heartStrength;
+  }
+
+  if (!m.moon && frame % TIERS[state.tier].cordEvery === 0) updateCord(reduce ? 0 : now, S);
+  updateSparks(dt);
+
+  composer.render(dt);
+  updateHotspotAnchors();
+  updateHotspots();
+
+  if (!loaded) {
+    loaded = true;
+    $('loader').classList.add('done');
+    setTimeout(() => { $('loader').hidden = true; }, 700);
+  }
+});
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+
+$('loader-text').textContent = STR[state.lang].loading;
+updateStaticCopy();
+applyTier(state.quality === 'auto' ? detectTier() : Number(state.quality));
+camera.position.set(0.35, 0.18, 1).normalize().multiplyScalar(preferredDistance(sceneSize(gaOf(state.days))));
+</script>
+</body>
+</html>
