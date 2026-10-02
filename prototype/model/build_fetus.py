@@ -419,7 +419,7 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
     return anchor
 
 
-def add_face(add, sub, at, HR, R, feat, fat):
+def add_face(add, sub, at, HR, R, feat, fat, ops, g):
     """Cheeks, chin, closed eyes, a small button nose and lips, in head units (R).
     feat (0-1) is how formed the face is: early on the features are small and soft.
     Returns the eyelid lines (for darkening the lash line in the vertex colours)."""
@@ -430,18 +430,42 @@ def add_face(add, sub, at, HR, R, feat, fat):
         add("cheek" + s, Ellipsoid(at(0.4 * sx, -0.52, 0.6), np.full(3, cheek)), 0.15 * R)
     add("chin", Ellipsoid(at(0, -0.87, 0.66), np.array([0.17, 0.15, 0.17]) * R, HR), 0.12 * R)
 
-    # Closed eyes: the lid bulges over the eyeball, a soft upper fold, and the lash line
-    # curving gently down at the outer corner
+    # Closed eyes. Before ~26 weeks the lids are fused; later they are closed most of the
+    # time. A closed newborn eye is a soft almond of upper lid lying almost flush with the
+    # face, with a fine lash line that dips gently in the middle.
+    def surface(lx, ly):
+        """Head-units depth (along FWD) of the face surface built so far at (lx, ly)."""
+        head = [op for op in ops if op.group == "head"]
+        lo, hi = 0.3, 1.4
+        for _ in range(28):
+            mid = 0.5 * (lo + hi)
+            if eval_group(head, at(lx, ly, mid)[None])[0] < 0:
+                lo = mid
+            else:
+                hi = mid
+        return 0.5 * (lo + hi)
+
     lid_lines = []
+    tilt = math.radians(6)            # outer corner a little higher, as in newborns
     for sx, s in ((-1, "L"), (1, "R")):
-        add("eye" + s, Ellipsoid(at(0.32 * sx, -0.21, 0.81 + 0.03 * fs), np.array([0.17, 0.12, 0.1 * fs]) * R, HR), 0.07 * R * soft)
-        add("eyeFold" + s, Ellipsoid(at(0.31 * sx, -0.165, 0.86 + 0.02 * fs), np.array([0.15, 0.055, 0.05 * fs]) * R, HR), 0.04 * R * soft)
-        line = [at(0.18 * sx, -0.238, 0.905), at(0.27 * sx, -0.252, 0.925), at(0.37 * sx, -0.247, 0.905), at(0.46 * sx, -0.222, 0.85)]
-        lash = Chain([RoundCone(line[i], line[i + 1], 0.011 * R, 0.011 * R) for i in range(3)])
-        if feat > 0.3:
-            sub("eyeLine" + s, lash, 0.012 * R * soft)
-            sub("eyeCorner" + s, Ellipsoid(at(0.165 * sx, -0.24, 0.88), np.full(3, 0.022 * R * feat)), 0.015 * R)
-        lid_lines.append(lash)
+        c, sn = math.cos(tilt * sx), math.sin(tilt * sx)
+        tilt_frame = HR @ np.array([[c, -sn, 0], [sn, c, 0], [0, 0, 1]])
+        ex, ey = 0.31, -0.215
+        # soft fill under the eye: the cranium curves away there while the cheeks bulge,
+        # which would leave a hollow under the lower lid
+        z_under = surface(0.3 * sx, -0.36)
+        add("eyeUnder" + s, Ellipsoid(at(0.3 * sx, -0.36, z_under + 0.01 - 0.07), np.array([0.19, 0.1, 0.07]) * R, HR), 0.1 * R)
+        z_lid = surface(ex * sx, ey)
+        lid_d = 0.07 * fs
+        add("eyeLid" + s, Ellipsoid(at(ex * sx, ey + 0.01, z_lid + 0.022 * fs - lid_d), np.array([0.16, 0.105, lid_d]) * R, tilt_frame), 0.06 * R * soft)
+        # Lash line: only in the vertex colour. As geometry it would have to be finer than the
+        # mesh can hold (a few grid cells), and a cut that wide reads as an open slit.
+        on_skin = []
+        for t in np.linspace(0, 1, 7):
+            lx = (0.165 + 0.3 * t) * sx
+            ly = -0.258 - 0.014 * math.sin(math.pi * t) + 0.03 * t
+            on_skin.append(at(lx, ly, surface(lx, ly) - 0.004))
+        lid_lines.append(Chain([RoundCone(on_skin[i], on_skin[i + 1], 0.004 * R, 0.004 * R) for i in range(6)]))
 
     # Nose: low flat bridge, round tip, soft alae, small nostrils
     add("noseBridge", RoundCone(at(0, -0.2, 0.86), at(0, -0.37, 0.93), 0.055 * R * fs, 0.075 * R * fs), 0.06 * R * soft)
@@ -696,7 +720,7 @@ def build(g, overrides=None, sex=None, grow=1.0):
     add("neck", RoundCone(j["neck"], head_top, table(NECK_R, g), table(NECK_R, g) * 0.95), 0.06)
     add("cranium", Ellipsoid(at(0, 0.04, -0.06), (0.9 * R, 0.97 * R, 1.06 * R), HR), 0.05)
     add("face", Ellipsoid(at(0, -0.42, 0.4), (0.66 * R, 0.52 * R, 0.52 * R), HR), 0.22 * R)
-    lid_lines = add_face(add, sub, at, HR, R, feat, fat)
+    lid_lines = add_face(add, sub, at, HR, R, feat, fat, ops, g)
     ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat)
     anchors = {
         "head": at(-0.25, 0.45, 0.6),
@@ -1483,25 +1507,21 @@ def main():
     write_positions(obj, basis - center)
     obj.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", to_blender(basis - center).ravel())
 
-    # Skin colour detail: occlusion in creases, a little warmth on cheeks, lips, fingertips and knees
+    # Skin colour detail: occlusion in creases and a little warmth on the cheeks and lips
     _, _, normals = read_mesh(obj)
     ao = ambient_occlusion(base_ops, basis, normals)
     for _ in range(4):   # soften: on a dense mesh raw occlusion speckles at sharp junctions (shoulders)
         ao = 0.5 * ao + 0.5 * (A @ ao) / deg
     warm = np.zeros(len(basis))
     by_name = {op.name: op for op in base_ops}
-    for name, amount in (("cheekL", 0.55), ("cheekR", 0.55), ("lipUpperC", 0.8), ("lipUpperL", 0.8), ("lipUpperR", 0.8),
-                         ("lipLower", 0.8), ("noseTip", 0.35), ("toe0L", 0.4), ("toe0R", 0.4)):
+    for name, amount in (("cheekL", 0.4), ("cheekR", 0.4), ("lipUpperC", 0.6), ("lipUpperL", 0.6), ("lipUpperR", 0.6),
+                         ("lipLower", 0.6), ("noseTip", 0.2)):
         if name in by_name:
             warm = np.maximum(warm, amount * np.exp(-np.maximum(by_name[name].shape.sdf(basis), 0) / 0.006))
-    for s in "LR":
-        for i in range(4):
-            op = by_name[f"finger{i}{s}b"]
-            warm = np.maximum(warm, 0.45 * np.exp(-np.maximum(op.shape.sdf(basis), 0) / 0.004))
     lid = np.zeros(len(basis))
     for line in base_ops.lid_lines:
-        lid = np.maximum(lid, np.exp(-np.maximum(line.sdf(basis), 0) / 0.0018))
-    shade = (0.55 + 0.45 * ao) * (1 - 0.32 * lid)
+        lid = np.maximum(lid, np.exp(-np.maximum(line.sdf(basis), 0) / 0.0016))
+    shade = (0.55 + 0.45 * ao) * (1 - 0.4 * lid)
     rgb = np.stack([shade, shade * (1 - 0.1 * warm), shade * (1 - 0.13 * warm)], axis=1)
     rgb = rgb * np.array([1.0, 0.97, 0.96]) ** (1 - ao)[:, None]
     thickness = skin_thickness(base_ops, basis, normals, A, deg)

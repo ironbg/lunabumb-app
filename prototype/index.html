@@ -187,19 +187,6 @@
   .sex-panel p { font-size: 13px; color: var(--muted); }
   .sex-panel .sex-early { color: var(--peach); }
 
-  .scan-label {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 66px);
-    right: var(--gutter);
-    z-index: 3;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    color: #E9C08A;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-  }
-
   /* ---------- Tool rail ---------- */
   .rail {
     position: fixed;
@@ -625,8 +612,6 @@
   </div>
 </section>
 
-<div class="scan-label" id="scan-label" hidden>4D · GA 24w3d</div>
-
 <div class="hotspots" id="hotspots"></div>
 
 <aside class="info" id="info" role="dialog" aria-labelledby="info-title" hidden>
@@ -703,7 +688,6 @@
   <div class="modes" role="radiogroup" aria-label="Visual mode" id="modes">
     <button type="button" role="radio" data-mode="dreamy" aria-checked="true">Dreamy</button>
     <button type="button" role="radio" data-mode="realistic" aria-checked="false">Realistic</button>
-    <button type="button" role="radio" data-mode="us" aria-checked="false">4D scan</button>
     <button type="button" role="radio" data-mode="moon" aria-checked="false">Moon</button>
   </div>
   <p class="disclaimer" id="disclaimer">Artistic visualisation for a prototype. Not a medical image.</p>
@@ -832,7 +816,7 @@ const STR = {
     crownRump: 'crown–rump',
     crownHeel: 'crown–heel',
     headDown: 'Head-down',
-    modes: { dreamy: 'Dreamy', realistic: 'Realistic', us: '4D scan', moon: 'Moon' },
+    modes: { dreamy: 'Dreamy', realistic: 'Realistic', moon: 'Moon' },
     modeGroup: 'Visual mode',
     kick: 'Log kick',
     kicksToday: (n) => `${n} today`,
@@ -857,7 +841,6 @@ const STR = {
     noWebgl: "This browser can't show the 3D scene. Try a recent version of Chrome, Safari, Edge or Firefox.",
     sceneAlt: (who, w, d, len, fruit) => `3D view of ${who} at week ${w}, day ${d}: curled up in the womb, about ${len} long, the size of ${fruit}.`,
     moonAlt: (w) => `A glowing moon that grows with your pregnancy, now at week ${w}.`,
-    scan: (w, d) => `4D · GA ${w}w${d}d`,
     tagline: 'Watch your little moon grow.',
     taglineSex: { F: 'Watch your baby girl grow.', M: 'Watch your baby boy grow.' },
     sex: {
@@ -928,7 +911,7 @@ const STR = {
     crownRump: 'теме–седалище',
     crownHeel: 'теме–пета',
     headDown: 'С главата надолу',
-    modes: { dreamy: 'Мечта', realistic: 'Реален', us: 'Видеозон', moon: 'Луна' },
+    modes: { dreamy: 'Мечта', realistic: 'Реален', moon: 'Луна' },
     modeGroup: 'Визуален режим',
     kick: 'Ритник',
     kicksToday: (n) => `${n} днес`,
@@ -953,7 +936,6 @@ const STR = {
     noWebgl: 'Този браузър не може да покаже 3D сцената. Опитай с нова версия на Chrome, Safari, Edge или Firefox.',
     sceneAlt: (who, w, d, len, fruit) => `3D изглед на ${who} в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}, колкото ${fruit}.`,
     moonAlt: (w) => `Светеща луна, която расте заедно с бременността, сега в седмица ${w}.`,
-    scan: (w, d) => `4D · ${w} г.с. + ${d} д.`,
     tagline: 'Гледай как расте твоята малка луна.',
     taglineSex: { F: 'Гледай как расте твоето момиченце.', M: 'Гледай как расте твоето момченце.' },
     sex: {
@@ -1025,7 +1007,7 @@ const MODES = {
     shell: { rim: '#f6c8b5', glow: '#ffe6a3', intensity: 1.0 },
     particles: 1.0, stars: 1.0,
     baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.12, heart: '#ff7a5c', heartStrength: 0.55,
-      sss: '#ff5a3a', translucency: 1.0, wrap: 0.4, wrapTint: '#ff8a68' },
+      sss: '#ffb39a', translucency: 1.0, wrap: 0.4, wrapTint: '#ffa585' },
     placenta: '#a4465c',
     lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
     vignette: 0.6, grain: 0.035,
@@ -1037,23 +1019,10 @@ const MODES = {
     shell: { rim: '#f2a993', glow: '#ffcfb5', intensity: 0.5 },
     particles: 0.4, stars: 0.35,
     baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.25,
-      sss: '#ff3c24', translucency: 0.9, wrap: 0.4, wrapTint: '#ff6a50' },
+      sss: '#f0a088', translucency: 0.9, wrap: 0.4, wrapTint: '#f59a80' },
     placenta: '#8c2f3d',
     lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4 },
     vignette: 0.5, grain: 0.02,
-  },
-  us: {
-    bg: '#000000', exposure: 1.1,
-    bloom: null,
-    wall: { center: '#0b0703', edge: '#000000', caustic: '#000000', amount: 0.0 },
-    shell: { rim: '#000000', glow: '#000000', intensity: 0.0 },
-    particles: 0.0, stars: 0.0,
-    baby: { color: '#d9cfc4', roughness: 0.75, sheen: 0.2, sheenColor: '#ffffff', iridescence: 0.0, clearcoat: 0.0, rim: '#ffffff', rimStrength: 0.04, heart: '#000000', heartStrength: 0.0,
-      sss: '#fff0dc', translucency: 0.5, wrap: 0.3, wrapTint: '#ffffff' },
-    placenta: '#6a6058',
-    lights: { hemi: 0.25, key: 0.5, back: 0.3, head: 2.0, env: 0.12 },
-    vignette: 0.0, grain: 0.0,
-    scan: true,
   },
   moon: {
     bg: '#100f24', exposure: 1.0,
@@ -1506,11 +1475,12 @@ const babyUniforms = {
   uRimColor: { value: new THREE.Color('#ffc9b0') },
   uRimStrength: { value: 0.42 },
   uTranslucency: { value: 0.5 },
-  uSssColor: { value: new THREE.Color('#ff5a3a') },
+  uSssColor: { value: new THREE.Color('#ffb39a') },
   uSssDistortion: { value: 0.3 },
   uSssPower: { value: 2.5 },
-  uSssScale: { value: 1.8 },
-  uSssAmbient: { value: 0.04 },
+  // kept low and close to the skin tone: a strong, saturated value turns ears and fingers into pink spots
+  uSssScale: { value: 0.8 },
+  uSssAmbient: { value: 0.0 },
   uWrap: { value: 0.5 },
   uWrapTint: { value: new THREE.Color('#ff8a68') },
 };
@@ -2231,38 +2201,9 @@ const FinishShader = {
   `,
 };
 
-const ScanShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) } },
-  vertexShader: FinishShader.vertexShader,
-  fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;
-    uniform float uTime;
-    uniform vec2 uRes;
-    varying vec2 vUv;
-    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-    void main() {
-      vec2 px = 1.5 / uRes;
-      vec3 c = texture2D(tDiffuse, vUv).rgb * 0.4;
-      c += texture2D(tDiffuse, vUv + vec2(px.x, 0.0)).rgb * 0.15;
-      c += texture2D(tDiffuse, vUv - vec2(px.x, 0.0)).rgb * 0.15;
-      c += texture2D(tDiffuse, vUv + vec2(0.0, px.y)).rgb * 0.15;
-      c += texture2D(tDiffuse, vUv - vec2(0.0, px.y)).rgb * 0.15;
-      float l = pow(dot(c, vec3(0.299, 0.587, 0.114)), 0.85);
-      float n = hash(floor(vUv * uRes / 2.0) + floor(uTime * 18.0));
-      l *= 0.8 + 0.4 * n;
-      vec3 col = mix(vec3(0.03, 0.015, 0.0), vec3(0.62, 0.36, 0.13), smoothstep(0.02, 0.45, l));
-      col = mix(col, vec3(1.0, 0.9, 0.7), smoothstep(0.45, 0.95, l));
-      vec2 q = (vUv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
-      col *= smoothstep(0.95, 0.3, length(q));
-      gl_FragColor = vec4(col, 1.0);
-    }
-  `,
-};
-
 let composer;
 let bloomPass;
 let finishPass;
-let scanPass;
 
 function buildComposer(tier) {
   if (composer) {
@@ -2278,8 +2219,6 @@ function buildComposer(tier) {
   finishPass = new ShaderPass(FinishShader);
   composer.addPass(finishPass);
   composer.addPass(new OutputPass());
-  scanPass = new ShaderPass(ScanShader);
-  composer.addPass(scanPass);
 }
 
 /* =========================================================================
@@ -2381,8 +2320,6 @@ function applyMode(mode) {
   }
   finishPass.uniforms.uVignette.value = m.vignette;
   finishPass.uniforms.uGrain.value = state.tier >= 2 ? m.grain : 0;
-  scanPass.enabled = !!m.scan;
-  $('scan-label').hidden = !m.scan;
 
   for (const btn of document.querySelectorAll('#modes button')) {
     btn.setAttribute('aria-checked', String(btn.dataset.mode === mode));
@@ -2632,7 +2569,6 @@ function updateLabels() {
   $('size-kind').textContent = size.kind;
   $('head-down').textContent = s.headDown;
   $('head-down').hidden = ga < 34 || !!MODES[state.mode].moon;
-  $('scan-label').textContent = s.scan(w, d);
 
   const input = $('timeline');
   input.value = String(state.days);
@@ -2715,7 +2651,6 @@ function resize() {
   const h = window.innerHeight;
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
-  scanPass.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
   const dock = $('dock').getBoundingClientRect();
   const hero = document.querySelector('.hero').getBoundingClientRect();
   document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
@@ -2758,7 +2693,7 @@ for (const btn of document.querySelectorAll('#modes button')) {
   });
 }
 $('modes').addEventListener('keydown', (e) => {
-  const order = ['dreamy', 'realistic', 'us', 'moon'];
+  const order = ['dreamy', 'realistic', 'moon'];
   const i = order.indexOf(state.mode);
   let next = -1;
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % order.length;
@@ -2938,7 +2873,6 @@ async function capturePortrait() {
   renderer.setSize(W, H, false);
   composer.setPixelRatio(1);
   composer.setSize(W, H);
-  scanPass.uniforms.uRes.value.set(W, H);
   camera.aspect = W / H;
   camera.clearViewOffset();
   camera.updateProjectionMatrix();
@@ -3133,7 +3067,6 @@ renderer.setAnimationLoop((timestamp) => {
   starMaterial.uniforms.uTime.value = tt;
   moonMaterial.uniforms.uTime.value = tt;
   finishPass.uniforms.uTime.value = now;
-  scanPass.uniforms.uTime.value = now;
 
   const bpm = interpTable(HEART_RATE, ga);
   const pulse = heartPulse(now, bpm);
