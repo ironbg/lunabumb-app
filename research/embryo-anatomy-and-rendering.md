@@ -103,6 +103,35 @@
 - **Отварянето на очите:** дава се между г.с. 26 и 30. Ползваме г.с. 27–28 като преход.
 - **Лануго:** начало между г.с. 13 и 18. Ползваме г.с. 16–22 за плавно появяване.
 
+### 3.1 Уши и външни полови органи
+
+**Ушната мида** се оформя рано, но хрущялът ѝ узрява късно. Неонаталната скала на Ballard описва етапите така (седмиците са приблизителни):
+
+| Около г.с. | Ушна мида |
+|---|---|
+| 24 | Плоска и мека, остава прегъната |
+| 28 | Леко извит ръб, мека, бавно се изправя |
+| 32–34 | Добре извит ръб, мека, но бързо се изправя |
+| 36–38 | Оформена и твърда |
+| 40 | Дебел хрущял, твърдо ухо |
+
+**Външните полови органи** са еднакви при двата пола до около г.с. 11–12: генитален туберкул, уретрални гънки и лабиоскротални издутини. След това се диференцират. На видеозон полът може да се различи от около г.с. 12–14 по ъгъла на туберкула, а на морфологичния преглед (г.с. 18–22) обикновено се вижда ясно. Кръвният тест NIPT определя пола от около г.с. 10.
+
+| Около г.с. | Момиче (Ballard) | Момче (Ballard) |
+|---|---|---|
+| до 12 | Общ ранен етап | Общ ранен етап |
+| 20–24 | Изпъкнал клитор, плоски големи срамни устни | Празен и плосък скротум, бледи гънки |
+| 28 | Изпъкнал клитор, растящи малки срамни устни | Тестисите в горния ингвинален канал |
+| 32 | Големите и малките срамни устни са еднакво изпъкнали | Тестисите слизат, малко гънки |
+| 36–40 | Големите срамни устни покриват клитора и малките | Тестисите са в скротума, добри гънки |
+
+Размери за модела:
+- **Пенис:** дължина ≈ 0,76–0,81 × г.с. − 8 мм по нормограми от видеозон (около 4 мм на г.с. 16, 10 мм на г.с. 24, 23 мм на г.с. 40).
+- **Клитор:** дължина 4,8 ± 1,1 мм през втория и 5,4 ± 1,1 мм през третия триместър, ширина 3,4 → 4,6 мм. Спрямо тялото е най-изпъкнал в средата на бременността.
+- **Тестиси:** слизането започва около г.с. 24–25 (при 5%) и завършва до г.с. 32–33 при 97%.
+
+В прототипа полът е по избор на родителите. Докато не е избран, моделът е неутрален.
+
 ---
 
 ## 4. Размери и пропорции
@@ -405,4 +434,8 @@
 **Светлина и визуални референции**
 - Светлина в утробата (University of Waikato): [Cosmos](https://cosmosmagazine.com/science/biology/modelling-brings-to-light-how-bright-it-can-get-inside-the-womb), [Waikato](https://waikato.ac.nz/news-events/news/discovery-lights-the-way-for-in-utero-research-innovation)
 - HDlive: [Voluson Club](https://www.volusonclub.net/id/generalnews?id=683), [Probo Medical](https://www.probomedical.com/learn/blog/what-is-hdlive-silhouette-ges-see-through-fetal-4d-imaging/); Realistic Vue: [PMC6561374](https://pmc.ncbi.nlm.nih.gov/articles/PMC6561374/)
+- Ушна мида и външни полови органи по зрялост: [New Ballard Score, гениталии при момчета](https://www.ballardscore.com/CatalogView/Article/physical-maturity/6-genitals-male), [Ballard Maturational Assessment (Wikipedia)](https://en.wikipedia.org/wiki/Ballard_Maturational_Assessment)
+- Дължина на пениса на плода: [систематичен преглед, SPU 2024 (резюме)](https://fallcongress.spuonline.org/program/2024/74.cgi), [морфометрия на пениса при плода](https://www.biomedres.info/articles/morphometric-analysis-of-penis-development-in-human-fetuses.html)
+- Размери на клитора при плода: [Surg Radiol Anat, doi:10.1007/s00276-019-02383-9](https://link.springer.com/article/10.1007/s00276-019-02383-9)
+- Слизане на тестисите: [Sonographic evaluation of fetal scrotum, testes and epididymis, Obstet Gynecol Sci 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8458611)
 - Lennart Nilsson, *Drama of Life Before Birth* (1965): [Embryo Project, ASU](https://embryo.asu.edu/pages/drama-life-birth-1965-life-magazine-and-lennart-nilsson)

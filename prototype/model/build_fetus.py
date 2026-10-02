@@ -4,26 +4,30 @@ Pipeline
   1. A parametric skeleton for any gestational week (key poses at 8, 20 and 40
      weeks, proportions from approximate fetal biometry tables).
   2. An SDF sculpt on top of it: smooth unions of ellipsoids and round cones
-     (head, face, torso, limbs, fingers, toes) and smooth subtractions for small
-     creases (eyelids, mouth, nostrils, ear concha).
-  3. Marching cubes on the week-24 sculpt, cleaned up and decimated in Blender.
-     This is the basis mesh.
+     (head, face, ears, torso, buttocks, limbs, fingers, toes) and smooth
+     subtractions for small creases (eyelids, mouth, nostrils, ear concha,
+     gluteal cleft).
+  3. Marching cubes on the week-24 sculpt, cleaned up and decimated in Blender,
+     keeping more vertices in the ears and the groin. This is the basis mesh.
   4. Growth shape keys (W8 ... W40): the basis vertices are carried to each week
      by blending per-primitive frame mappings, then projected onto that week's
      SDF surface. All keys share one topology, so they morph smoothly.
   5. Action shape keys (KICK_L, KICK_R, WAVE_L) built the same way from posed
      skeletons at week 24.
-  6. Ambient occlusion and soft skin tints computed from the SDF and stored as
-     vertex colours.
-  7. GLB export, plus a small JSON rig with anchor points per key week.
+  6. Sex keys (SEX_8, SEX_12, F16 ... F40, M16 ... M40): external genitals grown
+     out of each week's neutral body in steps, as deltas on that body.
+  7. Ambient occlusion and soft skin tints computed from the SDF and stored as
+     vertex colours, local thickness in the colour alpha (for translucency).
+  8. GLB export, gltfpack quantization, then a repack that stores the sex keys
+     and the action keys as sparse morph targets. Plus a small JSON rig with
+     anchor points per key week.
 
 Coordinates: "pose space" is x = baby's right, y = up, z = front, in
 crown–rump units (CRL = 1). It is written to Blender as (x, -z, y) so the
 glTF export (+Y up) comes back out as pose space.
 
-Run (needs Blender's `bpy` module, numpy and scikit-image):
-  python build_fetus.py --out ../models/fetus.raw.glb --rig ../models/fetus-rig.json
-then compress with gltfpack (see README).
+Run (needs Blender's `bpy` module, numpy, scipy and scikit-image, and gltfpack):
+  python build_fetus.py --out ../models/fetus.glb --rig ../models/fetus-rig.json
 """
 
 import argparse
@@ -170,6 +174,33 @@ class RoundCone:
         return other.a + s1[:, None] * u1 + (radial @ R.T) * ratio[:, None]
 
 
+class Chain:
+    """A tube made of round cones joined with an exact union, so the joints don't bulge."""
+    kind = "chain"
+
+    def __init__(self, cones):
+        self.cones = cones
+
+    def sdf(self, p):
+        return np.min([c.sdf(p) for c in self.cones], axis=0)
+
+    def aabb(self):
+        boxes = [c.aabb() for c in self.cones]
+        return np.min([b[0] for b in boxes], axis=0), np.max([b[1] for b in boxes], axis=0)
+
+    def size(self):
+        return min(c.size() for c in self.cones)
+
+    def map_to(self, other, p):
+        nearest = np.stack([c.sdf(p) for c in self.cones], axis=1).argmin(axis=1)
+        out = np.empty_like(p)
+        for i, (a, b) in enumerate(zip(self.cones, other.cones)):
+            m = nearest == i
+            if m.any():
+                out[m] = a.map_to(b, p[m])
+        return out
+
+
 class Op:
     def __init__(self, name, shape, mode, k, group):
         self.name = name
@@ -276,6 +307,8 @@ BELLY = [(8, (0.13, 0.12, 0.145)), (20, (0.115, 0.11, 0.11)), (40, (0.132, 0.115
 PELVIS = [(8, (0.095, 0.085, 0.085)), (20, (0.1, 0.09, 0.085)), (40, (0.115, 0.095, 0.1))]
 GLUT_R = [(8, 0.05), (20, 0.065), (40, 0.08)]
 TAIL_R = [(8, 0.05), (10, 0.03), (11, 0.0)]
+# Crown–rump length in mm, to turn measured sizes into CRL units
+CRL_MM = [(8, 16), (12, 55), (16, 116), (20, 165), (24, 210), (28, 250), (32, 285), (36, 320), (40, 360)]
 
 
 def table3(pairs, g):
@@ -322,7 +355,150 @@ def groups_of(name):
 # --------------------------------------------------------------------------
 
 
-def build(g, overrides=None):
+def add_chain(add, name, pts, radii, k, per_span=3):
+    """A smooth tube through pts (Catmull-Rom), made of short round cones (helix rim, antihelix)."""
+    pts = [np.asarray(p, dtype=np.float64) for p in pts]
+    ext = [2 * pts[0] - pts[1]] + pts + [2 * pts[-1] - pts[-2]]
+    samples, rads = [], []
+    for i in range(len(pts) - 1):
+        p0, p1, p2, p3 = ext[i], ext[i + 1], ext[i + 2], ext[i + 3]
+        for t in np.linspace(0, 1, per_span, endpoint=False):
+            samples.append(0.5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t
+                                  + (3 * p1 - p0 - 3 * p2 + p3) * t ** 3))
+            rads.append(radii[i] + (radii[i + 1] - radii[i]) * t)
+    samples.append(pts[-1])
+    rads.append(radii[-1])
+    add(name, Chain([RoundCone(samples[i], samples[i + 1], rads[i], rads[i + 1]) for i in range(len(samples) - 1)]), k)
+
+
+def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
+    """Both ears: plate, helix rim, antihelix with its crus, concha, tragus, antitragus and
+    lobule. On the Ballard maturity scale the pinna is flat and soft around 24 weeks, well
+    curved by 32-34 and firm at term, so the rim and the antihelix stand out more with age.
+    Returns the left ear's centre for the rig."""
+    curl = smoothstep(18, 36, g)
+    H = 0.31 * R * (0.45 + 0.55 * feat)      # half the ear's height
+    a, b = math.radians(22) * (0.3 + 0.7 * feat), math.radians(15)   # early ears lie flatter
+    anchor = None
+    for sx, s in ((-1, "L"), (1, "R")):
+        out = X * sx
+        n_e = out * math.cos(a) + FWD * math.sin(a)        # faces out and a little forward
+        back0 = -FWD * math.cos(a) + out * math.sin(a)     # so the back edge stands off the head
+        up_e = UP * math.cos(b) + back0 * math.sin(b)      # and the top leans back
+        back = back0 * math.cos(b) - UP * math.sin(b)
+        frame = np.stack([back, up_e, n_e], axis=1)
+        E = at(0.88 * sx, -0.15 - 0.3 * (1 - feat), -0.14)
+
+        def ep(u, v, w):
+            return E + back * u * H + up_e * v * H + n_e * w * H
+
+        soft = 1 - smoothstep(10, 15, g)          # before ~14 weeks the ear is a low mound on the head
+        add("earRoot" + s, Ellipsoid(ep(-0.3, -0.05, 0.0), np.array([0.22, 0.72, 0.2]) * H, frame), (0.3 + 0.5 * soft) * H)
+        add("earPlate" + s, Ellipsoid(ep(0.12, 0.0, 0.17), np.array([0.6, 1.0, 0.12]) * H, frame), (0.25 + 0.6 * soft) * H)
+        rim_w = 0.2 + 0.12 * curl
+        rim = [(-0.12, 0.04, 0.2), (-0.28, 0.45, rim_w), (-0.08, 0.9, rim_w), (0.34, 0.9, rim_w),
+               (0.64, 0.5, rim_w), (0.7, 0.0, 0.92 * rim_w), (0.52, -0.48, 0.65 * rim_w)]
+        rr = (0.085 + 0.035 * curl) * H
+        add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [0.55 * rr, 0.85 * rr, rr, rr, rr, 0.95 * rr, 0.8 * rr], 0.1 * H)
+        ah_w = 0.2 + 0.08 * curl
+        ar = (0.05 + 0.03 * curl) * H
+        anti = [(0.12, -0.4, 0.85 * ah_w), (0.33, -0.04, ah_w), (0.34, 0.3, ah_w), (0.18, 0.62, 0.9 * ah_w)]
+        add_chain(add, "earAntihelix" + s, [ep(*p) for p in anti], [0.9 * ar, ar, ar, 0.8 * ar], 0.1 * H)
+        add_chain(add, "earCrus" + s, [ep(0.32, 0.28, ah_w), ep(0.12, 0.42, 0.95 * ah_w), ep(-0.06, 0.46, 0.9 * ah_w)],
+                  [0.9 * ar, 0.8 * ar, 0.65 * ar], 0.1 * H)
+        add("earLobule" + s, Ellipsoid(ep(0.2, -0.72, 0.12), np.array([0.3, 0.26, 0.11]) * H, frame), 0.2 * H)
+        sub("earConcha" + s, Ellipsoid(ep(-0.02, -0.12, 0.42), np.array([0.3, 0.36, 0.3]) * H, frame), 0.08 * H)
+        add("earTragus" + s, Ellipsoid(ep(-0.36, -0.2, 0.24), np.array([0.11, 0.15, 0.1]) * H, frame), 0.1 * H)
+        add("earAntitragus" + s, Ellipsoid(ep(0.12, -0.5, 0.25), np.array([0.1, 0.08, 0.08]) * H, frame), 0.1 * H)
+        if s == "L":
+            anchor = ep(0.1, 0.05, 0.4)
+    return anchor
+
+
+def genital_frame(ops, j):
+    """Pubic point on the skin, between the thighs, plus a frame: X across the body,
+    U up the belly, N out of the skin."""
+    P = j["pelvis"]
+    d = unit(vec(0, -0.5, 1.0))
+    t = 0.0
+    while eval_sdf(ops, (P + d * t)[None])[0] < 0 and t < 0.3:
+        t += 0.002
+    lo, hi = t - 0.002, t
+    for _ in range(30):
+        mid = 0.5 * (lo + hi)
+        if eval_sdf(ops, (P + d * mid)[None])[0] < 0:
+            lo = mid
+        else:
+            hi = mid
+    O = P + d * hi
+    N = unit(gradient(ops, O[None])[0])
+    U = unit(vec(0, 1, 0) - N * N[1])
+    return O, unit(np.cross(U, N)), U, N
+
+
+def add_genitals(add, sub, gframe, g, sex, grow, fat):
+    """External genitals, sized from fetal measurements and staged like the Ballard scale.
+    "X": genital tubercle and labioscrotal swellings, alike in girls and boys until ~12 weeks.
+    "M": penis (length 0.81 * GA - 8.8 mm) over a scrotum that fills out once the testes
+         descend (28-33 weeks).
+    "F": labia majora, labia minora and clitoris; the clitoris and minora are prominent in
+         mid-pregnancy and the majora close over them by term.
+    grow (0-1) scales the shapes so they can be grown onto the mesh in steps."""
+    O, Xg, U, N = gframe
+    frame = np.stack([Xg, U, N], axis=1)
+    s = grow
+
+    def gp(a, b, c):
+        return O + Xg * a + U * b + N * c
+
+    def along(d):
+        e2 = unit(np.cross(d, Xg))
+        return np.stack([unit(np.cross(e2, d)), e2, d], axis=1)
+
+    if sex == "X":
+        L = table([(8, 0.045), (12, 0.036)], g)
+        d = unit(N * math.cos(0.35) - U * math.sin(0.35))
+        add("genTubercle", RoundCone(O - N * 0.25 * L, O + d * 0.7 * L * s, 0.28 * L * s, 0.24 * L * s), 0.3 * L)
+        for sx, side in ((-1, "L"), (1, "R")):
+            add("genSwelling" + side, Ellipsoid(gp(0.45 * L * sx, -0.6 * L, -0.08 * L), np.array([0.36, 0.55, 0.2]) * L * s, frame), 0.4 * L)
+    elif sex == "M":
+        Lp = max(0.8068 * g - 8.84, 3.0) / table(CRL_MM, g)
+        desc = smoothstep(26, 33, g)
+        hw = table([(16, 0.017), (24, 0.022), (32, 0.03), (40, 0.034)], g)   # scrotum half-width
+        C = gp(0, -0.95 * hw - 0.15 * Lp, 0.0)
+        for sx, side in ((-1, "L"), (1, "R")):
+            rad = np.array([0.64, 0.8 + 0.22 * desc, 0.4 + 0.33 * desc]) * hw * s
+            add("genScrotum" + side, Ellipsoid(C + Xg * 0.4 * hw * sx, rad, frame), 0.6 * hw)
+        sub("genRaphe", RoundCone(C + U * 0.7 * hw + N * 0.5 * hw * s, C - U * 0.85 * hw + N * 0.45 * hw * s,
+                                  0.035 * hw, 0.015 * hw), 0.1 * hw, group="torso")
+        d = unit(N * math.cos(0.7) - U * math.sin(0.7))
+        r = 0.2 * Lp
+        base = O - N * 0.5 * r
+        tip = base + d * (0.25 + 0.62 * s) * Lp
+        add("genShaft", RoundCone(base, tip, r * (0.6 + 0.4 * s), r * (0.55 + 0.4 * s)), 0.5 * r)
+        add("genGlans", Ellipsoid(tip + d * 0.08 * Lp * s, np.array([1.1, 1.1, 1.35]) * r * s, along(d)), 0.3 * r)
+    elif sex == "F":
+        Lv = table([(16, 0.05), (24, 0.055), (40, 0.058)], g)          # mons to fourchette
+        maj = smoothstep(26, 40, g)
+        clit = table([(16, 1.0), (28, 0.85), (40, 0.5)], g)
+        mino = table([(16, 0.75), (24, 1.0), (32, 0.8), (40, 0.4)], g)
+        V = gp(0, -0.3 * Lv, 0.0)
+        for sx, side in ((-1, "L"), (1, "R")):
+            rad = np.array([0.17 + 0.07 * maj, 0.5, 0.08 + 0.12 * maj]) * Lv * s
+            add("genMajora" + side, Ellipsoid(V + Xg * (0.19 + 0.04 * maj) * Lv * sx, rad, frame), 0.14 * Lv)
+        add("genMons", Ellipsoid(gp(0, 0.3 * Lv, -0.1 * Lv), np.array([0.45, 0.32, 0.1 + 0.1 * fat]) * Lv * s, frame), 0.1 * Lv)
+        sub("genCleft", RoundCone(V + U * 0.4 * Lv + N * 0.07 * Lv * s, V - U * 0.48 * Lv + N * 0.05 * Lv * s,
+                                  0.03 * Lv, 0.03 * Lv), 0.05 * Lv, group="torso")
+        for sx, side in ((-1, "L"), (1, "R")):
+            rad = np.array([0.035, 0.3, 0.08 * mino]) * Lv * s
+            add("genMinora" + side, Ellipsoid(V + Xg * 0.035 * Lv * sx + N * 0.03 * Lv - U * 0.04 * Lv, rad, frame), 0.03 * Lv)
+        add("genClitoris", Ellipsoid(V + U * 0.36 * Lv + N * 0.06 * Lv, np.full(3, 0.1 * Lv * clit * s)), 0.05 * Lv)
+
+
+def build(g, overrides=None, sex=None, grow=1.0):
+    """The sculpt for gestational week g. sex is None (no external genitals), "X" (the
+    indifferent genital tubercle, same for everyone before ~12 weeks), "F" or "M";
+    grow scales the genitals from 0 to full size, used to grow them in steps."""
     j = skeleton(g, overrides)
     fat = smoothstep(22, 40, g)
     feat = smoothstep(8.5, 14, g)          # how formed the face, hands and feet are
@@ -342,8 +518,8 @@ def build(g, overrides=None):
     def add(name, shape, k):
         ops.append(Op(name, shape, "add", k, group_for(name)))
 
-    def sub(name, shape, k):
-        ops.append(Op(name, shape, "sub", k, "head"))
+    def sub(name, shape, k, group="head"):
+        ops.append(Op(name, shape, "sub", k, group))
 
     # --- torso --------------------------------------------------------------
     add("chest", Ellipsoid(j["chest"], table3(CHEST, g) + 0.014 * fat), 0.07)
@@ -352,10 +528,28 @@ def build(g, overrides=None):
     br = table(BACK_R, g)
     add("backUpper", RoundCone(j["backTop"], j["backMid"], br, br * 1.05), 0.06)
     add("backLower", RoundCone(j["backMid"], j["backLow"], br * 1.05, br), 0.06)
+    # Buttocks: two rounded masses that stay distinct (tighter blend), parted by the gluteal cleft
+    gr = table(GLUT_R, g) + 0.014 * fat
     for s in "LR":
-        add("glut" + s, Ellipsoid(j["glut" + s], np.full(3, table(GLUT_R, g) + 0.012 * fat)), 0.05)
+        c = j["glut" + s] + vec(0, -0.006, -0.012)
+        add("glut" + s, Ellipsoid(c, np.array([0.92, 1.0, 0.95]) * gr), 0.032 + 0.012 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
+    cleft = 0.0055 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
+    if cleft > 0:
+        # follow the valley between the buttocks, from the sacrum round to the perineum
+        torso = [op for op in ops if op.group == "torso"]
+        gc = 0.5 * (j["glutL"] + j["glutR"]) + vec(0, -0.006, -0.012)
+        pts = []
+        for th in np.radians(np.linspace(38, -75, 9)):
+            d = vec(0, math.sin(th), -math.cos(th))
+            t = 0.0
+            while eval_group(torso, (gc + d * t)[None])[0] < 0 and t < 0.3:
+                t += 0.002
+            pts.append(gc + d * (t - 0.45 * cleft))
+        taper = (0.15, 0.6, 0.95, 1.0, 1.0, 1.0, 0.9, 0.6, 0.3)
+        cones = [RoundCone(pts[i], pts[i + 1], cleft * taper[i], cleft * taper[i + 1]) for i in range(len(pts) - 1)]
+        sub("glutCleft", Chain(cones), 0.014, group="torso")
     navel_dir = unit(vec(0, -0.25, 1))
     navel = j["belly"] + navel_dir * table3(BELLY, g)[2] * 0.93
     add("navel", RoundCone(navel - navel_dir * 0.01, navel + navel_dir * 0.018, 0.021, 0.019), 0.012)
@@ -445,22 +639,19 @@ def build(g, overrides=None):
     add("nose", RoundCone(at(0, -0.2, 0.9), at(0, -0.42, 0.9 + 0.12 * fs), 0.07 * R * fs, 0.105 * R * fs), 0.07 * R)
     for sx, s in ((-1, "L"), (1, "R")):
         add("eye" + s, Ellipsoid(at(0.33 * sx, -0.18, 0.84), (0.17 * R, 0.1 * R * fs, 0.08 * R * fs), HR), 0.06 * R)
-        ear = 0.45 + 0.55 * feat
-        add("ear" + s, Ellipsoid(at(0.96 * sx, -0.12 - 0.3 * (1 - feat), -0.1), (0.07 * R * ear, 0.27 * R * ear, 0.18 * R * ear), HR), 0.05 * R)
+    ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat)
     add("lipUpper", Ellipsoid(at(0, -0.64, 0.86), (0.17 * R, 0.06 * R * fs, 0.07 * R * fs), HR), 0.06 * R)
     add("lipLower", Ellipsoid(at(0, -0.75, 0.83), (0.13 * R, 0.07 * R * fs, 0.07 * R * fs), HR), 0.06 * R)
 
     crease = max(0.024 * R, 0.0038) * feat
     for sx, s in ((-1, "L"), (1, "R")):
         sub("nostril" + s, Ellipsoid(at(0.065 * sx, -0.48, 1.0 + 0.1 * fs), np.full(3, max(0.04 * R, 0.004) * feat)), 0.02 * R)
-        ear = 0.45 + 0.55 * feat
-        sub("concha" + s, Ellipsoid(at(1.03 * sx, -0.14 - 0.3 * (1 - feat), -0.08), (0.06 * R * ear, 0.15 * R * ear, 0.1 * R * ear), HR), 0.02 * R)
     sub("mouth", RoundCone(at(-0.12, -0.695, 0.9), at(0.12, -0.695, 0.9), crease * 0.9, crease * 0.9), 0.02 * R)
 
     lid_lines = [RoundCone(at(0.21 * sx, -0.215, 0.925), at(0.45 * sx, -0.185, 0.835), 0.004, 0.004) for sx in (-1, 1)]
     anchors = {
         "head": at(-0.25, 0.45, 0.6),
-        "ear": at(-0.99, -0.12, -0.1),
+        "ear": ear_anchor,
         "heart": j["chest"] + vec(-0.035, 0.02, table3(CHEST, g)[2] * 0.6),
         "hand": j["wrL"] + unit(j["tipL"] - j["wrL"]) * 0.3 * hand_len,
         "knee": j["knL"],
@@ -468,6 +659,11 @@ def build(g, overrides=None):
         "footL": j["anL"] + unit(j["toeL"] - j["anL"]) * 0.45 * foot_len,
         "footR": j["anR"] + unit(j["toeR"] - j["anR"]) * 0.45 * foot_len,
     }
+    gframe = genital_frame(ops, j)
+    anchors["groin"] = gframe[0]
+    if sex:
+        add_genitals(add, sub, gframe, g, sex, grow, fat)
+    ops.gframe = gframe
     ops.lid_lines = lid_lines if feat > 0.5 else []
     return ops, anchors
 
@@ -626,6 +822,85 @@ def ambient_occlusion(ops, p, nrm, steps=5, dist=0.012):
     return np.clip(1.0 - 4.5 * occ / dist / steps, 0.0, 1.0)
 
 
+def local_ops(ops, centre, radius):
+    """Only the primitives near centre, for fast evaluation in a small region."""
+    near = Sculpt()
+    near.junctions = ops.junctions
+    for op in ops:
+        a, b = op.shape.aabb()
+        if np.all(a - op.k < centre + radius) and np.all(b + op.k > centre - radius):
+            near.append(op)
+    return near
+
+
+def march_along(ops, p, n, max_t=0.1, iterations=48):
+    """Signed distance along n from p to the surface: outwards when p is inside, inwards when outside."""
+    d0 = eval_sdf(ops, p)
+    sign = np.where(d0 < 0, 1.0, -1.0)
+    t = np.zeros(len(p))
+    active = np.abs(d0) > 1e-5
+    for _ in range(iterations):
+        if not active.any():
+            break
+        d = eval_sdf(ops, p[active] + n[active] * t[active, None])
+        step = np.maximum(np.abs(d), 2e-5)
+        crossed = np.sign(d) != -sign[active]
+        t_act = t[active] + np.where(crossed, 0.0, sign[active] * step)
+        t[active] = np.clip(t_act, -max_t, max_t)
+        idx = np.flatnonzero(active)
+        active[idx[crossed | (np.abs(t_act) >= max_t)]] = False
+    return t
+
+
+def adjacency(edges, n):
+    import scipy.sparse as sp
+    i, j = edges[:, 0], edges[:, 1]
+    A = sp.coo_matrix((np.ones(len(i) * 2), (np.r_[i, j], np.r_[j, i])), shape=(n, n)).tocsr()
+    A.data[:] = 1.0
+    return A, np.maximum(np.asarray(A.sum(axis=1)).ravel(), 1)
+
+
+def relax_masked(ops, p, A, deg, idx, weight, iterations=8, lam=0.5):
+    """Even out vertex spacing along the surface for the vertices idx only (weighted)."""
+    rows = A[idx]
+    for _ in range(iterations):
+        q = p[idx]
+        lap = (rows @ p) / deg[idx, None] - q
+        g = gradient(ops, q)
+        nrm = g / np.maximum(np.linalg.norm(g, axis=1, keepdims=True), 1e-9)
+        lap -= np.einsum("ij,ij->i", lap, nrm)[:, None] * nrm
+        p[idx] = project(ops, q + lam * weight[:, None] * lap, iterations=2, max_step=0.006)
+    return p
+
+
+def grow_genitals(g, sex, start, idx, weight, A, deg, steps=(0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0)):
+    """Grow the genital shapes for week g out of the neutral skin in a few steps: each step
+    pushes the region's vertices along their normals onto the new surface and relaxes them,
+    so vertices spread up the new shapes instead of piling up at their tips."""
+    neutral = build(g)[0]
+    centre = neutral.gframe[0]
+    prev = local_ops(neutral, centre, 0.16)
+    p = start.copy()
+    for s in steps:
+        ops_s = local_ops(build(g, sex=sex, grow=s)[0], centre, 0.16)
+        q = p[idx]
+        nrm = gradient(prev, q)
+        nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-9)
+        p[idx] = q + nrm * march_along(ops_s, q, nrm)[:, None]
+        p = relax_masked(ops_s, p, A, deg, idx, weight, iterations=10)
+        prev = ops_s
+    p[idx] = project(prev, p[idx], iterations=3, max_step=0.004)
+    return p
+
+
+def vertex_normals(p, tris):
+    fn = np.cross(p[tris[:, 1]] - p[tris[:, 0]], p[tris[:, 2]] - p[tris[:, 0]])
+    n = np.zeros_like(p)
+    for k in range(3):
+        np.add.at(n, tris[:, k], fn)
+    return n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+
+
 # --------------------------------------------------------------------------
 # Blender
 # --------------------------------------------------------------------------
@@ -650,7 +925,28 @@ def apply_modifiers(obj):
     bpy.data.meshes.remove(old)
 
 
-def blender_mesh(verts, faces, target_tris):
+def _decimate(obj, ratio, weights=None):
+    """Collapse-decimate; with weights, only vertices of weight 1 may collapse."""
+    if weights is not None:
+        group = obj.vertex_groups.new(name="Decimate")
+        group.add([int(i) for i in np.flatnonzero(weights)], 1.0, "REPLACE")
+    dec = obj.modifiers.new("Decimate", "DECIMATE")
+    dec.ratio = min(1.0, ratio)
+    dec.use_collapse_triangulate = True
+    if weights is not None:
+        dec.vertex_group = "Decimate"
+    apply_modifiers(obj)
+    obj.vertex_groups.clear()
+
+
+def _face_count(obj):
+    return sum(len(p.vertices) - 2 for p in obj.data.polygons)
+
+
+def blender_mesh(verts, faces, target_tris, details=()):
+    """Mesh from marching cubes: weld, smooth lightly and decimate to target_tris.
+    details: (inside(points) -> bool mask, keep) regions that are decimated less, so small
+    anatomy (ears, the groin where the genital shapes grow) keeps enough vertices."""
     import bpy
     import bmesh  # only importable once bpy is loaded
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -669,11 +965,26 @@ def blender_mesh(verts, faces, target_tris):
     smooth.factor = 0.5
     smooth.iterations = 2
     apply_modifiers(obj)
-    tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
-    dec = obj.modifiers.new("Decimate", "DECIMATE")
-    dec.ratio = min(1.0, target_tris / tris)
-    dec.use_collapse_triangulate = True
-    apply_modifiers(obj)
+    if not details:
+        _decimate(obj, target_tris / _face_count(obj))
+    else:
+        def masks():
+            co, tri, _ = read_mesh(obj)
+            return [inside(co) for inside, _ in details], tri
+        ms, tri = masks()
+        protected = np.any(ms, axis=0)
+        detail_tris = int(np.all(protected[tri], axis=1).sum())
+        total = len(tri)
+        # 1. everything outside the detail regions, down to the body budget
+        _decimate(obj, (target_tris + detail_tris) / total, ~protected)
+        # 2. each detail region on its own, keeping the given share of its triangles
+        for i, (_, keep) in enumerate(details):
+            if keep >= 1.0:
+                continue
+            ms, tri = masks()
+            region_tris = int(np.all(ms[i][tri], axis=1).sum())
+            total = len(tri)
+            _decimate(obj, (total - (1 - keep) * region_tris) / total, ms[i])
     for poly in obj.data.polygons:
         poly.use_smooth = True
     return obj
@@ -716,6 +1027,156 @@ def set_colors(obj, rgb, alpha):
 
 
 # --------------------------------------------------------------------------
+# GLB post-processing (after gltfpack)
+# --------------------------------------------------------------------------
+
+COMPONENT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
+N_COMPONENTS = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
+
+
+def read_glb(path):
+    import struct
+    with open(path, "rb") as fh:
+        data = fh.read()
+    json_len = struct.unpack_from("<I", data, 12)[0]
+    gltf = json.loads(data[20:20 + json_len])
+    off = 20 + json_len
+    bin_len = struct.unpack_from("<I", data, off)[0]
+    return gltf, data[off + 8:off + 8 + bin_len]
+
+
+def accessor_array(gltf, binary, index):
+    acc = gltf["accessors"][index]
+    dtype = np.dtype(COMPONENT[acc["componentType"]])
+    nc = N_COMPONENTS[acc["type"]]
+    count = acc["count"]
+    el = dtype.itemsize * nc
+    if "bufferView" not in acc:
+        return np.zeros((count, nc), dtype)
+    bv = gltf["bufferViews"][acc["bufferView"]]
+    start = bv.get("byteOffset", 0) + acc.get("byteOffset", 0)
+    stride = bv.get("byteStride", el)
+    raw = np.frombuffer(binary, np.uint8, count=(count - 1) * stride + el, offset=start)
+    rows = np.lib.stride_tricks.as_strided(raw, shape=(count, el), strides=(stride, 1))
+    return np.ascontiguousarray(rows).view(dtype).reshape(count, nc)
+
+
+class GlbWriter:
+    def __init__(self):
+        self.chunks, self.views, self.accessors, self.size = [], [], [], 0
+
+    def view(self, data, stride=None, target=None):
+        pad = -self.size % 4
+        if pad:
+            self.chunks.append(b"\0" * pad)
+            self.size += pad
+        bv = {"buffer": 0, "byteOffset": self.size, "byteLength": len(data)}
+        if stride:
+            bv["byteStride"] = stride
+        if target:
+            bv["target"] = target
+        self.chunks.append(data)
+        self.size += len(data)
+        self.views.append(bv)
+        return len(self.views) - 1
+
+    def dense(self, arr, meta, indices=False):
+        """Vertex attributes padded to 4-byte elements (glTF alignment rules)."""
+        n, nc = arr.shape
+        el = arr.dtype.itemsize * nc
+        if indices:
+            bv = self.view(arr.tobytes(), target=34963)
+        else:
+            stride = (el + 3) // 4 * 4
+            rows = np.zeros((n, stride), np.uint8)
+            rows[:, :el] = arr.view(np.uint8).reshape(n, el)
+            bv = self.view(rows.tobytes(), stride=stride if stride != el else None, target=34962)
+        self.accessors.append(dict(meta, bufferView=bv))
+        return len(self.accessors) - 1
+
+    def sparse(self, arr, meta, where, index_view):
+        acc = dict(meta)
+        acc.pop("bufferView", None)
+        acc["sparse"] = {"count": int(len(where)), "indices": dict(index_view),
+                         "values": {"bufferView": self.view(np.ascontiguousarray(arr[where]).tobytes())}}
+        self.accessors.append(acc)
+        return len(self.accessors) - 1
+
+    def save(self, gltf, path):
+        import struct
+        binary = b"".join(self.chunks)
+        binary += b"\0" * (-len(binary) % 4)
+        gltf["buffers"] = [{"byteLength": len(binary)}]
+        gltf["bufferViews"] = self.views
+        gltf["accessors"] = self.accessors
+        js = json.dumps(gltf, separators=(",", ":")).encode()
+        js += b" " * (-len(js) % 4)
+        with open(path, "wb") as fh:
+            fh.write(struct.pack("<III", 0x46546C67, 2, 28 + len(js) + len(binary)))
+            fh.write(struct.pack("<II", len(js), 0x4E4F534A) + js)
+            fh.write(struct.pack("<II", len(binary), 0x004E4942) + binary)
+
+
+def finalize_glb(src, dst, basis, tris, extra_targets):
+    """Repack a gltfpack-ed GLB: morph targets that only move part of the body (kick, wave)
+    become sparse, and extra_targets [(name, neutral_positions, delta, normals)] are added as
+    sparse targets; their normal deltas take the shaped surface's normals relative to the
+    neutral mesh normals. basis and tris are the mesh in build order; the
+    GLB's vertices are matched to them by position."""
+    from scipy.spatial import cKDTree
+    gltf, binary = read_glb(src)
+    mesh = gltf["meshes"][0]
+    prim = mesh["primitives"][0]
+    node = next(n for n in gltf["nodes"] if n.get("mesh") == 0)
+    scale = np.array(node.get("scale", [1, 1, 1]))
+    shift = np.array(node.get("translation", [0, 0, 0]))
+    meta = [{k: v for k, v in a.items() if k not in ("bufferView", "byteOffset")} for a in gltf["accessors"]]
+
+    positions = accessor_array(gltf, binary, prim["attributes"]["POSITION"]).astype(np.float64) * scale + shift
+    dist, order = cKDTree(basis).query(positions)
+    if dist.max() > 2e-3:
+        raise RuntimeError(f"GLB vertices don't match the basis (max distance {dist.max():.4f})")
+
+    out = GlbWriter()
+    attributes = {name: out.dense(accessor_array(gltf, binary, i), meta[i]) for name, i in prim["attributes"].items()}
+    indices = out.dense(accessor_array(gltf, binary, prim["indices"]).ravel()[:, None], meta[prim["indices"]], indices=True)
+
+    def add_target(arrays, metas):
+        moved = np.zeros(len(positions), bool)
+        for arr in arrays.values():
+            moved |= np.any(arr != 0, axis=1)
+        if moved.mean() > 0.5:
+            return {k: out.dense(arrays[k], metas[k]) for k in arrays}
+        where = np.flatnonzero(moved)
+        kind = 5123 if len(positions) < 65536 else 5125
+        index_view = {"bufferView": out.view(where.astype(COMPONENT[kind]).tobytes()), "componentType": kind}
+        return {k: out.sparse(arrays[k], metas[k], where, index_view) for k in arrays}
+
+    targets, names = [], list(mesh.get("extras", {}).get("targetNames", []))
+    for t in prim.get("targets", []):
+        targets.append(add_target({k: accessor_array(gltf, binary, i) for k, i in t.items()}, {k: meta[i] for k, i in t.items()}))
+
+    pos_meta = meta[prim["targets"][0]["POSITION"]]
+    nrm_meta = meta[prim["targets"][0]["NORMAL"]]
+    for name, neutral, delta, normals in extra_targets:
+        dq = np.round(delta[order] / scale).astype(np.int16)
+        dn = (normals - vertex_normals(neutral, tris))[order]
+        dnq = np.clip(np.round(dn * 127), -127, 127).astype(np.int8)
+        pm = dict(pos_meta, min=dq.min(axis=0).tolist(), max=dq.max(axis=0).tolist())
+        targets.append(add_target({"POSITION": dq, "NORMAL": dnq}, {"POSITION": pm, "NORMAL": nrm_meta}))
+        names.append(name)
+
+    prim["attributes"] = attributes
+    prim["indices"] = indices
+    prim["targets"] = targets
+    mesh.setdefault("extras", {})["targetNames"] = names
+    if "weights" in mesh:
+        mesh["weights"] = mesh["weights"] + [0.0] * (len(targets) - len(mesh["weights"]))
+    out.save(gltf, dst)
+    return len(positions)
+
+
+# --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
 
@@ -751,14 +1212,23 @@ def wave_pose():
     return pose
 
 
+# Sex keys: the indifferent tubercle at 8 and 12 weeks (shared), then girl and boy shapes at
+# each growth week. They are deltas on top of that week's neutral body, kept out of the GPU
+# morph texture: the page blends them on the CPU (they only move a few hundred vertices).
+SEX_KEYS = [("SEX_8", 8, "X"), ("SEX_12", 12, "X")] + [(f"{s}{w}", w, s) for s in "FM" for w in (16, 20, 24, 28, 32, 36, 40)]
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out", required=True, help="final GLB")
     ap.add_argument("--rig", required=True)
-    ap.add_argument("--h", type=float, default=0.0034, help="grid spacing for marching cubes")
-    ap.add_argument("--tris", type=int, default=30000)
+    ap.add_argument("--raw", help="Blender export before gltfpack (default: next to --out, .raw.glb)")
+    ap.add_argument("--gltfpack", default="npx --yes gltfpack", help="gltfpack command")
+    ap.add_argument("--h", type=float, default=0.0026, help="grid spacing for marching cubes")
+    ap.add_argument("--tris", type=int, default=27000, help="triangle budget outside the ears and groin")
     args = ap.parse_args(argv)
+    raw = args.raw or args.out.replace(".glb", ".raw.glb")
     t0 = time.time()
 
     base_ops, base_anchors = build(BASE_WEEK)
@@ -767,7 +1237,22 @@ def main():
     verts, faces = marching_cubes(d, lo, args.h)
     print(f"marching cubes: {len(verts)} verts, {len(faces)} tris")
 
-    obj = blender_mesh(verts, faces, args.tris)
+    # Ears and the groin keep more vertices: the ears for their folds, the groin so the
+    # genital shapes (sex keys) have vertices to grow from
+    groin = base_anchors["groin"]
+    ear_ops = [op for op in base_ops if op.name.startswith("ear")]
+
+    def near_ears(p):
+        return np.min([op.shape.sdf(p) for op in ear_ops], axis=0) < 0.008
+
+    def groin_core(p):
+        return np.linalg.norm(p - groin, axis=1) < 0.045
+
+    def groin_ring(p):
+        r = np.linalg.norm(p - groin, axis=1)
+        return (r >= 0.045) & (r < 0.085)
+
+    obj = blender_mesh(verts, faces, args.tris, details=((near_ears, 0.4), (groin_core, 1.0), (groin_ring, 0.5)))
     basis, tris, normals = read_mesh(obj)
     basis = project(base_ops, basis, iterations=2, max_step=0.004)
     write_positions(obj, basis)
@@ -793,12 +1278,14 @@ def main():
         for key, val in built[g][1].items():
             rig["anchors"].setdefault(key, []).append((val - center).round(5).tolist())
     # Walk outwards from the basis week so each step is a small change
+    neutral = {BASE_WEEK: basis}
     for chain in ([w for w in RIG_WEEKS if w < BASE_WEEK][::-1], [w for w in RIG_WEEKS if w > BASE_WEEK]):
         prev_ops, prev = base_ops, basis
         for g in chain:
             ops_g = built[g][0]
-            prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=8 if g < 16 else 4)
+            prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=14 if g < 16 else 4)
             prev_ops = ops_g
+            neutral[g] = prev
             add_shape_key(obj, f"W{g}", prev - center)
 
     for name, overrides in (("KICK_L", kick_pose("L")), ("KICK_R", kick_pose("R")), ("WAVE_L", wave_pose())):
@@ -807,6 +1294,31 @@ def main():
         if name.startswith("KICK"):
             rig[name] = (anchors_a["foot" + name[-1]] - center).round(5).tolist()
 
+    # Sex keys, grown onto each week's neutral body inside the groin region
+    A, deg = adjacency(edges, len(basis))
+    r = np.linalg.norm(basis - groin, axis=1)
+    region = np.flatnonzero(r < 0.085)
+    weight = 1 - np.array([smoothstep(0.06, 0.085, x) for x in r[region]])
+    sex_targets = []
+    for name, g, sex in SEX_KEYS:
+        start = neutral[g]
+        o = built[g][0].gframe[0]
+        outside = np.setdiff1d(np.arange(len(basis)), region)
+        margin = np.linalg.norm(start[outside] - o, axis=1).min()
+        shaped = grow_genitals(g, sex, start, region, weight, A, deg)
+        delta = shaped - start
+        normals = vertex_normals(shaped, tris)
+        ops_s = local_ops(build(g, sex=sex)[0], o, 0.16)
+        # half mesh, half SDF normals (sampled wide, so narrow creases don't flicker): smooth on
+        # small round shapes where the mesh is coarse, steady inside the clefts
+        n_sdf = gradient(ops_s, shaped[region], eps=0.0025)
+        n_sdf /= np.maximum(np.linalg.norm(n_sdf, axis=1, keepdims=True), 1e-9)
+        blend = 0.5 * n_sdf * weight[:, None] + normals[region] * (1 - 0.5 * weight[:, None])
+        normals[region] = blend / np.maximum(np.linalg.norm(blend, axis=1, keepdims=True), 1e-9)
+        print(f"  {name}: {int((np.linalg.norm(delta, axis=1) > 1e-5).sum())} verts moved, "
+              f"max {np.linalg.norm(delta, axis=1).max():.4f}, region margin {margin:.3f}")
+        sex_targets.append((name, start - center, delta, normals))
+
     # Basis last: shape keys above were relative to the uncentred basis
     write_positions(obj, basis - center)
     obj.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", to_blender(basis - center).ravel())
@@ -814,6 +1326,8 @@ def main():
     # Skin colour detail: occlusion in creases, a little warmth on cheeks, lips, fingertips and knees
     _, _, normals = read_mesh(obj)
     ao = ambient_occlusion(base_ops, basis, normals)
+    for _ in range(4):   # soften: on a dense mesh raw occlusion speckles at sharp junctions (shoulders)
+        ao = 0.5 * ao + 0.5 * (A @ ao) / deg
     warm = np.zeros(len(basis))
     by_name = {op.name: op for op in base_ops}
     for name, amount in (("cheekL", 0.55), ("cheekR", 0.55), ("lipUpper", 0.8), ("lipLower", 0.8), ("nose", 0.35),
@@ -836,7 +1350,7 @@ def main():
 
     import bpy
     bpy.ops.export_scene.gltf(
-        filepath=args.out,
+        filepath=raw,
         export_format="GLB",
         use_selection=False,
         export_yup=True,
@@ -851,7 +1365,17 @@ def main():
     )
     with open(args.rig, "w") as fh:
         json.dump(rig, fh, separators=(",", ":"))
-    print(f"wrote {args.out} and {args.rig} in {time.time() - t0:.1f}s")
+
+    # Quantize with gltfpack (KHR_mesh_quantization, no decoder needed), then add the sex keys
+    import os
+    import shlex
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        packed = os.path.join(tmp, "packed.glb")
+        subprocess.run(shlex.split(args.gltfpack) + ["-i", raw, "-o", packed, "-kn", "-ke"], check=True)
+        n = finalize_glb(packed, args.out, basis - center, tris, sex_targets)
+    print(f"wrote {args.out} ({os.path.getsize(args.out) / 1e6:.2f} MB, {n} verts) and {args.rig} in {time.time() - t0:.1f}s")
 
 
 if __name__ == "__main__":

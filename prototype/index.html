@@ -163,6 +163,29 @@
   .bpm svg { width: 14px; height: 14px; }
   .bpm.beat svg { transform: scale(1.18); }
   .bpm svg { transition: transform 90ms ease-out; }
+  .sex-chip {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 12px 4px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-shadow: none;
+  }
+  .sex-chip svg { width: 14px; height: 14px; color: var(--violet); }
+  .sex-chip[data-sex="F"] svg, .sex-chip[data-sex="M"] svg { color: var(--peach); }
+  .sex-panel .modes { margin-top: 14px; }
+  .sex-panel .modes button { flex: 1 1 auto; padding-inline: 7px; font-size: 12.5px; }
+  .sex-panel p { font-size: 13px; color: var(--muted); }
+  .sex-panel .sex-early { color: var(--peach); }
 
   .scan-label {
     position: fixed;
@@ -595,6 +618,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.4 2.5.2.3.6.3.8 0 .8-1.4 2.3-2.5 4.4-2.5 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>
       <span id="bpm-text">~146 bpm</span>
     </span>
+    <button type="button" class="sex-chip" id="sex-chip" data-sex="unknown" aria-haspopup="dialog" aria-expanded="false" aria-controls="sex-panel">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="9" r="5.5"/><path d="M9.5 8.5h.01M14.5 8.5h.01M10 11.3c1.2.9 2.8.9 4 0M7 20.5c1.2-2.6 3-3.8 5-3.8s3.8 1.2 5 3.8"/></svg>
+      <span id="sex-chip-text">Sex: not known yet</span>
+    </button>
   </div>
 </section>
 
@@ -613,6 +640,22 @@
     </button>
   </div>
   <p id="info-body"></p>
+</aside>
+
+<aside class="info sex-panel" id="sex-panel" role="dialog" aria-labelledby="sex-title" hidden>
+  <div class="info-head">
+    <h2 id="sex-title">Baby's sex</h2>
+    <button type="button" class="icon-btn" id="sex-close" aria-label="Close">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modes" role="radiogroup" aria-labelledby="sex-title" id="sex-options">
+    <button type="button" role="radio" data-sex="unknown" aria-checked="true">Not known</button>
+    <button type="button" role="radio" data-sex="F" aria-checked="false">Girl</button>
+    <button type="button" role="radio" data-sex="M" aria-checked="false">Boy</button>
+  </div>
+  <p id="sex-hint"></p>
+  <p class="sex-early" id="sex-early" hidden></p>
 </aside>
 
 <nav class="rail" aria-label="Scene tools">
@@ -812,10 +855,20 @@ const STR = {
     close: 'Close',
     loading: 'Loading Luna View…',
     noWebgl: "This browser can't show the 3D scene. Try a recent version of Chrome, Safari, Edge or Firefox.",
-    sceneAlt: (w, d, len, fruit) => `3D view of your baby at week ${w}, day ${d}: curled up in the womb, about ${len} long, the size of ${fruit}.`,
+    sceneAlt: (who, w, d, len, fruit) => `3D view of ${who} at week ${w}, day ${d}: curled up in the womb, about ${len} long, the size of ${fruit}.`,
     moonAlt: (w) => `A glowing moon that grows with your pregnancy, now at week ${w}.`,
     scan: (w, d) => `4D · GA ${w}w${d}d`,
     tagline: 'Watch your little moon grow.',
+    taglineSex: { F: 'Watch your baby girl grow.', M: 'Watch your baby boy grow.' },
+    sex: {
+      title: "Baby's sex",
+      chip: { unknown: 'Sex: not known yet', F: "It's a girl", M: "It's a boy" },
+      options: { unknown: 'Not known', F: 'Girl', M: 'Boy' },
+      hint: 'Often seen at the 18–22 week anatomy scan, or from about week 10 with a NIPT blood test. Until you choose, the model stays neutral.',
+      early: 'Until about week 12, girls and boys look the same on the outside, so the model shows this shared early stage.',
+      toast: { unknown: 'Showing the model without sex', F: 'Showing a baby girl', M: 'Showing a baby boy' },
+      who: { unknown: 'your baby', F: 'your baby girl', M: 'your baby boy' },
+    },
     hotspots: {
       head: {
         title: 'Face & brain',
@@ -898,10 +951,20 @@ const STR = {
     close: 'Затвори',
     loading: 'Зареждане на Luna View…',
     noWebgl: 'Този браузър не може да покаже 3D сцената. Опитай с нова версия на Chrome, Safari, Edge или Firefox.',
-    sceneAlt: (w, d, len, fruit) => `3D изглед на бебето в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}, колкото ${fruit}.`,
+    sceneAlt: (who, w, d, len, fruit) => `3D изглед на ${who} в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}, колкото ${fruit}.`,
     moonAlt: (w) => `Светеща луна, която расте заедно с бременността, сега в седмица ${w}.`,
     scan: (w, d) => `4D · ${w} г.с. + ${d} д.`,
     tagline: 'Гледай как расте твоята малка луна.',
+    taglineSex: { F: 'Гледай как расте твоето момиченце.', M: 'Гледай как расте твоето момченце.' },
+    sex: {
+      title: 'Пол на бебето',
+      chip: { unknown: 'Пол: още не знаем', F: 'Момиче е', M: 'Момче е' },
+      options: { unknown: 'Не знаем', F: 'Момиче', M: 'Момче' },
+      hint: 'Полът често се вижда на морфологичния преглед в 18–22 седмица или от около 10 седмица с кръвен тест (NIPT). Докато не избереш, моделът остава неутрален.',
+      early: 'До около 12 седмица момичетата и момчетата изглеждат еднакво отвън, затова моделът показва този общ ранен етап.',
+      toast: { unknown: 'Моделът е показан без пол', F: 'Показваме момиченце', M: 'Показваме момченце' },
+      who: { unknown: 'бебето', F: 'момиченцето', M: 'момченцето' },
+    },
     hotspots: {
       head: {
         title: 'Лице и мозък',
@@ -1029,18 +1092,21 @@ const state = {
   listening: false,
   playing: false,
   activeHotspot: null,
+  sex: 'unknown',
 };
+const SEXES = ['unknown', 'F', 'M'];
 
 try {
   const saved = JSON.parse(localStorage.getItem('lunabump.lunaView') || '{}');
   if (saved.lang in STR) state.lang = saved.lang;
   if (saved.mode in MODES) state.mode = saved.mode;
   if (['auto', '0', '1', '2', '3'].includes(saved.quality)) state.quality = saved.quality;
+  if (SEXES.includes(saved.sex)) state.sex = saved.sex;
 } catch (err) { /* storage unavailable: keep defaults */ }
 
 function persist() {
   try {
-    localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality }));
+    localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality, sex: state.sex }));
   } catch (err) { /* storage unavailable */ }
 }
 
@@ -1659,6 +1725,7 @@ async function loadSculptedBaby() {
     let mesh = null;
     gltf.scene.traverse((o) => { if (o.isMesh) mesh = o; });
     if (!mesh || !mesh.morphTargetDictionary) throw new Error('model has no morph targets');
+    const sexKeys = splitSexTargets(mesh);
     const material = babyMaterial.clone();
     material.vertexColors = true;
     material.onBeforeCompile = babyMaterial.onBeforeCompile;
@@ -1670,7 +1737,7 @@ async function loadSculptedBaby() {
     gltfBaby.group.visible = true;
     if (babyMesh) babyMesh.visible = false;
     applyMode(state.mode);
-    debugLog(`sculpted model ready: ${mesh.geometry.attributes.position.count} vertices, ${Object.keys(mesh.morphTargetDictionary).length} morph targets`);
+    debugLog(`sculpted model ready: ${mesh.geometry.attributes.position.count} vertices, ${Object.keys(mesh.morphTargetDictionary).length} morph targets, ${sexKeys} sex shapes`);
   } catch (err) {
     console.warn('Sculpted model unavailable, keeping the procedural body.', err);
   }
@@ -1694,6 +1761,112 @@ function updateGltfBaby(ga, now) {
   if (ek > 0) inf[dict[`KICK_${motion.kick.side}`]] = ek * grown;
   const ew = envelope(motion.wave, now);
   if (ew > 0) inf[dict.WAVE_L] = ew * grown * (0.85 + 0.15 * Math.sin((now - motion.wave.t0) * 13));
+}
+
+/* ---------- Sex shapes: sparse morphs blended on the CPU ----------
+   The model carries SEX_8 and SEX_12 (the genital tubercle, alike in girls and boys) and
+   girl and boy shapes F16…F40 and M16…M40, each a delta on that week's neutral body. They
+   move only a few hundred vertices, so rather than adding 16 layers to the GPU morph
+   texture they are added to the base mesh here, and only when the week or the choice changes. */
+
+const SEX_KEY = /^(SEX_\d+|[FM]\d+)$/;
+const SEX_WEEKS = [16, 20, 24, 28, 32, 36, 40];
+const sexShape = { keys: {}, blend: { F: 0, M: 0 }, signature: '', basePos: null, baseNrm: null, lo: 0, hi: 0 };
+
+function splitSexTargets(mesh) {
+  const geo = mesh.geometry;
+  const names = [];
+  for (const [name, i] of Object.entries(mesh.morphTargetDictionary)) names[i] = name;
+  const keep = [];
+  let lo = Infinity;
+  let hi = -1;
+  names.forEach((name, i) => {
+    const pos = geo.morphAttributes.position[i];
+    const nrm = geo.morphAttributes.normal ? geo.morphAttributes.normal[i] : null;
+    if (!SEX_KEY.test(name)) {
+      keep.push({ name, pos, nrm });
+      return;
+    }
+    const idx = [];
+    for (let v = 0; v < pos.count; v++) {
+      if (pos.getX(v) || pos.getY(v) || pos.getZ(v) || (nrm && (nrm.getX(v) || nrm.getY(v) || nrm.getZ(v)))) idx.push(v);
+    }
+    const dp = new Float32Array(idx.length * 3);
+    const dn = new Float32Array(idx.length * 3);
+    idx.forEach((v, k) => {
+      dp[3 * k] = pos.getX(v); dp[3 * k + 1] = pos.getY(v); dp[3 * k + 2] = pos.getZ(v);
+      if (nrm) { dn[3 * k] = nrm.getX(v); dn[3 * k + 1] = nrm.getY(v); dn[3 * k + 2] = nrm.getZ(v); }
+    });
+    sexShape.keys[name] = { idx: Uint32Array.from(idx), dp, dn };
+    if (idx.length) { lo = Math.min(lo, idx[0]); hi = Math.max(hi, idx[idx.length - 1]); }
+  });
+  if (hi < 0) return 0;
+  geo.morphAttributes.position = keep.map((k) => k.pos);
+  if (geo.morphAttributes.normal) geo.morphAttributes.normal = keep.map((k) => k.nrm);
+  mesh.morphTargetDictionary = Object.fromEntries(keep.map((k, j) => [k.name, j]));
+  mesh.morphTargetInfluences = new Array(keep.length).fill(0);
+  // Editable float copies of the base attributes (the file stores them quantized)
+  for (const [attrName, store] of [['position', 'basePos'], ['normal', 'baseNrm']]) {
+    const src = geo.attributes[attrName];
+    const arr = new Float32Array(src.count * 3);
+    for (let v = 0; v < src.count; v++) { arr[3 * v] = src.getX(v); arr[3 * v + 1] = src.getY(v); arr[3 * v + 2] = src.getZ(v); }
+    sexShape[store] = arr.slice();
+    const attr = new THREE.BufferAttribute(arr, 3);
+    attr.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute(attrName, attr);
+  }
+  sexShape.lo = lo;
+  sexShape.hi = hi;
+  return Object.keys(sexShape.keys).length;
+}
+
+function addSexWeights(ga, sex, amount, out) {
+  if (amount <= 0) return;
+  const keys = [[8, 'SEX_8'], [12, 'SEX_12'], ...SEX_WEEKS.map((w) => [w, sex + w])];
+  const g = THREE.MathUtils.clamp(ga, 8, 40);
+  let i = keys.findIndex(([w]) => w > g);
+  if (i === -1) i = keys.length - 1;
+  const [w0, k0] = keys[i - 1];
+  const [w1, k1] = keys[i];
+  const f = (g - w0) / (w1 - w0);
+  out[k0] = (out[k0] || 0) + amount * (1 - f);
+  out[k1] = (out[k1] || 0) + amount * f;
+}
+
+function updateSexShape(ga, dt) {
+  if (!sexShape.basePos) return;
+  const speed = reduceMotionQuery.matches ? 1e6 : 2.5;   // soft cross-fade when the choice changes
+  for (const sx of ['F', 'M']) {
+    const target = state.sex === sx ? 1 : 0;
+    const b = sexShape.blend[sx];
+    sexShape.blend[sx] = target > b ? Math.min(target, b + dt * speed) : Math.max(target, b - dt * speed);
+  }
+  const weights = {};
+  addSexWeights(ga, 'F', sexShape.blend.F, weights);
+  addSexWeights(ga, 'M', sexShape.blend.M, weights);
+  const signature = Object.entries(weights).map(([k, w]) => `${k}:${w.toFixed(4)}`).join('|');
+  if (signature === sexShape.signature) return;
+  sexShape.signature = signature;
+  const geo = gltfBaby.mesh.geometry;
+  const pos = geo.attributes.position;
+  const nrm = geo.attributes.normal;
+  const { lo, hi } = sexShape;
+  pos.array.set(sexShape.basePos.subarray(lo * 3, (hi + 1) * 3), lo * 3);
+  nrm.array.set(sexShape.baseNrm.subarray(lo * 3, (hi + 1) * 3), lo * 3);
+  for (const [name, w] of Object.entries(weights)) {
+    const key = sexShape.keys[name];
+    if (!key || w === 0) continue;
+    for (let k = 0; k < key.idx.length; k++) {
+      const v = key.idx[k] * 3;
+      pos.array[v] += key.dp[3 * k] * w; pos.array[v + 1] += key.dp[3 * k + 1] * w; pos.array[v + 2] += key.dp[3 * k + 2] * w;
+      nrm.array[v] += key.dn[3 * k] * w; nrm.array[v + 1] += key.dn[3 * k + 1] * w; nrm.array[v + 2] += key.dn[3 * k + 2] * w;
+    }
+  }
+  for (const attr of [pos, nrm]) {
+    attr.clearUpdateRanges();
+    attr.addUpdateRange(lo * 3, (hi - lo + 1) * 3);
+    attr.needsUpdate = true;
+  }
 }
 
 function rigPoint(name, ga, out) {
@@ -2352,6 +2525,7 @@ function hotspotCopy(id) {
 }
 
 function openInfo(id) {
+  closeSexPanel(false);
   state.activeHotspot = id;
   for (const key of HOTSPOT_IDS) hotspotEls[key].setAttribute('aria-expanded', String(key === id));
   renderInfo();
@@ -2449,7 +2623,8 @@ function updateLabels() {
   input.setAttribute('aria-valuetext', s.timelineValue(w, d));
   input.style.setProperty('--fill', `${((state.days - FIRST_DAY) / (LAST_DAY - FIRST_DAY)) * 100}%`);
 
-  canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(w, d, size.len, size.fruit));
+  renderSexEarly();
+  canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(s.sex.who[state.sex], w, d, size.len, size.fruit));
   renderInfo();
 }
 
@@ -2485,6 +2660,7 @@ function updateStaticCopy() {
     hotspotEls[id].firstChild.textContent = title;
   }
   renderQualityOptions();
+  renderSex();
   updateLabels();
 }
 
@@ -2528,6 +2704,7 @@ function resize() {
   const hero = document.querySelector('.hero').getBoundingClientRect();
   document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
   $('info').style.top = `${Math.round(hero.bottom + 14)}px`;
+  $('sex-panel').style.top = $('info').style.top;
   const visibleCenter = (hero.bottom + dock.top) / 2;
   viewShift = Math.max(0, h / 2 - visibleCenter);
   const fullH = h + 2 * viewShift;
@@ -2584,6 +2761,69 @@ function setLang(lang) {
 }
 $('lang-en').addEventListener('click', () => setLang('en'));
 $('lang-bg').addEventListener('click', () => setLang('bg'));
+
+/* ---------- Baby's sex: neutral until the parents choose ---------- */
+
+function renderSex() {
+  const s = t().sex;
+  const chip = $('sex-chip');
+  chip.dataset.sex = state.sex;
+  chip.setAttribute('aria-label', `${s.title}: ${s.options[state.sex]}`);
+  $('sex-chip-text').textContent = s.chip[state.sex];
+  $('sex-title').textContent = s.title;
+  for (const btn of document.querySelectorAll('#sex-options button')) {
+    const on = btn.dataset.sex === state.sex;
+    btn.textContent = s.options[btn.dataset.sex];
+    btn.setAttribute('aria-checked', String(on));
+    btn.tabIndex = on ? 0 : -1;
+  }
+  $('sex-hint').textContent = s.hint;
+  $('sex-early').textContent = s.early;
+  $('sex-close').setAttribute('aria-label', t().close);
+  renderSexEarly();
+}
+
+function renderSexEarly() {
+  $('sex-early').hidden = state.sex === 'unknown' || gaOf(state.days) >= 12;
+}
+
+function openSexPanel() {
+  closeInfo();
+  renderSex();
+  $('sex-panel').hidden = false;
+  $('sex-chip').setAttribute('aria-expanded', 'true');
+  document.querySelector('#sex-options [aria-checked="true"]').focus();
+}
+
+function closeSexPanel(returnFocus) {
+  if ($('sex-panel').hidden) return;
+  $('sex-panel').hidden = true;
+  $('sex-chip').setAttribute('aria-expanded', 'false');
+  if (returnFocus) $('sex-chip').focus();
+}
+
+function setSex(sex) {
+  if (!SEXES.includes(sex) || sex === state.sex) return;
+  state.sex = sex;
+  persist();
+  renderSex();
+  updateLabels();
+  toast(t().sex.toast[sex]);
+}
+
+$('sex-chip').addEventListener('click', () => ($('sex-panel').hidden ? openSexPanel() : closeSexPanel(false)));
+$('sex-close').addEventListener('click', () => closeSexPanel(true));
+for (const btn of document.querySelectorAll('#sex-options button')) btn.addEventListener('click', () => setSex(btn.dataset.sex));
+$('sex-options').addEventListener('keydown', (e) => {
+  const i = SEXES.indexOf(state.sex);
+  let next = -1;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % SEXES.length;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i + SEXES.length - 1) % SEXES.length;
+  if (next < 0) return;
+  e.preventDefault();
+  setSex(SEXES[next]);
+  document.querySelector(`#sex-options button[data-sex="${SEXES[next]}"]`).focus();
+});
 
 $('quality').addEventListener('change', (e) => {
   state.quality = e.target.value;
@@ -2732,7 +2972,7 @@ function drawPortraitCaption(ctx, W, H) {
   ctx.fillText(`${s.day(dayOf(state.days))} · ${s.sizeOf(size.fruit)}`, 72 * u, H - 112 * u);
   ctx.fillStyle = 'rgba(243, 240, 255, 0.62)';
   ctx.font = `italic 500 ${32 * u}px Lora, Georgia, serif`;
-  ctx.fillText(s.tagline, 72 * u, H - 56 * u);
+  ctx.fillText(s.taglineSex[state.sex] || s.tagline, 72 * u, H - 56 * u);
 }
 
 function closeModal() {
@@ -2747,6 +2987,7 @@ $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) close
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (!$('modal').hidden) closeModal();
+  else if (!$('sex-panel').hidden) closeSexPanel(true);
   else if (state.activeHotspot) closeInfo();
 });
 
@@ -2844,6 +3085,7 @@ renderer.setAnimationLoop((timestamp) => {
   if (!m.moon) {
     if (gltfBaby.ready) {
       updateGltfBaby(ga, now);
+      updateSexShape(ga, dt);
     } else if (babyDirty || motionActive(now)) {
       rebuildBaby(ga, now);
       babyDirty = false;
