@@ -1024,7 +1024,7 @@ const MODES = {
     wall: { center: '#5a2b4e', edge: '#1a1533', caustic: '#ffd2ad', amount: 0.5 },
     shell: { rim: '#f6c8b5', glow: '#ffe6a3', intensity: 1.0 },
     particles: 1.0, stars: 1.0,
-    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.12, heart: '#ff7a5c', heartStrength: 0.9,
+    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.12, heart: '#ff7a5c', heartStrength: 0.55,
       sss: '#ff5a3a', translucency: 1.0, wrap: 0.4, wrapTint: '#ff8a68' },
     placenta: '#a4465c',
     lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
@@ -1036,7 +1036,7 @@ const MODES = {
     wall: { center: '#7a3236', edge: '#22100f', caustic: '#ffcba3', amount: 0.22 },
     shell: { rim: '#f2a993', glow: '#ffcfb5', intensity: 0.5 },
     particles: 0.4, stars: 0.35,
-    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.35,
+    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.25,
       sss: '#ff3c24', translucency: 0.9, wrap: 0.4, wrapTint: '#ff6a50' },
     placenta: '#8c2f3d',
     lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4 },
@@ -3144,7 +3144,8 @@ renderer.setAnimationLoop((timestamp) => {
     babyAnchor('heart', heartWorld);
     babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
     babyUniforms.uHeartR.value = 0.13 * S;
-    babyUniforms.uPulse.value = (0.12 + pulse) * m.baby.heartStrength;
+    // a soft pulse with the beat; almost nothing in between, so it doesn't read as a spot on the chest
+    babyUniforms.uPulse.value = (0.03 + pulse) * m.baby.heartStrength;
   }
 
   if (!m.moon && frame % TIERS[state.tier].cordEvery === 0) updateCord(reduce ? 0 : now, S);

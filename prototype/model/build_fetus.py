@@ -618,10 +618,13 @@ def build(g, overrides=None, sex=None, grow=1.0):
         side = np.cross(n, d)
         L = hand_len
         add("palm" + s, Ellipsoid(W + d * 0.27 * L, (0.22 * L, 0.085 * L, 0.27 * L), np.stack([side, n, d], axis=1)), 0.014)
-        lengths = (0.42, 0.47, 0.44, 0.36)
-        offsets = (-0.16, -0.055, 0.055, 0.16)
+        # The thumb is on the radial side: cross(n, d) for the right hand, mirrored for the left
+        # (check: right hand hanging, palm forward -> n = +z, d = -y, cross = +x = lateral)
+        radial = side if s == "R" else -side
+        lengths = (0.42, 0.47, 0.44, 0.36)          # index, middle, ring, little
+        offsets = (0.16, 0.055, -0.055, -0.16)      # along the radial direction
         for i in range(4):
-            base = W + d * 0.5 * L + side * offsets[i] * L
+            base = W + d * 0.5 * L + radial * offsets[i] * L
             fl = lengths[i] * L * finger_scale
             c1, c2 = j["curl" + s][0], j["curl" + s][1]
             d1 = d * math.cos(c1) + n * math.sin(c1)
@@ -631,7 +634,7 @@ def build(g, overrides=None, sex=None, grow=1.0):
             fr = 0.06 * L
             add(f"finger{i}{s}a", RoundCone(base, mid, fr, fr * 0.92), finger_k)
             add(f"finger{i}{s}b", RoundCone(mid, tip, fr * 0.92, fr * 0.82), finger_k)
-        thumb_side = side if s == "L" else -side
+        thumb_side = radial
         t0 = W + d * 0.12 * L + thumb_side * 0.2 * L + n * 0.03 * L
         t1 = unit(d * 0.65 + thumb_side * 0.35 + n * 0.45)
         t2 = unit(d * 0.4 + thumb_side * 0.05 + n * 0.75)
@@ -654,11 +657,11 @@ def build(g, overrides=None, sex=None, grow=1.0):
         F = np.stack([side, up, f], axis=1)
         # big toe sits on the medial side (towards +x for the left foot)
         medial = side if (side[0] > 0) == (s == "L") else -side
-        add("foot" + s, Ellipsoid(A + f * 0.22 * Lf - up * 0.2 * Lf, np.array([0.18, 0.12, 0.38]) * Lf, F), 0.025)
+        add("foot" + s, Ellipsoid(A + f * 0.27 * Lf - up * 0.2 * Lf, np.array([0.18, 0.12, 0.33]) * Lf, F), 0.025)
         # forefoot: wide and thin, sloping down to the toes
         add("footBall" + s, Ellipsoid(A + f * 0.48 * Lf - up * 0.25 * Lf - medial * 0.02 * Lf, np.array([0.21, 0.085, 0.15]) * Lf, F), 0.02)
         # the heel carries the foot's frame, so it turns with the foot when the leg moves
-        add("heel" + s, Ellipsoid(A - f * 0.08 * Lf - up * 0.2 * Lf, np.full(3, 0.17 * Lf), F), 0.03)
+        add("heel" + s, Ellipsoid(A - f * 0.02 * Lf - up * 0.24 * Lf, np.array([0.1, 0.095, 0.105]) * Lf, F), 0.025)
         # Toes: short and plump, side by side on the sole, the big toe wider with a small gap
         # after it, the others getting shorter along an arc and curling slightly down
         toe_len = (0.19, 0.17, 0.155, 0.14, 0.125)
@@ -855,6 +858,30 @@ def local_thickness(ops, p, nrm, max_t=0.3, iterations=48):
         d = eval_sdf(ops, p - nrm * t[:, None])
         done |= d > 0
         t = np.where(done, t, np.minimum(t + np.maximum(-d, 0.002), max_t))
+    return t
+
+
+def skin_thickness(ops, p, nrm, A, deg, tilt=0.5, smooth=10):
+    """Thickness for the translucency: measured on the body without its small creases (a ray
+    from inside the lash line or the mouth would cross only the crease and glow red), averaged
+    over a cone of rays around the inward normal and smoothed over the surface, so the glow
+    follows the real shape (ears, fingers, toes) instead of the mesh's noise."""
+    solid = Sculpt()
+    solid.junctions = ops.junctions
+    solid.extend(op for op in ops if op.mode == "add")
+    a = np.where(np.abs(nrm[:, :1]) < 0.9, np.array([[1.0, 0, 0]]), np.array([[0, 1.0, 0]]))
+    u = np.cross(nrm, a)
+    u /= np.linalg.norm(u, axis=1, keepdims=True)
+    v = np.cross(nrm, u)
+    total = local_thickness(solid, p, nrm)
+    for k in range(6):
+        phi = k * math.pi / 3
+        ray = nrm + tilt * (math.cos(phi) * u + math.sin(phi) * v)
+        ray /= np.linalg.norm(ray, axis=1, keepdims=True)
+        total = total + local_thickness(solid, p, ray)
+    t = total / 7
+    for _ in range(smooth):
+        t = 0.5 * t + 0.5 * (A @ t) / deg
     return t
 
 
@@ -1477,9 +1504,11 @@ def main():
     shade = (0.55 + 0.45 * ao) * (1 - 0.32 * lid)
     rgb = np.stack([shade, shade * (1 - 0.1 * warm), shade * (1 - 0.13 * warm)], axis=1)
     rgb = rgb * np.array([1.0, 0.97, 0.96]) ** (1 - ao)[:, None]
-    thickness = local_thickness(base_ops, basis, normals)
+    thickness = skin_thickness(base_ops, basis, normals, A, deg)
     print(f"thickness: min {thickness.min():.4f}, median {np.median(thickness):.4f}, max {thickness.max():.4f}")
-    set_colors(obj, np.clip(rgb, 0, 1), np.clip(thickness / 0.12, 0, 1))
+    # only the thin parts glow; limbs and trunk are fully opaque
+    alpha = np.array([smoothstep(0.008, 0.07, x) for x in thickness])
+    set_colors(obj, np.clip(rgb, 0, 1), alpha)
 
     import bpy
     bpy.ops.export_scene.gltf(
