@@ -1065,6 +1065,39 @@ try {
   throw err;
 }
 window.__lunaReady = true;
+
+/* ---------- Diagnostics: open the page with #debug to see warnings and errors on screen ---------- */
+const debugMode = location.hash === '#debug';
+const debugPanel = debugMode ? document.createElement('pre') : null;
+function debugLog(message) {
+  if (!debugPanel) return;
+  debugPanel.textContent += `${new Date().toLocaleTimeString()}  ${message}\n`;
+  debugPanel.scrollTop = debugPanel.scrollHeight;
+}
+if (debugPanel) {
+  debugPanel.style.cssText = 'position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 140px);max-height:38vh;overflow:auto;margin:0;padding:10px 12px;border-radius:12px;background:var(--glass-strong);color:var(--text);border:1px solid var(--line);font:11px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;z-index:50';
+  document.body.appendChild(debugPanel);
+  for (const level of ['warn', 'error']) {
+    const original = console[level].bind(console);
+    console[level] = (...args) => { original(...args); debugLog(`${level}: ${args.map((a) => (a && a.message) || String(a)).join(' ')}`); };
+  }
+  window.addEventListener('error', (e) => debugLog(`error: ${e.message}`));
+  window.addEventListener('unhandledrejection', (e) => debugLog(`rejection: ${(e.reason && e.reason.message) || e.reason}`));
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    debugLog(`GPU: ${ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)}`);
+    debugLog(`fragment uniform vectors: ${gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS)}, max texture: ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}`);
+  } catch (err) { debugLog(`GPU info unavailable: ${err.message}`); }
+}
+// Phones can drop the WebGL context under memory pressure. three.js restores it on its own;
+// a lighter quality tier afterwards makes it less likely to happen again.
+canvas.addEventListener('webglcontextlost', () => console.warn('WebGL context lost.'));
+canvas.addEventListener('webglcontextrestored', () => {
+  console.warn('WebGL context restored.');
+  buildEnvironment(); // render target contents don't survive a lost context
+  if (state.tier > 0) applyTier(state.tier - 1);
+});
 // ACES kept on purpose: side-by-side tests showed AgX washing this scene out and Neutral over-saturating the skin
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -1072,8 +1105,12 @@ renderer.toneMappingExposure = 1.0;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MODES.dreamy.bg);
 
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+function buildEnvironment() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+}
+buildEnvironment();
 scene.environmentIntensity = 0.35;
 
 const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 220);
@@ -1415,6 +1452,10 @@ const babyMaterial = new THREE.MeshPhysicalMaterial({
   color: '#f2b5a1', roughness: 0.46, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ffe6a3'),
   clearcoat: 0.35, clearcoatRoughness: 0.4, iridescence: 0.3, iridescenceIOR: 1.3,
 });
+// Turned off automatically if a device fails to compile the skin shader (see onShaderError below)
+let skinShading = true;
+
+babyMaterial.customProgramCacheKey = () => (skinShading ? 'luna-skin' : 'luna-basic');
 babyMaterial.onBeforeCompile = (shader) => {
   Object.assign(shader.uniforms, babyUniforms);
   shader.fragmentShader = shader.fragmentShader
@@ -1424,12 +1465,26 @@ babyMaterial.onBeforeCompile = (shader) => {
       uniform float uPulse;
       uniform vec3 uHeartColor;
       uniform vec3 uRimColor;
-      uniform float uRimStrength;`)
+      uniform float uRimStrength;`);
+  if (skinShading) applySkinShading(shader);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      {
+        // Glow from the heart, scattered through the skin, plus a warm translucent rim
+        float hd = length(-vViewPosition - uHeartPos) / uHeartR;
+        totalEmissiveRadiance += uHeartColor * exp(-hd * hd) * uPulse;
+        float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
+        totalEmissiveRadiance += uRimColor * rimF * uRimStrength;
+      }`);
+};
+
+function applySkinShading(shader) {
+  shader.fragmentShader = shader.fragmentShader
     .replace('#include <color_fragment>', `
       #if defined( USE_COLOR_ALPHA )
         // the sculpted model stores local body thickness in the vertex colour alpha
         diffuseColor.rgb *= vColor.rgb;
-        sssThickness = vColor.a;
+        sssThickness = clamp( vColor.a, 0.0, 1.0 );
       #elif defined( USE_COLOR )
         diffuseColor *= vColor;
       #endif`)
@@ -1453,19 +1508,33 @@ babyMaterial.onBeforeCompile = (shader) => {
         // Translucency (Barré-Brisebois & Bouchard, GDC 2011): light passing through thin parts towards the viewer
         vec3 scatterDir = directLight.direction + geometryNormal * uSssDistortion;
         float scatter = pow( saturate( dot( geometryViewDir, -scatterDir ) ), uSssPower ) * uSssScale;
-        float thin = pow( 1.0 - sssThickness, 1.5 );
+        // no pow() here: a base that interpolates to a hair below zero gives NaN on many GPUs
+        float thinBase = saturate( 1.0 - sssThickness );
+        float thin = thinBase * sqrt( thinBase );
         reflectedLight.directDiffuse += ( scatter + uSssAmbient ) * thin * uTranslucency * directLight.color * uSssColor;
       }
       #undef RE_Direct
-      #define RE_Direct RE_Direct_Skin`)
-    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-      {
-        // Glow from the heart, scattered through the skin, plus a warm translucent rim
-        float hd = length(-vViewPosition - uHeartPos) / uHeartR;
-        totalEmissiveRadiance += uHeartColor * exp(-hd * hd) * uPulse;
-        float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
-        totalEmissiveRadiance += uRimColor * rimF * uRimStrength;
-      }`);
+      #define RE_Direct RE_Direct_Skin`);
+}
+
+// If the skin shader can't be built on this device, rebuild without it; if that fails too,
+// go back to the procedural body so there is always a baby on screen.
+renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
+  const log = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertexShader), gl.getShaderInfoLog(fragmentShader)]
+    .filter(Boolean).join(' ').trim().slice(0, 600);
+  console.error(`Shader failed to build: ${log || 'no log'}`);
+  if (skinShading) {
+    skinShading = false;
+    babyMaterial.needsUpdate = true;
+    if (gltfBaby.material) gltfBaby.material.needsUpdate = true;
+    console.warn('Skin shading turned off on this device.');
+  } else if (gltfBaby.ready) {
+    gltfBaby.ready = false;
+    gltfBaby.group.visible = false;
+    if (babyMesh) babyMesh.visible = true;
+    babyDirty = true;
+    console.warn('Sculpted model turned off on this device; showing the procedural body.');
+  }
 };
 
 const babyRoot = new THREE.Group();
@@ -1552,17 +1621,28 @@ gltfBaby.group.visible = false;
 babyRoot.add(gltfBaby.group);
 
 // Hosts that can't serve .glb files (such as the artifact viewer) get a base64 copy as text
+const isGlb = (buffer) => buffer.byteLength > 12 && new DataView(buffer).getUint32(0, true) === 0x46546c67; // "glTF"
+
 async function fetchModel() {
   for (const url of ['models/fetus.glb', 'models/fetus.glb.txt']) {
     try {
       const res = await fetch(url);
-      if (!res.ok) continue;
-      if (!url.endsWith('.txt')) return await res.arrayBuffer();
-      const bin = atob((await res.text()).trim());
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return bytes.buffer;
-    } catch (err) { /* try the next source */ }
+      if (!res.ok) { debugLog(`${url}: HTTP ${res.status}`); continue; }
+      let buffer;
+      if (url.endsWith('.txt')) {
+        const bin = atob((await res.text()).trim());
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        buffer = bytes.buffer;
+      } else {
+        buffer = await res.arrayBuffer();
+      }
+      if (!isGlb(buffer)) { debugLog(`${url}: not a glTF file (${buffer.byteLength} bytes)`); continue; }
+      debugLog(`model: ${url} (${buffer.byteLength} bytes)`);
+      return buffer;
+    } catch (err) {
+      debugLog(`${url}: ${err.message}`);
+    }
   }
   throw new Error('model file not found');
 }
@@ -1582,6 +1662,7 @@ async function loadSculptedBaby() {
     const material = babyMaterial.clone();
     material.vertexColors = true;
     material.onBeforeCompile = babyMaterial.onBeforeCompile;
+    material.customProgramCacheKey = babyMaterial.customProgramCacheKey;
     mesh.material = material;
     mesh.frustumCulled = false;
     gltfBaby.group.add(gltf.scene);
@@ -1589,6 +1670,7 @@ async function loadSculptedBaby() {
     gltfBaby.group.visible = true;
     if (babyMesh) babyMesh.visible = false;
     applyMode(state.mode);
+    debugLog(`sculpted model ready: ${mesh.geometry.attributes.position.count} vertices, ${Object.keys(mesh.morphTargetDictionary).length} morph targets`);
   } catch (err) {
     console.warn('Sculpted model unavailable, keeping the procedural body.', err);
   }
