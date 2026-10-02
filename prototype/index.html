@@ -1502,10 +1502,26 @@ const gltfBaby = { ready: false, group: new THREE.Group(), mesh: null, dict: nul
 gltfBaby.group.visible = false;
 babyRoot.add(gltfBaby.group);
 
+// Hosts that can't serve .glb files (such as the artifact viewer) get a base64 copy as text
+async function fetchModel() {
+  for (const url of ['models/fetus.glb', 'models/fetus.glb.txt']) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      if (!url.endsWith('.txt')) return await res.arrayBuffer();
+      const bin = atob((await res.text()).trim());
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    } catch (err) { /* try the next source */ }
+  }
+  throw new Error('model file not found');
+}
+
 async function loadSculptedBaby() {
   try {
     const [gltf, rig] = await Promise.all([
-      new GLTFLoader().loadAsync('models/fetus.glb'),
+      fetchModel().then((buffer) => new GLTFLoader().parseAsync(buffer, '')),
       fetch('models/fetus-rig.json').then((r) => {
         if (!r.ok) throw new Error(`rig: HTTP ${r.status}`);
         return r.json();
