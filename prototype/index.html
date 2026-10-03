@@ -665,7 +665,7 @@
 <footer class="dock" id="dock">
   <div class="size-row">
     <div class="size-text">
-      <div class="size-fruit" id="size-fruit">Size of an ear of corn</div>
+      <div class="size-fruit" id="size-fruit">Weighs about as much as a head of cauliflower</div>
       <div class="size-meta">
         <span id="size-numbers">≈ 30 cm · 600 g</span>
         <span id="size-kind">crown–heel</span>
@@ -744,11 +744,14 @@ const LAST_DAY = 280;   // 40 weeks + 0 days (due date)
 
 // week, EN size, BG size, length in cm (crown–rump until week 19, crown–heel from week 20), weight in g
 const WEEKS = [
+  // Until week 19 by length (crown–rump), from week 20 by weight: the baby is long and thin by
+  // then, so a produce item of the same weight is the honest comparison. Lengths and weights are
+  // the usual BabyCenter/Hadlock averages; produce weights from the Food Bank of CNY conversion chart.
   [8, 'a raspberry', 'малина', 1.6, 1],
   [9, 'a cherry', 'череша', 2.3, 2],
   [10, 'a strawberry', 'ягода', 3.1, 4],
   [11, 'a fig', 'смокиня', 4.1, 7],
-  [12, 'a lime', 'лайм', 5.4, 14],
+  [12, 'a plum', 'слива', 5.4, 14],
   [13, 'a lemon', 'лимон', 7.4, 23],
   [14, 'a peach', 'праскова', 8.7, 43],
   [15, 'an apple', 'ябълка', 10.1, 70],
@@ -756,27 +759,27 @@ const WEEKS = [
   [17, 'a pear', 'круша', 13.0, 140],
   [18, 'a bell pepper', 'чушка', 14.2, 190],
   [19, 'a mango', 'манго', 15.3, 240],
-  [20, 'a banana', 'банан', 25.6, 300],
-  [21, 'a carrot', 'морков', 26.7, 360],
-  [22, 'a papaya', 'папая', 27.8, 430],
-  [23, 'a grapefruit', 'грейпфрут', 28.9, 501],
-  [24, 'an ear of corn', 'кочан царевица', 30.0, 600],
-  [25, 'a cauliflower', 'карфиол', 32.0, 660],
-  [26, 'a zucchini', 'тиквичка', 33.9, 760],
-  [27, 'a head of lettuce', 'маруля', 35.8, 875],
-  [28, 'an eggplant', 'патладжан', 37.6, 1005],
+  [20, 'a pomegranate', 'нар', 25.6, 300],
+  [21, 'a zucchini', 'тиквичка', 26.7, 360],
+  [22, 'a grapefruit', 'грейпфрут', 27.8, 430],
+  [23, 'a head of broccoli', 'глава броколи', 28.9, 501],
+  [24, 'a head of cauliflower', 'глава карфиол', 30.0, 600],
+  [25, 'a large zucchini', 'голяма тиквичка', 32.0, 660],
+  [26, 'a large cauliflower', 'голям карфиол', 33.9, 760],
+  [27, 'a small cabbage', 'малка зелка', 35.8, 875],
+  [28, 'a large eggplant', 'голям патладжан', 37.6, 1005],
   [29, 'a butternut squash', 'мускатна тиква', 38.8, 1153],
   [30, 'a cabbage', 'зелка', 39.9, 1319],
-  [31, 'a coconut', 'кокосов орех', 41.1, 1502],
-  [32, 'a pineapple', 'ананас', 42.4, 1702],
-  [33, 'a cantaloupe', 'пъпеш канталупа', 43.7, 1918],
-  [34, 'a bunch of Swiss chard', 'връзка манголд', 45.0, 2146],
-  [35, 'a bunch of celery', 'връзка целина', 46.2, 2383],
-  [36, 'a honeydew melon', 'пъпеш', 47.4, 2622],
-  [37, 'a leek', 'стрък праз', 48.6, 2859],
-  [38, 'a pumpkin', 'тиква', 49.8, 3083],
-  [39, 'a winter melon', 'зимен пъпеш', 50.7, 3288],
-  [40, 'a small watermelon', 'малка диня', 51.2, 3462],
+  [31, 'a cantaloupe', 'пъпеш канталупа', 41.1, 1502],
+  [32, 'a large butternut squash', 'голяма мускатна тиква', 42.4, 1702],
+  [33, 'a honeydew melon', 'пъпеш „Медена роса“', 43.7, 1918],
+  [34, 'a large melon', 'голям пъпеш', 45.0, 2146],
+  [35, 'a small pumpkin', 'малка тиква', 46.2, 2383],
+  [36, 'a large cabbage', 'голяма зелка', 47.4, 2622],
+  [37, 'a pumpkin', 'тиква', 48.6, 2859],
+  [38, 'a large pumpkin', 'голяма тиква', 49.8, 3083],
+  [39, 'a small watermelon', 'малка диня', 50.7, 3288],
+  [40, 'a watermelon', 'диня', 51.2, 3462],
 ];
 
 // Typical embryonic/fetal heart rate by gestational week (beats per minute).
@@ -812,6 +815,7 @@ const STR = {
     triShort: ['1st', '2nd', '3rd'],
     bpm: (n) => `~${n} bpm`,
     sizeOf: (f) => `Size of ${f}`,
+    weighsAs: (f) => `Weighs about as much as ${f}`,
     cm: 'cm', g: 'g', kg: 'kg',
     crownRump: 'crown–rump',
     crownHeel: 'crown–heel',
@@ -839,7 +843,7 @@ const STR = {
     close: 'Close',
     loading: 'Loading Luna View…',
     noWebgl: "This browser can't show the 3D scene. Try a recent version of Chrome, Safari, Edge or Firefox.",
-    sceneAlt: (who, w, d, len, fruit) => `3D view of ${who} at week ${w}, day ${d}: curled up in the womb, about ${len} long, the size of ${fruit}.`,
+    sceneAlt: (who, w, d, len, compare) => `3D view of ${who} at week ${w}, day ${d}: curled up in the womb, about ${len} long. ${compare}.`,
     moonAlt: (w) => `A glowing moon that grows with your pregnancy, now at week ${w}.`,
     tagline: 'Watch your little moon grow.',
     taglineSex: { F: 'Watch your baby girl grow.', M: 'Watch your baby boy grow.' },
@@ -906,7 +910,8 @@ const STR = {
     trimester: (t) => `${['I', 'II', 'III'][t - 1]} триместър`,
     triShort: ['I', 'II', 'III'],
     bpm: (n) => `~${n} уд/мин`,
-    sizeOf: (f) => `Колкото ${f}`,
+    sizeOf: (f) => `Голямо колкото ${f}`,
+    weighsAs: (f) => `Тежи колкото ${f}`,
     cm: 'см', g: 'г', kg: 'кг',
     crownRump: 'теме–седалище',
     crownHeel: 'теме–пета',
@@ -934,7 +939,7 @@ const STR = {
     close: 'Затвори',
     loading: 'Зареждане на Luna View…',
     noWebgl: 'Този браузър не може да покаже 3D сцената. Опитай с нова версия на Chrome, Safari, Edge или Firefox.',
-    sceneAlt: (who, w, d, len, fruit) => `3D изглед на ${who} в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}, колкото ${fruit}.`,
+    sceneAlt: (who, w, d, len, compare) => `3D изглед на ${who} в седмица ${w}, ден ${d}: свито в утробата, дълго около ${len}. ${compare}.`,
     moonAlt: (w) => `Светеща луна, която расте заедно с бременността, сега в седмица ${w}.`,
     tagline: 'Гледай как расте твоята малка луна.',
     taglineSex: { F: 'Гледай как расте твоето момиченце.', M: 'Гледай как расте твоето момченце.' },
@@ -999,18 +1004,23 @@ const STR = {
    Visual modes and quality tiers
    ========================================================================= */
 
+// Each mode is its own mood: Dreamy is a moonlit dream (indigo womb, cool moonlight in front, a
+// golden glow behind, pearly skin), Realistic is warm and natural, Moon has no baby at all.
+// lights: intensities plus colours (sky/ground of the hemisphere light, key, back);
+// grade: a light colour grade after the scene (shadow lift, highlight tint, saturation).
 const MODES = {
   dreamy: {
-    bg: '#16152B', exposure: 0.9,
-    bloom: { strength: 0.6, radius: 0.55, threshold: 0.72 },
-    wall: { center: '#5a2b4e', edge: '#1a1533', caustic: '#ffd2ad', amount: 0.5 },
-    shell: { rim: '#f6c8b5', glow: '#ffe6a3', intensity: 1.0 },
-    particles: 1.0, stars: 1.0,
-    baby: { color: '#eaa58f', roughness: 0.5, sheen: 0.8, sheenColor: '#ffd9a8', iridescence: 0.3, clearcoat: 0.3, rim: '#ffbf9f', rimStrength: 0.12, heart: '#ff7a5c', heartStrength: 0.55,
-      sss: '#ffb39a', translucency: 1.0, wrap: 0.4, wrapTint: '#ffa585' },
-    placenta: '#a4465c',
-    lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
-    vignette: 0.6, grain: 0.035,
+    bg: '#100d2a', exposure: 0.95,
+    bloom: { strength: 0.85, radius: 0.75, threshold: 0.66 },
+    wall: { center: '#3b2b74', edge: '#0d0b26', caustic: '#c9b8ff', amount: 0.6 },
+    shell: { rim: '#b9aef0', glow: '#ffe6a3', intensity: 1.25 },
+    particles: 1.4, stars: 1.5,
+    baby: { color: '#eeac94', roughness: 0.42, sheen: 0.9, sheenColor: '#ffd8c6', iridescence: 0.45, clearcoat: 0.35, rim: '#d9c4ff', rimStrength: 0.22, heart: '#ffb36b', heartStrength: 0.5,
+      sss: '#ffc9a8', translucency: 1.0, wrap: 0.45, wrapTint: '#f2b0c8' },
+    placenta: '#6d4a9a',
+    lights: { hemi: 0.55, key: 1.1, back: 2.3, head: 0.2, env: 0.3, sky: '#ddd2ff', ground: '#2a1f5e', keyColor: '#f0e6ff', backColor: '#ffd58a' },
+    grade: { lift: '#1c1440', gain: '#fff8fc', sat: 0.97 },
+    vignette: 0.7, grain: 0.03,
   },
   realistic: {
     bg: '#120f1c', exposure: 0.95,
@@ -1021,7 +1031,8 @@ const MODES = {
     baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.25,
       sss: '#f0a088', translucency: 0.9, wrap: 0.4, wrapTint: '#f59a80' },
     placenta: '#8c2f3d',
-    lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4 },
+    lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4, sky: '#ffe6d8', ground: '#3a2220', keyColor: '#ffd8bf', backColor: '#ffc89a' },
+    grade: { lift: '#000000', gain: '#ffffff', sat: 1.0 },
     vignette: 0.5, grain: 0.02,
   },
   moon: {
@@ -1032,7 +1043,8 @@ const MODES = {
     particles: 1.0, stars: 1.2,
     baby: null,
     placenta: null,
-    lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3 },
+    lights: { hemi: 0.55, key: 1.15, back: 1.9, head: 0.25, env: 0.3, sky: '#ffe6d8', ground: '#2b2350', keyColor: '#ffd2b8', backColor: '#ffe6a3' },
+    grade: { lift: '#000000', gain: '#ffffff', sat: 1.0 },
     vignette: 0.6, grain: 0.03,
     moon: true,
   },
@@ -2178,7 +2190,10 @@ scene.add(moon);
    ========================================================================= */
 
 const FinishShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVignette: { value: 0.6 }, uGrain: { value: 0.03 } },
+  uniforms: {
+    tDiffuse: { value: null }, uTime: { value: 0 }, uVignette: { value: 0.6 }, uGrain: { value: 0.03 },
+    uLift: { value: new THREE.Color(0, 0, 0) }, uGain: { value: new THREE.Color(1, 1, 1) }, uSat: { value: 1 },
+  },
   vertexShader: /* glsl */`
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
@@ -2188,10 +2203,16 @@ const FinishShader = {
     uniform float uTime;
     uniform float uVignette;
     uniform float uGrain;
+    uniform vec3 uLift;
+    uniform vec3 uGain;
+    uniform float uSat;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
+      // colour grade (linear, before tone mapping): tint the highlights, lift the shadows, saturation
+      float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      c.rgb = mix(vec3(luma), c.rgb, uSat) * uGain + uLift * (1.0 - smoothstep(0.0, 0.6, luma));
       vec2 d = vUv - 0.5;
       c.rgb *= clamp(1.0 - uVignette * dot(d, d) * 2.2, 0.0, 1.0);
       float g = hash(vUv * 1000.0 + fract(uTime) * 100.0) - 0.5;
@@ -2307,8 +2328,12 @@ function applyMode(mode) {
   }
 
   hemi.intensity = m.lights.hemi;
+  hemi.color.set(m.lights.sky);
+  hemi.groundColor.set(m.lights.ground);
   keyLight.intensity = m.lights.key;
+  keyLight.color.set(m.lights.keyColor);
   backLight.intensity = m.lights.back;
+  backLight.color.set(m.lights.backColor);
   headLight.intensity = m.lights.head;
   scene.environmentIntensity = m.lights.env;
 
@@ -2319,6 +2344,9 @@ function applyMode(mode) {
     bloomPass.threshold = m.bloom.threshold;
   }
   finishPass.uniforms.uVignette.value = m.vignette;
+  finishPass.uniforms.uLift.value.set(m.grade.lift);
+  finishPass.uniforms.uGain.value.set(m.grade.gain);
+  finishPass.uniforms.uSat.value = m.grade.sat;
   finishPass.uniforms.uGrain.value = state.tier >= 2 ? m.grain : 0;
 
   for (const btn of document.querySelectorAll('#modes button')) {
@@ -2547,7 +2575,8 @@ function sizeNumbers(week) {
   const s = t();
   const len = row[3] < 10 ? `${formatNumber(row[3], 1)} ${s.cm}` : `${formatNumber(Math.round(row[3]), 0)} ${s.cm}`;
   const wt = row[4] >= 1000 ? `${formatNumber(row[4] / 1000, 1)} ${s.kg}` : `${formatNumber(row[4], 0)} ${s.g}`;
-  return { len, wt, fruit: state.lang === 'bg' ? row[2] : row[1], kind: week < 20 ? s.crownRump : s.crownHeel };
+  const fruit = state.lang === 'bg' ? row[2] : row[1];
+  return { len, wt, fruit, compare: week < 20 ? s.sizeOf(fruit) : s.weighsAs(fruit), kind: week < 20 ? s.crownRump : s.crownHeel };
 }
 
 function updateLabels() {
@@ -2564,7 +2593,7 @@ function updateLabels() {
   $('week-day').textContent = s.day(d);
   $('days-to-go').textContent = `${s.daysToGo(LAST_DAY - state.days)} · ${s.trimester(tri)}`;
   $('bpm-text').textContent = s.bpm(bpm);
-  $('size-fruit').textContent = s.sizeOf(size.fruit);
+  $('size-fruit').textContent = size.compare;
   $('size-numbers').textContent = `≈ ${size.len} · ${size.wt}`;
   $('size-kind').textContent = size.kind;
   $('head-down').textContent = s.headDown;
@@ -2576,7 +2605,7 @@ function updateLabels() {
   input.style.setProperty('--fill', `${((state.days - FIRST_DAY) / (LAST_DAY - FIRST_DAY)) * 100}%`);
 
   renderSexEarly();
-  canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(s.sex.who[state.sex], w, d, size.len, size.fruit));
+  canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(s.sex.who[state.sex], w, d, size.len, size.compare));
   renderInfo();
 }
 
@@ -2919,7 +2948,7 @@ function drawPortraitCaption(ctx, W, H) {
   ctx.fillText(s.week(w), 72 * u, H - 190 * u);
   ctx.fillStyle = '#F6C8B5';
   ctx.font = `500 ${44 * u}px "Sofia Sans", system-ui, sans-serif`;
-  ctx.fillText(`${s.day(dayOf(state.days))} · ${s.sizeOf(size.fruit)}`, 72 * u, H - 112 * u);
+  ctx.fillText(`${s.day(dayOf(state.days))} · ${size.compare}`, 72 * u, H - 112 * u);
   ctx.fillStyle = 'rgba(243, 240, 255, 0.62)';
   ctx.font = `italic 500 ${32 * u}px Lora, Georgia, serif`;
   ctx.fillText(s.taglineSex[state.sex] || s.tagline, 72 * u, H - 56 * u);
