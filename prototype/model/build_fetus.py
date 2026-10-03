@@ -377,8 +377,13 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
     """Both ears: plate, helix rim, antihelix with its crus, concha, tragus, antitragus and
     lobule. On the Ballard maturity scale the pinna is flat and soft around 24 weeks, well
     curved by 32-34 and firm at term, so the rim and the antihelix stand out more with age.
+    In the embryo (until ~10 weeks, easing out by ~13) the ear is different: a small upright
+    curl, taller than wide, made of a thick smooth rim shaped like a C that opens towards the
+    face and curls in at the bottom, around a small opening; no lobule or folds yet.
+    The same primitives take both shapes, so the growth morph can turn one into the other.
     Returns the left ear's centre for the rig."""
     curl = smoothstep(18, 36, g)
+    early = 1 - smoothstep(9.5, 13.5, g)
     H = 0.31 * R * (0.45 + 0.55 * feat)      # half the ear's height
     a, b = math.radians(22) * (0.3 + 0.7 * feat), math.radians(15)   # early ears lie flatter
     anchor = None
@@ -396,24 +401,41 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
 
         soft = 1 - smoothstep(10, 15, g)          # before ~14 weeks the ear is a low mound on the head
         detail = smoothstep(12, 18, g)            # the folds come in gradually; earlier a smooth rounded shell
-        add("earRoot" + s, Ellipsoid(ep(-0.3, -0.05, 0.0), np.array([0.22, 0.72, 0.2]) * H, frame), (0.3 + 0.5 * soft) * H)
-        add("earPlate" + s, Ellipsoid(ep(0.12, 0.0, 0.17), np.array([0.6, 1.0, 0.12 + 0.08 * (1 - detail)]) * H, frame), (0.25 + 0.6 * soft) * H)
+        def mix(late, emb):
+            return tuple(early * e + (1 - early) * l for l, e in zip(late, emb))
+
+        ec = (0.06, -0.02)                        # centre of the embryonic curl
+        add("earRoot" + s, Ellipsoid(ep(*mix((-0.3, -0.05, 0.0), (ec[0] + 0.05, ec[1], -0.04))), np.array(mix((0.22, 0.72, 0.2), (0.24, 0.42, 0.12))) * H, frame),
+            (0.3 + 0.5 * soft * (1 - early) + 0.12 * early) * H)
+        add("earPlate" + s, Ellipsoid(ep(*mix((0.12, 0.0, 0.17), (ec[0] + 0.04, ec[1], 0.07))),
+                                      np.array(mix((0.6, 1.0, 0.12 + 0.08 * (1 - detail)), (0.3, 0.46, 0.08))) * H, frame),
+            (0.25 + 0.6 * soft * (1 - early) + 0.08 * early) * H)
         rim_w = 0.2 + 0.12 * curl
-        rim = [(-0.12, 0.04, 0.2), (-0.28, 0.45, rim_w), (-0.08, 0.9, rim_w), (0.34, 0.9, rim_w),
-               (0.64, 0.5, rim_w), (0.7, 0.0, 0.92 * rim_w), (0.52, -0.48, 0.65 * rim_w)]
-        rr = (0.085 + 0.035 * curl) * H
-        add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [0.55 * rr, 0.85 * rr, rr, rr, rr, 0.95 * rr, 0.8 * rr], 0.1 * H)
+        rim_late = [(-0.12, 0.04, 0.2), (-0.28, 0.45, rim_w), (-0.08, 0.9, rim_w), (0.34, 0.9, rim_w),
+                    (0.64, 0.5, rim_w), (0.7, 0.0, 0.92 * rim_w), (0.52, -0.48, 0.65 * rim_w)]
+        # embryonic rim: a C open towards the face (-u), from the front-top over the top, down the
+        # back and round the bottom, ending curled in under the opening
+        rim_emb = []
+        for t, rad, w in ((150, 1.0, 0.13), (100, 1.0, 0.2), (50, 1.0, 0.21), (0, 1.0, 0.21), (-50, 1.0, 0.2), (-100, 0.95, 0.17), (-145, 0.62, 0.13)):
+            a_t = math.radians(t)
+            rim_emb.append((ec[0] + 0.3 * rad * math.cos(a_t), ec[1] + 0.47 * rad * math.sin(a_t), w))
+        rim = [mix(l, e) for l, e in zip(rim_late, rim_emb)]
+        rr = (0.085 + 0.035 * curl) * H * (1 - early) + 0.15 * H * early
+        taper = mix((0.55, 0.85, 1, 1, 1, 0.95, 0.8), (0.7, 0.95, 1, 1, 1, 0.95, 0.8))
+        add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [t * rr for t in taper], (0.1 - 0.04 * early) * H)
         ah_w = (0.2 + 0.08 * curl) * (0.6 + 0.4 * detail)
-        ar = (0.05 + 0.03 * curl) * H * (0.25 + 0.75 * detail)
+        ar = (0.05 + 0.03 * curl) * H * (0.25 + 0.75 * detail) * (1 - 0.8 * early)
         anti = [(0.12, -0.4, 0.85 * ah_w), (0.33, -0.04, ah_w), (0.34, 0.3, ah_w), (0.18, 0.62, 0.9 * ah_w)]
         add_chain(add, "earAntihelix" + s, [ep(*p) for p in anti], [0.9 * ar, ar, ar, 0.8 * ar], 0.1 * H)
         add_chain(add, "earCrus" + s, [ep(0.32, 0.28, ah_w), ep(0.12, 0.42, 0.95 * ah_w), ep(-0.06, 0.46, 0.9 * ah_w)],
                   [0.9 * ar, 0.8 * ar, 0.65 * ar], 0.1 * H)
-        add("earLobule" + s, Ellipsoid(ep(0.2, -0.72, 0.12), np.array([0.3, 0.26, 0.11]) * H, frame), 0.2 * H)
-        sub("earConcha" + s, Ellipsoid(ep(-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), np.array([0.3, 0.36, 0.3]) * H * (0.8 + 0.2 * detail), frame),
-            (0.08 + 0.06 * (1 - detail)) * H)
-        add("earTragus" + s, Ellipsoid(ep(-0.36, -0.2, 0.24), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail), frame), 0.1 * H)
-        add("earAntitragus" + s, Ellipsoid(ep(0.12, -0.5, 0.25), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail), frame), 0.1 * H)
+        add("earLobule" + s, Ellipsoid(ep(*mix((0.2, -0.72, 0.12), (0.12, -0.3, 0.04))), np.array([0.3, 0.26, 0.11]) * H * (1 - 0.85 * early), frame), 0.2 * H)
+        # the hollow; in the embryo a round bowl in the middle of the button, a little deeper
+        sub("earConcha" + s, Ellipsoid(ep(*mix((-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), (ec[0] - 0.05, ec[1] - 0.06, 0.26))),
+                                       np.array(mix(tuple(np.array([0.3, 0.36, 0.3]) * (0.8 + 0.2 * detail)), (0.13, 0.18, 0.24))) * H, frame),
+            (0.08 + 0.06 * (1 - detail) - 0.03 * early) * H)
+        add("earTragus" + s, Ellipsoid(ep(*mix((-0.36, -0.2, 0.24), (-0.22, -0.2, 0.08))), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail) * (1 - 0.5 * early), frame), 0.1 * H)
+        add("earAntitragus" + s, Ellipsoid(ep(*mix((0.12, -0.5, 0.25), (0.1, -0.3, 0.06))), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail) * (1 - 0.8 * early), frame), 0.1 * H)
         if s == "L":
             anchor = ep(0.1, 0.05, 0.4)
     return anchor
@@ -1235,9 +1257,27 @@ def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None):
     if dist.max() > 2e-3:
         raise RuntimeError(f"GLB vertices don't match the basis (max distance {dist.max():.4f})")
 
-    base_n = accessor_array(gltf, binary, prim["attributes"]["NORMAL"]).astype(np.float64) / 127
+    # Normals are recomputed from the geometry (base and every target, in GLB order), so they
+    # match the shapes exactly. Morph normal deltas are stored as normalized bytes, which can
+    # only hold -1..1; where a target turns the surface by more than that (the small early
+    # ear, the chin on the chest) that target's normals are written as floats instead.
+    tris_glb = accessor_array(gltf, binary, prim["indices"]).ravel().reshape(-1, 3).astype(np.int64)
+    base_q = np.clip(np.round(vertex_normals(positions, tris_glb) * 127), -127, 127).astype(np.int8)
+    base_n = base_q.astype(np.float64) / 127
+    float_meta = {"componentType": 5126, "type": "VEC3", "count": len(positions)}
+
+    def normal_delta(delta, byte_meta, sparse=False):
+        clipped = int((np.abs(delta).max(axis=1) > 0.99).sum())
+        # floats cost 3x the bytes: worth it for limb-only (sparse) targets and wherever many
+        # vertices would clip; a handful of clipped vertices in a crease isn't visible
+        if clipped > (0 if sparse else 150):
+            return delta.astype(np.float32), dict(float_meta)
+        return np.clip(np.round(delta * 127), -127, 127).astype(np.int8), byte_meta
+
     out = GlbWriter()
-    attributes = {name: out.dense(accessor_array(gltf, binary, i), meta[i]) for name, i in prim["attributes"].items()}
+    attributes = {}
+    for name, i in prim["attributes"].items():
+        attributes[name] = out.dense(base_q if name == "NORMAL" else accessor_array(gltf, binary, i), meta[i])
     indices = out.dense(accessor_array(gltf, binary, prim["indices"]).ravel()[:, None], meta[prim["indices"]], indices=True)
 
     def add_target(arrays, metas):
@@ -1254,23 +1294,35 @@ def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None):
     targets, names = [], list(mesh.get("extras", {}).get("targetNames", []))
     for name, t in zip(list(names), prim.get("targets", [])):
         arrays = {k: accessor_array(gltf, binary, i) for k, i in t.items()}
-        if normal_fix and name in normal_fix and "NORMAL" in arrays:
-            n_fix, w = normal_fix[name][0][order], normal_fix[name][1][order]
-            n_old = base_n + arrays["NORMAL"] / 127
-            n_new = w[:, None] * n_fix + (1 - w[:, None]) * n_old
-            n_new /= np.maximum(np.linalg.norm(n_new, axis=1, keepdims=True), 1e-9)
-            sel = w > 0
-            arrays["NORMAL"][sel] = np.clip(np.round((n_new[sel] - base_n[sel]) * 127), -127, 127).astype(np.int8)
-        targets.append(add_target(arrays, {k: meta[i] for k, i in t.items()}))
+        metas = {k: meta[i] for k, i in t.items()}
+        if "NORMAL" in arrays:
+            shaped = positions + arrays["POSITION"].astype(np.float64) * scale
+            n_t = vertex_normals(shaped, tris_glb)
+            if normal_fix and name in normal_fix:
+                n_fix, w = normal_fix[name][0][order], normal_fix[name][1][order]
+                n_t = w[:, None] * n_fix + (1 - w[:, None]) * n_t
+                n_t /= np.maximum(np.linalg.norm(n_t, axis=1, keepdims=True), 1e-9)
+            delta = n_t - base_n
+            # vertices that don't move keep exactly the base normal (keeps limb-only targets sparse)
+            still = ~np.any(arrays["POSITION"] != 0, axis=1)
+            ring = np.zeros(len(still), bool)
+            ring[tris_glb[~np.all(still[tris_glb], axis=1)].ravel()] = True
+            delta[still & ~ring] = 0
+            limb_only = still.mean() > 0.5
+            arrays["NORMAL"], metas["NORMAL"] = normal_delta(delta, metas["NORMAL"], sparse=limb_only)
+            if arrays["NORMAL"].dtype == np.float32:
+                print(f"  {name}: normals stored as float (turns past the byte range)")
+        targets.append(add_target(arrays, metas))
 
     pos_meta = meta[prim["targets"][0]["POSITION"]]
     nrm_meta = meta[prim["targets"][0]["NORMAL"]]
     for name, neutral, delta, normals in extra_targets:
         dq = np.round(delta[order] / scale).astype(np.int16)
         dn = (normals - vertex_normals(neutral, tris))[order]
-        dnq = np.clip(np.round(dn * 127), -127, 127).astype(np.int8)
+        dn[~np.any(dq != 0, axis=1) & (np.abs(dn).max(axis=1) < 1e-3)] = 0
+        dnq, nm = normal_delta(dn, nrm_meta, sparse=True)
         pm = dict(pos_meta, min=dq.min(axis=0).tolist(), max=dq.max(axis=0).tolist())
-        targets.append(add_target({"POSITION": dq, "NORMAL": dnq}, {"POSITION": pm, "NORMAL": nrm_meta}))
+        targets.append(add_target({"POSITION": dq, "NORMAL": dnq}, {"POSITION": pm, "NORMAL": nm}))
         names.append(name)
 
     prim["attributes"] = attributes
@@ -1415,8 +1467,8 @@ def main():
     # smoothed normals
     neck_ops = [op for op in base_ops if op.name == "neck"]
     early_dist = np.min([op.shape.sdf(basis) for op in ear_ops + face_ops + neck_ops], axis=0)
-    ear_idx = np.flatnonzero(early_dist < 0.05)
-    ear_w = 1 - np.array([smoothstep(0.03, 0.05, x) for x in early_dist[ear_idx]])
+    ear_idx = np.flatnonzero(early_dist < 0.09)
+    ear_w = 1 - np.array([smoothstep(0.06, 0.09, x) for x in early_dist[ear_idx]])
     normal_fix = {}
 
     obj.shape_key_add(name="Basis", from_mix=False)
@@ -1427,24 +1479,28 @@ def main():
             rig["anchors"].setdefault(key, []).append((val - center).round(5).tolist())
     # Walk outwards from the basis week so each step is a small change
     neutral = {BASE_WEEK: basis}
-    for chain in ([w for w in RIG_WEEKS if w < BASE_WEEK][::-1], [w for w in RIG_WEEKS if w > BASE_WEEK]):
+    # (week 10 is only a stepping stone: the ear changes shape most between 12 and 8)
+    for chain in ([20, 16, 12, 10, 8], [w for w in RIG_WEEKS if w > BASE_WEEK]):
         prev_ops, prev = base_ops, basis
         for g in chain:
-            ops_g = built[g][0]
+            ops_g = built[g][0] if g in built else build(g)[0]
             prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=14 if g < 16 else 4)
             if g < 16:
-                # enough iterations for the surface Laplacian to unfold the crowded early ear
-                prev = relax_masked(ops_g, prev, A, deg, ear_idx, ear_w, iterations=100 if g < 10 else 40)
-                n_mesh = vertex_normals(prev, tris)
+                # extra relaxation along the surface for the crowded early ear, face and neck
+                prev = relax_masked(ops_g, prev, A, deg, ear_idx, ear_w, iterations=150 if g < 12 else 60)
+                prev[ear_idx] = project(ops_g, prev[ear_idx], iterations=8, max_step=0.01)
+                # the vertices lie on the SDF surface, so its gradient is the smooth normal the
+                # shape should have; using it hides the small creases left where the big ear
+                # folds down into the small embryonic one
+                n_fix = vertex_normals(prev, tris)
                 n_sdf = gradient(ops_g, prev[ear_idx], eps=0.002)
-                n_sdf /= np.maximum(np.linalg.norm(n_sdf, axis=1, keepdims=True), 1e-9)
-                n_fix = n_mesh.copy()
-                blend = 0.5 * n_sdf + 0.5 * n_mesh[ear_idx]
-                n_fix[ear_idx] = blend / np.maximum(np.linalg.norm(blend, axis=1, keepdims=True), 1e-9)
+                n_fix[ear_idx] = n_sdf / np.maximum(np.linalg.norm(n_sdf, axis=1, keepdims=True), 1e-9)
                 weight_full = np.zeros(len(basis))
                 weight_full[ear_idx] = ear_w
                 normal_fix[f"W{g}"] = (n_fix, weight_full)
             prev_ops = ops_g
+            if g not in RIG_WEEKS:
+                continue
             neutral[g] = prev
             add_shape_key(obj, f"W{g}", prev - center)
 
