@@ -258,7 +258,7 @@ POSE_8 = {
     "curlL": (1.1, 1.25, 0), "curlR": (1.1, 1.25, 0),
     "skull": (0, 0.235, 0.105), "neck": (0, 0.04, 0.02),
     "backTop": (0, 0.04, -0.09), "backMid": (0, -0.12, -0.1), "backLow": (0, -0.28, -0.07),
-    "chest": (0, -0.03, 0.01), "belly": (0, -0.165, 0.06), "pelvis": (0, -0.3, -0.02),
+    "chest": (0, -0.03, 0.01), "belly": (0, -0.165, 0.05), "pelvis": (0, -0.3, -0.02),
     "glutL": (-0.03, -0.34, -0.05), "glutR": (0.03, -0.34, -0.05),
     "tailA": (0, -0.36, -0.03), "tailB": (0, -0.44, 0.05),
     "shL": (-0.115, 0.0, 0.03), "elL": (-0.15, -0.07, 0.1), "wrL": (-0.13, -0.05, 0.165), "tipL": (-0.11, -0.02, 0.23), "palmL": (0.6, 0.3, 0.6),
@@ -270,7 +270,7 @@ POSE_20 = {
     "curlL": (1.1, 1.25, 0), "curlR": (1.1, 1.25, 0),
     "skull": (0, 0.385, 0.07), "neck": (0, 0.2, 0.0),
     "backTop": (0, 0.16, -0.055), "backMid": (0, -0.04, -0.075), "backLow": (0, -0.24, -0.08),
-    "chest": (0, 0.07, 0.005), "belly": (0, -0.105, 0.025), "pelvis": (0, -0.27, -0.035),
+    "chest": (0, 0.07, 0.005), "belly": (0, -0.105, 0.015), "pelvis": (0, -0.27, -0.035),
     "glutL": (-0.05, -0.32, -0.065), "glutR": (0.05, -0.32, -0.065),
     "tailA": (0, -0.33, -0.06), "tailB": (0, -0.36, -0.04),
     "shL": (-0.105, 0.165, -0.015), "elL": (-0.15, 0.03, 0.085), "wrL": (-0.15, 0.16, 0.165), "tipL": (-0.145, 0.275, 0.19), "palmL": (1.0, 0.0, 0.3),
@@ -282,7 +282,7 @@ POSE_40 = {
     "curlL": (1.1, 1.25, 0), "curlR": (1.1, 1.25, 0),
     "skull": (0, 0.4, 0.06), "neck": (0, 0.215, 0.0),
     "backTop": (0, 0.17, -0.06), "backMid": (0, -0.04, -0.085), "backLow": (0, -0.24, -0.09),
-    "chest": (0, 0.075, 0.005), "belly": (0, -0.105, 0.03), "pelvis": (0, -0.27, -0.035),
+    "chest": (0, 0.075, 0.005), "belly": (0, -0.105, 0.018), "pelvis": (0, -0.27, -0.035),
     "glutL": (-0.058, -0.325, -0.075), "glutR": (0.058, -0.325, -0.075),
     "tailA": (0, -0.33, -0.07), "tailB": (0, -0.36, -0.05),
     "shL": (-0.12, 0.175, -0.02), "elL": (-0.162, 0.04, 0.09), "wrL": (-0.162, 0.17, 0.17), "tipL": (-0.157, 0.29, 0.2), "palmL": (1.0, 0.0, 0.3),
@@ -304,9 +304,11 @@ LEG_KN = [(8, 0.032), (12, 0.03), (20, 0.034), (28, 0.044), (40, 0.055)]
 LEG_AN = [(8, 0.026), (12, 0.022), (20, 0.024), (28, 0.029), (40, 0.035)]
 HAND_L = [(8, 0.1), (12, 0.13), (20, 0.15), (40, 0.165)]
 FOOT_L = [(8, 0.1), (12, 0.15), (20, 0.19), (40, 0.21)]
-CHEST = [(8, (0.135, 0.125, 0.125)), (20, (0.11, 0.105, 0.095)), (40, (0.128, 0.115, 0.105))]
-BELLY = [(8, (0.13, 0.12, 0.145)), (20, (0.115, 0.11, 0.11)), (40, (0.132, 0.115, 0.125))]
-PELVIS = [(8, (0.095, 0.085, 0.085)), (20, (0.1, 0.09, 0.085)), (40, (0.115, 0.095, 0.1))]
+# Chest, belly and pelvis overlap a lot (tall radii) so the trunk is one smooth column; the
+# belly is rounded but only a little deeper than the chest, not a pot belly
+CHEST = [(8, (0.135, 0.14, 0.125)), (20, (0.11, 0.125, 0.095)), (40, (0.128, 0.135, 0.106))]
+BELLY = [(8, (0.125, 0.13, 0.125)), (20, (0.108, 0.125, 0.092)), (40, (0.126, 0.135, 0.106))]
+PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.098, 0.092, 0.07)), (40, (0.112, 0.096, 0.078))]
 GLUT_R = [(8, 0.05), (20, 0.065), (40, 0.08)]
 TAIL_R = [(8, 0.05), (10, 0.03), (11, 0.0)]
 # Crown–rump length in mm, to turn measured sizes into CRL units
@@ -648,26 +650,28 @@ def build(g, overrides=None, sex=None, grow=1.0):
         ops.append(Op(name, shape, "sub", k, group))
 
     # --- torso --------------------------------------------------------------
-    add("chest", Ellipsoid(j["chest"], table3(CHEST, g) + 0.014 * fat), 0.07)
-    add("belly", Ellipsoid(j["belly"], table3(BELLY, g) + 0.018 * fat), 0.07)
-    add("pelvis", Ellipsoid(j["pelvis"], table3(PELVIS, g) + 0.012 * fat), 0.07)
+    add("chest", Ellipsoid(j["chest"], table3(CHEST, g) + 0.014 * fat), 0.09)
+    add("belly", Ellipsoid(j["belly"], table3(BELLY, g) + 0.012 * fat), 0.09)
+    add("pelvis", Ellipsoid(j["pelvis"], table3(PELVIS, g) + 0.01 * fat), 0.09)
     br = table(BACK_R, g)
     add("backUpper", RoundCone(j["backTop"], j["backMid"], br, br * 1.05), 0.06)
     add("backLower", RoundCone(j["backMid"], j["backLow"], br * 1.05, br), 0.06)
-    # Buttocks: two soft, fairly flat masses tucked under the pelvis, parted by the gluteal cleft
+    # Buttocks: two rounded cheeks below the sacrum, parted by the gluteal cleft. They sit flush
+    # with the line of the lower back rather than sticking out past it, but lower and further
+    # back than the pelvis, so from behind and below they read as two shapes, not one block.
     gr = 0.8 * table(GLUT_R, g) + 0.008 * fat
-    glut_shift = vec(0, 0.012, 0.008)
+    glut_shift = vec(0, 0.006, -0.015)
     for s in "LR":
-        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.95, 0.88, 0.72]) * gr), 0.042 + 0.012 * (1 - feat))
+        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.88, 0.92, 0.84]) * gr), 0.036 + 0.014 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
-    cleft = 0.0055 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
+    cleft = 0.007 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
     if cleft > 0:
         # follow the valley between the buttocks, from the sacrum round to the perineum
         torso = [op for op in ops if op.group == "torso"]
         gc = 0.5 * (j["glutL"] + j["glutR"]) + glut_shift
         pts = []
-        for th in np.radians(np.linspace(28, -75, 9)):
+        for th in np.radians(np.linspace(40, -75, 9)):
             d = vec(0, math.sin(th), -math.cos(th))
             t = 0.0
             while eval_group(torso, (gc + d * t)[None])[0] < 0 and t < 0.3:
@@ -1267,13 +1271,14 @@ class GlbWriter:
             fh.write(struct.pack("<II", len(binary), 0x004E4942) + binary)
 
 
-def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None):
+def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None, early_colour=None):
     """Repack a gltfpack-ed GLB: morph targets that only move part of the body (kick, wave)
     become sparse, and extra_targets [(name, neutral_positions, delta, normals)] are added as
     sparse targets; their normal deltas take the shaped surface's normals relative to the
     neutral mesh normals. normal_fix {target name: (normals, weight)} blends better normals
-    into existing targets where weight > 0. basis, tris and all per-vertex arrays are in
-    build order; the GLB's vertices are matched to them by position."""
+    into existing targets where weight > 0. early_colour (RGBA, 0-1) becomes the custom
+    attribute _EARLY: the vertex colour baked on the week-8 shape. basis, tris and all
+    per-vertex arrays are in build order; the GLB's vertices are matched to them by position."""
     from scipy.spatial import cKDTree
     gltf, binary = read_glb(src)
     mesh = gltf["meshes"][0]
@@ -1310,6 +1315,9 @@ def finalize_glb(src, dst, basis, tris, extra_targets, normal_fix=None):
     for name, i in prim["attributes"].items():
         attributes[name] = out.dense(base_q if name == "NORMAL" else accessor_array(gltf, binary, i), meta[i])
     indices = out.dense(accessor_array(gltf, binary, prim["indices"]).ravel()[:, None], meta[prim["indices"]], indices=True)
+    if early_colour is not None:
+        q = np.round(np.clip(early_colour[order], 0, 1) * 255).astype(np.uint8)
+        attributes["_EARLY"] = out.dense(q, {"componentType": 5121, "normalized": True, "type": "VEC4", "count": len(positions)})
 
     def add_target(arrays, metas):
         moved = np.zeros(len(positions), bool)
@@ -1637,27 +1645,36 @@ def main():
     obj.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", to_blender(basis - center).ravel())
 
     # Skin colour detail: occlusion in creases and a little warmth on the cheeks and lips
+    def skin_colours(ops, pos, normals, label):
+        ao = ambient_occlusion(ops, pos, normals)
+        for _ in range(4):   # soften: on a dense mesh raw occlusion speckles at sharp junctions (shoulders)
+            ao = 0.5 * ao + 0.5 * (A @ ao) / deg
+        warm = np.zeros(len(pos))
+        by_name = {op.name: op for op in ops}
+        for name, amount in (("cheekL", 0.4), ("cheekR", 0.4), ("lipUpperC", 0.6), ("lipUpperL", 0.6), ("lipUpperR", 0.6),
+                             ("lipLower", 0.6), ("noseTip", 0.2)):
+            if name in by_name:
+                warm = np.maximum(warm, amount * np.exp(-np.maximum(by_name[name].shape.sdf(pos), 0) / 0.006))
+        lid = np.zeros(len(pos))
+        for line in ops.lid_lines:
+            lid = np.maximum(lid, np.exp(-np.maximum(line.sdf(pos), 0) / 0.0016))
+        shade = (0.55 + 0.45 * ao) * (1 - 0.4 * lid)
+        rgb = np.stack([shade, shade * (1 - 0.1 * warm), shade * (1 - 0.13 * warm)], axis=1)
+        rgb = rgb * np.array([1.0, 0.97, 0.96]) ** (1 - ao)[:, None]
+        thickness = skin_thickness(ops, pos, normals, A, deg)
+        print(f"thickness {label}: min {thickness.min():.4f}, median {np.median(thickness):.4f}, max {thickness.max():.4f}")
+        # only the thin parts glow; limbs and trunk are fully opaque
+        alpha = np.array([smoothstep(0.008, 0.07, x) for x in thickness])
+        return np.clip(rgb, 0, 1), alpha
+
     _, _, normals = read_mesh(obj)
-    ao = ambient_occlusion(base_ops, basis, normals)
-    for _ in range(4):   # soften: on a dense mesh raw occlusion speckles at sharp junctions (shoulders)
-        ao = 0.5 * ao + 0.5 * (A @ ao) / deg
-    warm = np.zeros(len(basis))
-    by_name = {op.name: op for op in base_ops}
-    for name, amount in (("cheekL", 0.4), ("cheekR", 0.4), ("lipUpperC", 0.6), ("lipUpperL", 0.6), ("lipUpperR", 0.6),
-                         ("lipLower", 0.6), ("noseTip", 0.2)):
-        if name in by_name:
-            warm = np.maximum(warm, amount * np.exp(-np.maximum(by_name[name].shape.sdf(basis), 0) / 0.006))
-    lid = np.zeros(len(basis))
-    for line in base_ops.lid_lines:
-        lid = np.maximum(lid, np.exp(-np.maximum(line.sdf(basis), 0) / 0.0016))
-    shade = (0.55 + 0.45 * ao) * (1 - 0.4 * lid)
-    rgb = np.stack([shade, shade * (1 - 0.1 * warm), shade * (1 - 0.13 * warm)], axis=1)
-    rgb = rgb * np.array([1.0, 0.97, 0.96]) ** (1 - ao)[:, None]
-    thickness = skin_thickness(base_ops, basis, normals, A, deg)
-    print(f"thickness: min {thickness.min():.4f}, median {np.median(thickness):.4f}, max {thickness.max():.4f}")
-    # only the thin parts glow; limbs and trunk are fully opaque
-    alpha = np.array([smoothstep(0.008, 0.07, x) for x in thickness])
-    set_colors(obj, np.clip(rgb, 0, 1), alpha)
+    rgb, alpha = skin_colours(base_ops, basis, normals, "W24")
+    set_colors(obj, rgb, alpha)
+    # The same again on the week-8 shape: occlusion and thickness belong to the shape, and the
+    # basis' thin pinna would otherwise glow on the embryo's flat ear, where translucency is
+    # strongest. The page blends the two by age.
+    rgb8, alpha8 = skin_colours(built[8][0], neutral[8], vertex_normals(neutral[8], tris), "W8")
+    early_colour = np.concatenate([rgb8, alpha8[:, None]], axis=1)
 
     import bpy
     bpy.ops.export_scene.gltf(
@@ -1685,7 +1702,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         packed = os.path.join(tmp, "packed.glb")
         subprocess.run(shlex.split(args.gltfpack) + ["-i", raw, "-o", packed, "-kn", "-ke"], check=True)
-        n = finalize_glb(packed, args.out, basis - center, tris, sex_targets, normal_fix)
+        n = finalize_glb(packed, args.out, basis - center, tris, sex_targets, normal_fix, early_colour)
     print(f"wrote {args.out} ({os.path.getsize(args.out) / 1e6:.2f} MB, {n} verts) and {args.rig} in {time.time() - t0:.1f}s")
 
 

@@ -1504,6 +1504,7 @@ const babyUniforms = {
   uSssScale: { value: 0.8 },
   uSssAmbient: { value: 0.0 },
   uWrap: { value: 0.5 },
+  uEarly: { value: 0 },
   uWrapTint: { value: new THREE.Color('#ff8a68') },
 };
 const babyMaterial = new THREE.MeshPhysicalMaterial({
@@ -1516,6 +1517,18 @@ let skinShading = true;
 babyMaterial.customProgramCacheKey = () => (skinShading ? 'luna-skin' : 'luna-basic');
 babyMaterial.onBeforeCompile = (shader) => {
   Object.assign(shader.uniforms, babyUniforms);
+  // The sculpted model carries a second vertex colour baked on the week-8 shape (occlusion and
+  // thickness belong to the shape: the week-24 basis' thin pinna would glow on the embryo's flat ear)
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
+      #ifdef HAS_EARLY
+        attribute vec4 _early;
+        uniform float uEarly;
+      #endif`)
+    .replace('#include <color_vertex>', `#include <color_vertex>
+      #if defined( HAS_EARLY ) && defined( USE_COLOR_ALPHA )
+        vColor = mix( vColor, _early, uEarly );
+      #endif`);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
       uniform vec3 uHeartPos;
@@ -1721,6 +1734,7 @@ async function loadSculptedBaby() {
     const sexKeys = splitSexTargets(mesh);
     const material = babyMaterial.clone();
     material.vertexColors = true;
+    if (mesh.geometry.attributes._early) material.defines = { ...material.defines, HAS_EARLY: '' };
     material.onBeforeCompile = babyMaterial.onBeforeCompile;
     material.customProgramCacheKey = babyMaterial.customProgramCacheKey;
     mesh.material = material;
@@ -3133,6 +3147,7 @@ renderer.setAnimationLoop((timestamp) => {
   placeLights();
   if (m.baby) {
     babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency;
+    babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);
     babyAnchor('heart', heartWorld);
     babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
     babyUniforms.uHeartR.value = 0.13 * S;
