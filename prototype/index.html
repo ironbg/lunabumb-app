@@ -44,6 +44,8 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
+  html, body { touch-action: pan-x pan-y; }
+
   #scene {
     position: fixed;
     inset: 0;
@@ -1294,6 +1296,7 @@ const shellMaterial = new THREE.ShaderMaterial({
     uRim: { value: new THREE.Color() },
     uGlow: { value: new THREE.Color() },
     uIntensity: { value: 1 },
+    uFade: { value: 1 },
     uRippleDir: { value: new THREE.Vector3(0, 0, 1) },
     uRippleT: { value: 99 },
   },
@@ -1305,6 +1308,7 @@ const shellMaterial = new THREE.ShaderMaterial({
     varying vec3 vViewDir;
     varying vec3 vObj;
     varying float vRipple;
+    varying float vCamDist;
     void main() {
       vec3 n = normalize(position);
       float ang = acos(clamp(dot(n, normalize(uRippleDir)), -1.0, 1.0));
@@ -1315,6 +1319,7 @@ const shellMaterial = new THREE.ShaderMaterial({
       vec4 mv = modelViewMatrix * vec4(pos, 1.0);
       vNormalV = normalize(normalMatrix * normal);
       vViewDir = normalize(-mv.xyz);
+      vCamDist = length(mv.xyz);
       gl_Position = projectionMatrix * mv;
     }
   `,
@@ -1323,16 +1328,21 @@ const shellMaterial = new THREE.ShaderMaterial({
     uniform vec3 uRim;
     uniform vec3 uGlow;
     uniform float uIntensity;
+    uniform float uFade;
     varying vec3 vNormalV;
     varying vec3 vViewDir;
     varying vec3 vObj;
     varying float vRipple;
+    varying float vCamDist;
     void main() {
       float f = 1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir)));
       float rim = pow(f, 2.6);
       float m = 0.5 + 0.5 * sin(vObj.x * 9.0 + uTime * 0.2) * sin(vObj.y * 7.0 - uTime * 0.15) * sin(vObj.z * 8.0 + 1.3);
       vec3 col = uRim * rim * (0.75 + 0.25 * m) + uGlow * (0.035 + 0.03 * m);
       col += uGlow * vRipple * 1.5;
+      // zooming in passes the camera through the membrane: fade it out before the near plane can slice it,
+      // otherwise the glow switches on and off as the camera crosses
+      col *= smoothstep(0.2, 1.1, vCamDist) * uFade;
       gl_FragColor = vec4(col * uIntensity, 1.0);
     }
   `,
@@ -1994,8 +2004,11 @@ const particleMaterial = new THREE.ShaderMaterial({
       float s = aSeed * 6.28318;
       vec3 p = position + vec3(sin(uTime * 0.13 + s * 3.1), sin(uTime * 0.11 + s * 1.7), cos(uTime * 0.09 + s * 2.3)) * 0.18;
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
-      gl_PointSize = uSize * uPR * (0.5 + aSeed) * (8.0 / -mv.z);
-      vTw = 0.55 + 0.45 * sin(uTime * (0.8 + aSeed * 1.6) + s * 5.0);
+      // a mote drifting up to the lens would grow to hundreds of pixels and pop at the near plane:
+      // fade it out and cap the size so zooming into the cloud stays calm
+      float depth = max(-mv.z, 0.05);
+      gl_PointSize = min(uSize * uPR * (0.5 + aSeed) * (8.0 / depth), 40.0 * uPR);
+      vTw = (0.55 + 0.45 * sin(uTime * (0.8 + aSeed * 1.6) + s * 5.0)) * smoothstep(0.4, 1.4, depth);
       vMix = fract(aSeed * 7.13);
       gl_Position = projectionMatrix * mv;
     }
@@ -2077,9 +2090,10 @@ const sparkMaterial = new THREE.ShaderMaterial({
     uniform float uPR;
     varying float vLife;
     void main() {
-      vLife = aLife;
       vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = 34.0 * uPR * aLife * (8.0 / -mv.z);
+      float depth = max(-mv.z, 0.05);
+      vLife = aLife * smoothstep(0.2, 0.8, depth);
+      gl_PointSize = min(34.0 * uPR * aLife * (8.0 / depth), 120.0 * uPR);
       gl_Position = projectionMatrix * mv;
     }
   `,
@@ -2207,7 +2221,9 @@ const FinishShader = {
     uniform vec3 uGain;
     uniform float uSat;
     varying vec2 vUv;
-    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    // arithmetic hash on pixel coordinates: sin() of large numbers loses precision on some phone GPUs
+    // and turns the grain into flickering blocks
+    float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
     void main() {
       vec4 c = texture2D(tDiffuse, vUv);
       // colour grade (linear, before tone mapping): tint the highlights, lift the shadows, saturation
@@ -2215,7 +2231,7 @@ const FinishShader = {
       c.rgb = mix(vec3(luma), c.rgb, uSat) * uGain + uLift * (1.0 - smoothstep(0.0, 0.6, luma));
       vec2 d = vUv - 0.5;
       c.rgb *= clamp(1.0 - uVignette * dot(d, d) * 2.2, 0.0, 1.0);
-      float g = hash(vUv * 1000.0 + fract(uTime) * 100.0) - 0.5;
+      float g = hash(gl_FragCoord.xy + floor(fract(uTime * 0.37) * 64.0) * 57.0) - 0.5;
       c.rgb = max(c.rgb + g * uGrain * (0.25 + c.rgb), 0.0);
       gl_FragColor = c;
     }
@@ -2675,11 +2691,19 @@ function preferredDistance(S) {
   return (0.7 * S) / frameTan;
 }
 
+// Resizing the canvas clears it, and a ResizeObserver callback runs after the frame was drawn,
+// so only touch the buffers when the size really changed (otherwise that frame shows up blank)
+const sized = { w: 0, h: 0, pr: 0, composer: null };
+
 function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  composer.setSize(w, h);
+  const pr = renderer.getPixelRatio();
+  if (w !== sized.w || h !== sized.h || pr !== sized.pr || composer !== sized.composer) {
+    renderer.setSize(w, h, false);
+    composer.setSize(w, h);
+    Object.assign(sized, { w, h, pr, composer });
+  }
   const dock = $('dock').getBoundingClientRect();
   const hero = document.querySelector('.hero').getBoundingClientRect();
   document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
@@ -2917,6 +2941,7 @@ async function capturePortrait() {
 
   renderer.setPixelRatio(prevPR);
   composer.setPixelRatio(prevPR);
+  sized.w = 0; // the buffers were sized for the portrait: restore them
   resize();
 
   const s = t();
@@ -2971,6 +2996,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('resize', resize);
+// A pinch that starts on the page chrome would zoom the page itself on iOS (it ignores user-scalable=no)
+for (const type of ['gesturestart', 'gesturechange']) document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
 new ResizeObserver(resize).observe($('dock'));
 
 /* =========================================================================
@@ -3092,6 +3119,9 @@ renderer.setAnimationLoop((timestamp) => {
   wallMaterial.uniforms.uTime.value = tt;
   shellMaterial.uniforms.uTime.value = tt;
   shellMaterial.uniforms.uRippleT.value += dt;
+  // seen from just outside, the membrane's rim sweeps across the whole view: dim it as the camera nears it
+  const camR = Math.hypot(camera.position.x / WOMB.x, camera.position.y / WOMB.y, camera.position.z / WOMB.z);
+  shellMaterial.uniforms.uFade.value = THREE.MathUtils.smoothstep(camR, 1.02, 1.5);
   particleMaterial.uniforms.uTime.value = tt;
   starMaterial.uniforms.uTime.value = tt;
   moonMaterial.uniforms.uTime.value = tt;
