@@ -669,13 +669,13 @@ def build(g, overrides=None, sex=None, grow=1.0):
         add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.8, 0.82, 0.72]) * gr), 0.05 + 0.014 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
-    cleft = 0.006 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
+    cleft = 0.0036 * smoothstep(11, 18, g) * (1 + 0.3 * fat)   # a fine, short crease
     if cleft > 0:
         # follow the valley between the buttocks, from the sacrum round to the perineum
         torso = [op for op in ops if op.group == "torso"]
         gc = 0.5 * (j["glutL"] + j["glutR"]) + glut_shift
         pts = []
-        for th in np.radians(np.linspace(40, -75, 9)):
+        for th in np.radians(np.linspace(18, -70, 9)):
             d = vec(0, math.sin(th), -math.cos(th))
             t = 0.0
             while eval_group(torso, (gc + d * t)[None])[0] < 0 and t < 0.3:
@@ -683,7 +683,7 @@ def build(g, overrides=None, sex=None, grow=1.0):
             pts.append(gc + d * (t - 0.45 * cleft))
         taper = (0.15, 0.6, 0.95, 1.0, 1.0, 1.0, 0.9, 0.6, 0.3)
         cones = [RoundCone(pts[i], pts[i + 1], cleft * taper[i], cleft * taper[i + 1]) for i in range(len(pts) - 1)]
-        sub("glutCleft", Chain(cones), 0.02, group="torso")
+        sub("glutCleft", Chain(cones), 0.014, group="torso")
     navel_dir = unit(vec(0, -0.25, 1))
     navel = j["belly"] + navel_dir * table3(BELLY, g)[2] * 0.93
     add("navel", RoundCone(navel - navel_dir * 0.01, navel + navel_dir * 0.018, 0.021, 0.019), 0.012)

@@ -46,6 +46,14 @@
 
   html, body { touch-action: pan-x pan-y; }
 
+  /* Phones and tablets: no backdrop blur over the WebGL canvas. On Android, blurred panels on top
+     of a canvas that changes every frame make the browser drop the canvas for single frames (the
+     picture blinks out to the page background); denser glass looks almost the same. */
+  @media (pointer: coarse) {
+    :root { --glass: rgba(30, 27, 58, 0.82); --glass-strong: rgba(30, 27, 58, 0.92); }
+    * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  }
+
   #scene {
     position: fixed;
     inset: 0;
@@ -1109,7 +1117,12 @@ const dayOf = (days) => days % 7;
 const canvas = $('scene');
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  // On touch devices keep the drawing buffer between frames: with a discarded buffer some Android
+  // browsers show an empty canvas for a frame when the compositor and the page get out of step
+  renderer = new THREE.WebGLRenderer({
+    canvas, antialias: false, powerPreference: 'high-performance',
+    preserveDrawingBuffer: matchMedia('(pointer: coarse)').matches,
+  });
 } catch (err) {
   $('loader').hidden = true;
   $('fallback').textContent = STR[state.lang].noWebgl;
