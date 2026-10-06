@@ -1500,6 +1500,17 @@ def main():
     early_dist = np.min([op.shape.sdf(basis) for op in ear_ops + face_ops + neck_ops], axis=0)
     ear_idx = np.flatnonzero(early_dist < 0.09)
     ear_w = 1 - np.array([smoothstep(0.06, 0.09, x) for x in early_dist[ear_idx]])
+    # the pinna with a wide margin of scalp: redone from week 12 for the embryonic ear
+    ear_region = np.flatnonzero(np.min([op.shape.sdf(basis) for op in ear_ops], axis=0) < 0.03)
+    in_region = np.zeros(len(basis), bool)
+    in_region[ear_region] = True
+    on_rim = np.zeros(len(basis), bool)
+    for a, b in ((0, 1), (1, 2), (2, 0)):
+        u, v = tris[:, a], tris[:, b]
+        cut = in_region[u] != in_region[v]
+        on_rim[u[cut & in_region[u]]] = True
+        on_rim[v[cut & in_region[v]]] = True
+    ear_inner = np.flatnonzero(in_region & ~on_rim)
     normal_fix = {}
 
     obj.shape_key_add(name="Basis", from_mix=False)
@@ -1527,6 +1538,15 @@ def main():
                 plain.extend(op for op in ops_g if not op.name.startswith("ear"))
                 prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
                 prev = relax_masked(plain, prev, A, deg, ear_idx, ear_w, iterations=60)
+                # the growth steps' own relaxation slides the ear's vertices over the relief's
+                # edges, so the ear region is carried straight from week 12 instead
+                x, x_ops = neutral[12][ear_region], built[12][0]
+                for step in [w for w in (10, 8) if w >= g]:
+                    step_ops = ops_g if step == g else build(step)[0]
+                    x = project(step_ops, carry(x_ops, step_ops, x), iterations=6)
+                    x_ops = step_ops
+                prev[ear_region] = project(plain, x, iterations=8, max_step=0.01)
+                prev = relax_masked(plain, prev, A, deg, ear_inner, np.ones(len(ear_inner)), iterations=60)
                 prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
                 q = prev[ear_idx]
                 nrm = gradient(plain, q, eps=0.002)
