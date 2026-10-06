@@ -1383,7 +1383,7 @@ const placentaGeometry = new THREE.SphereGeometry(1, 96, 40, 0, Math.PI * 2, 0, 
 // the fetal side is covered by the shiny amnion
 const placentaMaterial = new THREE.MeshPhysicalMaterial({
   color: MODES.dreamy.placenta, roughness: 0.5, sheen: 0.6, sheenColor: new THREE.Color('#ffb3a0'),
-  clearcoat: 0.8, clearcoatRoughness: 0.22,
+  clearcoat: 0.3, clearcoatRoughness: 0.45,
   emissive: new THREE.Color('#3a0f1c'), emissiveIntensity: 0.5, side: THREE.DoubleSide,
 });
 const placentaGroup = new THREE.Group();
@@ -1396,7 +1396,7 @@ placentaGroup.add(placenta);
 // Chorionic vessels: they run from the cord's insertion in the middle out over the fetal surface,
 // branching and thinning towards the rim. Built once from a seeded random tree.
 const placentaVesselMaterial = new THREE.MeshPhysicalMaterial({
-  color: '#3a1530', roughness: 0.4, clearcoat: 0.8, clearcoatRoughness: 0.2, emissive: new THREE.Color('#1a0610'), emissiveIntensity: 0.6,
+  color: '#3a1530', roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.45, emissive: new THREE.Color('#1a0610'), emissiveIntensity: 0.6,
 });
 const placentaVessels = new THREE.Mesh(new THREE.BufferGeometry(), placentaVesselMaterial);
 placenta.add(placentaVessels);
@@ -2085,6 +2085,42 @@ const cordN = new THREE.Vector3();
 const cordB = new THREE.Vector3();
 const cordDir = new THREE.Vector3();
 const cordAround = new THREE.Vector3();
+const cordPts = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
+const cordTmp = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
+// The cord goes round the legs instead of through them: knees, thighs and feet as spheres
+// (model-space centre and radius; the right knee mirrors the left)
+const CORD_OBSTACLES = [
+  ['knee', 1, 0.08], ['knee', -1, 0.08], ['footL', 1, 0.065], ['footR', 1, 0.065], ['groin', 1, 0.075],
+  ['thighL', 1, 0.07], ['thighR', 1, 0.07],
+].map(([name, mirror, r]) => ({ name, mirror, r, c: new THREE.Vector3() }));
+const cordKnee = new THREE.Vector3();
+const cordGroin = new THREE.Vector3();
+
+function placeCordObstacles(ga) {
+  rigPoint('knee', ga, cordKnee);
+  rigPoint('groin', ga, cordGroin);
+  for (const o of CORD_OBSTACLES) {
+    if (o.name === 'thighL') o.c.lerpVectors(cordGroin, cordKnee, 0.5);
+    else if (o.name === 'thighR') o.c.lerpVectors(cordGroin, cordKnee.clone().setX(-cordKnee.x), 0.5);
+    else rigPoint(o.name, ga, o.c);
+    if (o.mirror < 0) o.c.x = -o.c.x;
+    gltfBaby.group.localToWorld(o.c);
+  }
+}
+
+function pushCordOut(radius, S) {
+  for (let i = Math.round(CORD_SEG * 0.06); i < CORD_SEG; i++) {
+    const p = cordPts[i];
+    for (const o of CORD_OBSTACLES) {
+      const reach = o.r * S + radius;
+      const d = p.distanceTo(o.c);
+      if (d < reach) p.sub(o.c).setLength(reach).add(o.c);
+    }
+  }
+}
+
+// a fixed direction across the cord where it leaves the placenta
+const PLACENTA_REF = new THREE.Vector3(1, 0, 0).addScaledVector(placentaNormal, -placentaNormal.x).normalize();
 
 function updateCord(now, S) {
   const pts = cordCurve.points;
@@ -2104,17 +2140,28 @@ function updateCord(now, S) {
   const d = pts[2].distanceTo(babyCenter);
   if (d < 0.62 * S) pts[2].sub(babyCenter).setLength(0.62 * S).add(babyCenter);
 
-  // A tube with frames carried along the curve (parallel transport) from a fixed reference, so
-  // the vessel spirals don't jump round as the cord sways
+  // A tube with frames carried along the curve (parallel transport), starting at the placenta,
+  // which never moves: the vessel spirals stay put instead of crawling round as the cord sways
   const radius = 0.022 * S + 0.012;
-  cordCurve.getTangentAt(0, cordT);
-  cordN.set(0, 1, 0).addScaledVector(cordT, -cordT.y);
-  if (cordN.lengthSq() < 1e-4) cordN.set(1, 0, 0).addScaledVector(cordT, -cordT.x);
-  cordN.normalize();
-  for (let i = 0; i <= CORD_SEG; i++) {
+  cordCurve.updateArcLengths();
+  for (let i = 0; i <= CORD_SEG; i++) cordCurve.getPointAt(i / CORD_SEG, cordPts[i]);
+  // keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
+  // would fold through itself (or through a leg), and the fold changes every frame as it sways
+  const obstacles = gltfBaby.ready;
+  if (obstacles) placeCordObstacles(gaOf(state.days));
+  for (let pass = 0; pass < 3; pass++) {
+    if (obstacles) pushCordOut(radius, S);
+    for (let it = 0; it < (pass === 0 ? 12 : 4); it++) {
+      for (let i = 1; i < CORD_SEG; i++) cordTmp[i].copy(cordPts[i - 1]).add(cordPts[i + 1]).multiplyScalar(0.25).addScaledVector(cordPts[i], 0.5);
+      for (let i = 1; i < CORD_SEG; i++) cordPts[i].copy(cordTmp[i]);
+    }
+  }
+  cordT.subVectors(cordPts[CORD_SEG], cordPts[CORD_SEG - 1]).normalize();
+  cordN.copy(PLACENTA_REF).addScaledVector(cordT, -PLACENTA_REF.dot(cordT)).normalize();
+  for (let i = CORD_SEG; i >= 0; i--) {
     const u = i / CORD_SEG;
-    cordCurve.getPointAt(u, cordP);
-    cordCurve.getTangentAt(u, cordT);
+    cordP.copy(cordPts[i]);
+    cordT.subVectors(cordPts[Math.min(i + 1, CORD_SEG)], cordPts[Math.max(i - 1, 0)]).normalize();
     cordN.addScaledVector(cordT, -cordN.dot(cordT)).normalize();
     cordB.crossVectors(cordT, cordN);
     // the cord flares where it goes into the placenta

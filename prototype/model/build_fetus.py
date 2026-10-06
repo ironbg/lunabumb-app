@@ -269,7 +269,7 @@ POSE_8 = {
 POSE_20 = {
     "curlL": (1.1, 1.25, 0), "curlR": (1.1, 1.25, 0),
     "skull": (0, 0.385, 0.07), "neck": (0, 0.2, 0.0),
-    "backTop": (0, 0.16, -0.055), "backMid": (0, -0.04, -0.075), "backLow": (0, -0.24, -0.08),
+    "backTop": (0, 0.16, -0.055), "backMid": (0, -0.04, -0.075), "backLow": (0, -0.24, -0.072),
     "chest": (0, 0.07, 0.005), "belly": (0, -0.105, 0.015), "pelvis": (0, -0.27, -0.035),
     "glutL": (-0.05, -0.32, -0.065), "glutR": (0.05, -0.32, -0.065),
     "tailA": (0, -0.33, -0.06), "tailB": (0, -0.36, -0.04),
@@ -281,7 +281,7 @@ POSE_20 = {
 POSE_40 = {
     "curlL": (1.1, 1.25, 0), "curlR": (1.1, 1.25, 0),
     "skull": (0, 0.4, 0.06), "neck": (0, 0.215, 0.0),
-    "backTop": (0, 0.17, -0.06), "backMid": (0, -0.04, -0.085), "backLow": (0, -0.24, -0.09),
+    "backTop": (0, 0.17, -0.06), "backMid": (0, -0.04, -0.082), "backLow": (0, -0.24, -0.078),
     "chest": (0, 0.075, 0.005), "belly": (0, -0.105, 0.018), "pelvis": (0, -0.27, -0.035),
     "glutL": (-0.058, -0.325, -0.075), "glutR": (0.058, -0.325, -0.075),
     "tailA": (0, -0.33, -0.07), "tailB": (0, -0.36, -0.05),
@@ -295,11 +295,11 @@ POSE_40 = {
 HEAD_R = [(8, 0.25), (12, 0.205), (16, 0.178), (20, 0.17), (28, 0.165), (36, 0.158), (40, 0.153)]
 PITCH = [(8, 0.95), (12, 0.72), (20, 0.42), (40, 0.45)]
 NECK_R = [(8, 0.12), (12, 0.09), (20, 0.068), (40, 0.075)]
-BACK_R = [(8, 0.075), (20, 0.058), (40, 0.068)]
+BACK_R = [(8, 0.075), (20, 0.058), (40, 0.064)]
 ARM_SH = [(8, 0.03), (12, 0.03), (20, 0.033), (28, 0.042), (40, 0.056)]
 ARM_EL = [(8, 0.026), (12, 0.024), (20, 0.026), (28, 0.033), (40, 0.043)]
 ARM_WR = [(8, 0.024), (12, 0.02), (20, 0.021), (28, 0.026), (40, 0.032)]
-LEG_HIP = [(8, 0.04), (12, 0.04), (20, 0.05), (28, 0.063), (40, 0.08)]
+LEG_HIP = [(8, 0.04), (12, 0.04), (20, 0.048), (28, 0.057), (40, 0.068)]
 LEG_KN = [(8, 0.032), (12, 0.03), (20, 0.034), (28, 0.044), (40, 0.055)]
 LEG_AN = [(8, 0.026), (12, 0.022), (20, 0.024), (28, 0.029), (40, 0.035)]
 HAND_L = [(8, 0.1), (12, 0.13), (20, 0.15), (40, 0.165)]
@@ -308,8 +308,8 @@ FOOT_L = [(8, 0.1), (12, 0.15), (20, 0.19), (40, 0.21)]
 # belly is rounded but only a little deeper than the chest, not a pot belly
 CHEST = [(8, (0.135, 0.14, 0.125)), (20, (0.11, 0.125, 0.095)), (40, (0.128, 0.135, 0.106))]
 BELLY = [(8, (0.125, 0.13, 0.125)), (20, (0.108, 0.125, 0.092)), (40, (0.126, 0.135, 0.106))]
-PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.098, 0.092, 0.07)), (40, (0.112, 0.096, 0.078))]
-GLUT_R = [(8, 0.05), (20, 0.065), (40, 0.08)]
+PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.098, 0.092, 0.068)), (40, (0.112, 0.096, 0.07))]
+GLUT_R = [(8, 0.05), (20, 0.058), (40, 0.066)]
 # The embryonic tail has regressed by the end of week 8 (Carnegie stage 23): no tail at all here
 TAIL_R = [(8, 0.0), (40, 0.0)]
 # Crown–rump length in mm, to turn measured sizes into CRL units
@@ -662,9 +662,9 @@ def build(g, overrides=None, sex=None, grow=1.0):
     # back than the pelvis, so from behind and below they read as two shapes, not one block.
     # The embryo has hardly any: they fill out from about week 10.
     gr = (0.8 * table(GLUT_R, g) + 0.008 * fat) * (0.55 + 0.45 * smoothstep(9, 18, g))
-    glut_shift = vec(0, 0.006, -0.006)
+    glut_shift = vec(0, 0.006, 0.0)
     for s in "LR":
-        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.86, 0.9, 0.7]) * gr), 0.036 + 0.014 * (1 - feat))
+        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.86, 0.9, 0.55]) * gr), 0.036 + 0.014 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
     cleft = 0.007 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
@@ -677,11 +677,11 @@ def build(g, overrides=None, sex=None, grow=1.0):
             d = vec(0, math.sin(th), -math.cos(th))
             t = 0.0
             while eval_group(torso, (gc + d * t)[None])[0] < 0 and t < 0.3:
-                t += 0.002
+                t += 0.0005
             pts.append(gc + d * (t - 0.45 * cleft))
         taper = (0.15, 0.6, 0.95, 1.0, 1.0, 1.0, 0.9, 0.6, 0.3)
         cones = [RoundCone(pts[i], pts[i + 1], cleft * taper[i], cleft * taper[i + 1]) for i in range(len(pts) - 1)]
-        sub("glutCleft", Chain(cones), 0.014, group="torso")
+        sub("glutCleft", Chain(cones), 0.02, group="torso")
     navel_dir = unit(vec(0, -0.25, 1))
     navel = j["belly"] + navel_dir * table3(BELLY, g)[2] * 0.93
     add("navel", RoundCone(navel - navel_dir * 0.01, navel + navel_dir * 0.018, 0.021, 0.019), 0.012)
