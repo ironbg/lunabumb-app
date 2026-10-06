@@ -445,14 +445,15 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat, ops):
         # embryonic rim: a C open towards the face (-u), from the front-top over the top, down the
         # back and round the bottom, ending curled in under the opening
         rim_emb = []
+        # A broad, low ridge rather than a thin cord: the mesh can't hold anything finer at this size
         # (the back of the rim lifts a little more than the front)
-        for t, rad, w in ((150, 1.0, 0.02), (100, 1.0, 0.05), (50, 1.0, 0.07), (0, 1.0, 0.08), (-50, 1.0, 0.07), (-100, 0.95, 0.05), (-145, 0.62, 0.02)):
+        for t, rad, w in ((150, 1.0, -0.05), (100, 1.0, -0.02), (50, 1.0, -0.01), (0, 1.0, 0.0), (-50, 1.0, -0.01), (-100, 0.95, -0.02), (-145, 0.62, -0.05)):
             a_t = math.radians(t)
-            rim_emb.append((ec[0] + 0.3 * rad * math.cos(a_t), ec[1] + 0.47 * rad * math.sin(a_t), w))
+            rim_emb.append((ec[0] + 0.34 * rad * math.cos(a_t), ec[1] + 0.5 * rad * math.sin(a_t), w))
         rim = [mix(l, e) for l, e in zip(rim_late, rim_emb)]
-        rr = (0.085 + 0.035 * curl) * H * (1 - early) + 0.11 * H * early
+        rr = (0.085 + 0.035 * curl) * H * (1 - early) + 0.17 * H * early
         taper = mix((0.55, 0.85, 1, 1, 1, 0.95, 0.8), (0.7, 0.95, 1, 1, 1, 0.95, 0.8))
-        add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [t * rr for t in taper], (0.1 - 0.04 * early) * H)
+        add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [t * rr for t in taper], (0.1 - 0.01 * early) * H)
         ah_w = (0.2 + 0.08 * curl) * (0.6 + 0.4 * detail)
         ar = (0.05 + 0.03 * curl) * H * (0.25 + 0.75 * detail) * (1 - 0.8 * early)
         anti = [(0.12, -0.4, 0.85 * ah_w), (0.33, -0.04, ah_w), (0.34, 0.3, ah_w), (0.18, 0.62, 0.9 * ah_w)]
@@ -462,7 +463,7 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat, ops):
         add("earLobule" + s, Ellipsoid(ep(*mix((0.2, -0.72, 0.12), (0.12, -0.3, 0.0))), np.array([0.3, 0.26, 0.11]) * H * (1 - 0.85 * early), frame), 0.2 * H)
         # the hollow; in the embryo a shallow pit inside the curl
         sub("earConcha" + s, Ellipsoid(ep(*mix((-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), (ec[0] - 0.03, ec[1] - 0.05, 0.0))),
-                                       np.array(mix(tuple(np.array([0.3, 0.36, 0.3]) * (0.8 + 0.2 * detail)), (0.12, 0.16, 0.07))) * H, frame),
+                                       np.array(mix(tuple(np.array([0.3, 0.36, 0.3]) * (0.8 + 0.2 * detail)), (0.13, 0.19, 0.08))) * H, frame),
             (0.08 + 0.06 * (1 - detail) - 0.03 * early) * H)
         add("earTragus" + s, Ellipsoid(ep(*mix((-0.36, -0.2, 0.24), (-0.22, -0.2, 0.02))), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail) * (1 - 0.5 * early), frame), 0.1 * H)
         add("earAntitragus" + s, Ellipsoid(ep(*mix((0.12, -0.5, 0.25), (0.1, -0.3, 0.02))), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail) * (1 - 0.8 * early), frame), 0.1 * H)
