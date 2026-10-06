@@ -1277,7 +1277,9 @@ const wallMaterial = new THREE.ShaderMaterial({
         if (n >= uIter) break;
         float tt = time * (1.0 - (3.5 / float(n + 1)));
         i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
-        c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / inten), p.y / (cos(i.y + tt) / inten)));
+        // 1 / length(p / (s / inten)) without dividing by the sine, which can reach zero
+        vec2 s = vec2(sin(i.x + tt), cos(i.y + tt)) / inten;
+        c += abs(s.x * s.y) / max(length(vec2(p.x * s.y, p.y * s.x)), 1e-4);
         steps++;
       }
       c /= float(max(steps, 1));
@@ -1286,7 +1288,7 @@ const wallMaterial = new THREE.ShaderMaterial({
     }
 
     void main() {
-      float facing = abs(dot(normalize(vNormalV), normalize(vViewDir)));
+      float facing = clamp(abs(dot(normalize(vNormalV), normalize(vViewDir))), 0.0, 1.0);
       vec3 base = mix(uEdge, uCenter, pow(facing, 1.4));
       vec3 n = normalize(vObj);
       vec3 w = abs(n);
@@ -1355,7 +1357,9 @@ const shellMaterial = new THREE.ShaderMaterial({
     varying float vRipple;
     varying float vCamDist;
     void main() {
-      float f = 1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir)));
+      // clamped: phone GPUs normalise approximately, so the dot product can come out a hair above 1,
+      // and pow() of a negative base is NaN, which the bloom then spreads over the whole picture
+      float f = clamp(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 0.0, 1.0);
       float rim = pow(f, 2.6);
       float m = 0.5 + 0.5 * sin(vObj.x * 9.0 + uTime * 0.2) * sin(vObj.y * 7.0 - uTime * 0.15) * sin(vObj.z * 8.0 + 1.3);
       vec3 col = uRim * rim * (0.75 + 0.25 * m) + uGlow * (0.035 + 0.03 * m);
@@ -2420,7 +2424,7 @@ const moonMaterial = new THREE.ShaderMaterial({
       float lit = smoothstep(-0.04, 0.22, dot(n, L));
       float maria = fbm(vObj * 2.2);
       float albedo = mix(0.55, 1.0, smoothstep(0.35, 0.7, maria));
-      float rim = pow(1.0 - abs(dot(n, normalize(vViewDir))), 3.0);
+      float rim = pow(clamp(1.0 - abs(dot(n, normalize(vViewDir))), 0.0, 1.0), 3.0);
       vec3 col = uColor * albedo * lit * 0.95 + uShade * 0.04 + uShade * rim * 0.25;
       gl_FragColor = vec4(col, 1.0);
     }
@@ -2433,6 +2437,15 @@ scene.add(moon);
 /* =========================================================================
    Post-processing
    ========================================================================= */
+
+// A pixel that came out NaN or infinite (a shader corner case on some phone GPUs) must not reach the
+// bloom: its blur spreads the value over the whole frame, and a NaN alpha makes the whole canvas
+// transparent for that frame (the picture blinks out to the page background). Such pixels become black.
+const FINITE_GLSL = /* glsl */`
+  vec4 finiteOrZero(vec4 c) {
+    bool bad = any(isnan(c)) || any(isinf(c)) || !all(lessThan(abs(c), vec4(6.0e4)));
+    return bad ? vec4(0.0) : c;
+  }`;
 
 const FinishShader = {
   uniforms: {
@@ -2455,8 +2468,9 @@ const FinishShader = {
     // arithmetic hash on pixel coordinates: sin() of large numbers loses precision on some phone GPUs
     // and turns the grain into flickering blocks
     float hash(vec2 p) { vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+    ${FINITE_GLSL}
     void main() {
-      vec4 c = texture2D(tDiffuse, vUv);
+      vec4 c = finiteOrZero(texture2D(tDiffuse, vUv));
       // colour grade (linear, before tone mapping): tint the highlights, lift the shadows, saturation
       float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
       c.rgb = mix(vec3(luma), c.rgb, uSat) * uGain + uLift * (1.0 - smoothstep(0.0, 0.6, luma));
@@ -2464,7 +2478,9 @@ const FinishShader = {
       c.rgb *= clamp(1.0 - uVignette * dot(d, d) * 2.2, 0.0, 1.0);
       float g = hash(gl_FragCoord.xy + floor(fract(uTime * 0.37) * 64.0) * 57.0) - 0.5;
       c.rgb = max(c.rgb + g * uGrain * (0.25 + c.rgb), 0.0);
-      gl_FragColor = c;
+      // the canvas is transparent (three.js always asks for an alpha channel): a pixel with alpha 0
+      // shows the page background, so the picture is always written fully opaque
+      gl_FragColor = vec4(c.rgb, 1.0);
     }
   `,
 };
@@ -2480,13 +2496,16 @@ function buildComposer(tier) {
     bloomPass.dispose();
   }
   // No MSAA at a pixel ratio of 2 or more: the edges are already fine there, and on a phone the
-  // multisampled half-float target costs four times the memory of the frame itself, which is what
-  // made the GPU drop the WebGL context (the picture blinking out) on Ultra with the baby close up
+  // multisampled half-float target costs four times the memory of the frame itself
   const samples = renderer.getPixelRatio() >= 2 ? 0 : TIERS[tier].msaa;
   const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples });
   composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
   bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.75, 0.6, 0.6);
+  const highPass = bloomPass.materialHighPassFilter;
+  highPass.fragmentShader = highPass.fragmentShader
+    .replace('void main() {', `${FINITE_GLSL}\n\t\tvoid main() {`)
+    .replace('vec4 texel = texture2D( tDiffuse, vUv );', 'vec4 texel = finiteOrZero( texture2D( tDiffuse, vUv ) );');
   composer.addPass(bloomPass);
   finishPass = new ShaderPass(FinishShader);
   composer.addPass(finishPass);
@@ -3296,12 +3315,6 @@ function trackFps(dt) {
   }
 }
 
-// Android WebView (the Claude app and other in-app browsers) can put the canvas on screen before the
-// GPU has finished drawing the frame: the picture blinks out to the page background for a frame or
-// a few, mostly in close-ups, where a frame takes the GPU longest (see Chromium issue 513436623).
-// Waiting for the GPU at the end of each frame hands the compositor only finished pictures.
-const waitForGpu = /Android/i.test(navigator.userAgent);
-
 renderer.setAnimationLoop((timestamp) => {
   timer.update(timestamp);
   const rawDt = timer.getDelta();
@@ -3395,7 +3408,6 @@ renderer.setAnimationLoop((timestamp) => {
   updateSparks(dt);
 
   composer.render(dt);
-  if (waitForGpu) renderer.getContext().finish();
   updateHotspotAnchors();
   updateHotspots();
 
