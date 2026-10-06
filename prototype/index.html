@@ -736,6 +736,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* =========================================================================
    Pregnancy data (approximate population averages, for illustration)
@@ -1355,20 +1356,34 @@ scene.add(wombShell);
 const PLACENTA_ARC = 0.5;      // angular radius of the placenta on the wall
 const PLACENTA_DEPTH = 0.07;   // inward bulge at its centre (unit-sphere space)
 const placentaUnit = new THREE.Vector3(0.28, 0.9, -0.34).normalize();
-const placentaGeometry = new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, PLACENTA_ARC);
+// Distance from the womb's centre to the placenta's fetal surface (unit-sphere space), at angle
+// theta from its centre and azimuth phi: a thick round disc with soft lobes (cotyledons) under
+// the membrane, thinning to the rim
+function placentaRadius(theta, phi) {
+  const k = Math.max(0, 1 - theta / PLACENTA_ARC);
+  const lobes = Math.sin(theta * 34 + Math.sin(phi * 3) * 1.4) * Math.sin(phi * 9 + theta * 11);
+  return 0.985 - PLACENTA_DEPTH * Math.pow(k, 0.7) * (1 + 0.06 * lobes);
+}
+function placentaPoint(theta, phi, lift, out) {
+  const r = placentaRadius(theta, phi) - lift;
+  return out.set(Math.sin(theta) * Math.cos(phi) * r, Math.cos(theta) * r, Math.sin(theta) * Math.sin(phi) * r);
+}
+const placentaGeometry = new THREE.SphereGeometry(1, 96, 40, 0, Math.PI * 2, 0, PLACENTA_ARC);
 {
   const pos = placentaGeometry.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
-    const k = Math.max(0, 1 - Math.acos(THREE.MathUtils.clamp(v.y, -1, 1)) / PLACENTA_ARC);
-    v.multiplyScalar(0.985 - PLACENTA_DEPTH * Math.pow(k, 0.7));
+    const theta = Math.acos(THREE.MathUtils.clamp(v.y, -1, 1));
+    placentaPoint(theta, Math.atan2(v.z, v.x), 0, v);
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   placentaGeometry.computeVertexNormals();
 }
+// the fetal side is covered by the shiny amnion
 const placentaMaterial = new THREE.MeshPhysicalMaterial({
-  color: MODES.dreamy.placenta, roughness: 0.55, sheen: 0.6, sheenColor: new THREE.Color('#ffb3a0'),
+  color: MODES.dreamy.placenta, roughness: 0.5, sheen: 0.6, sheenColor: new THREE.Color('#ffb3a0'),
+  clearcoat: 0.8, clearcoatRoughness: 0.22,
   emissive: new THREE.Color('#3a0f1c'), emissiveIntensity: 0.5, side: THREE.DoubleSide,
 });
 const placentaGroup = new THREE.Group();
@@ -1377,6 +1392,63 @@ scene.add(placentaGroup);
 const placenta = new THREE.Mesh(placentaGeometry, placentaMaterial);
 placenta.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placentaUnit);
 placentaGroup.add(placenta);
+
+// Chorionic vessels: they run from the cord's insertion in the middle out over the fetal surface,
+// branching and thinning towards the rim. Built once from a seeded random tree.
+const placentaVesselMaterial = new THREE.MeshPhysicalMaterial({
+  color: '#3a1530', roughness: 0.4, clearcoat: 0.8, clearcoatRoughness: 0.2, emissive: new THREE.Color('#1a0610'), emissiveIntensity: 0.6,
+});
+const placentaVessels = new THREE.Mesh(new THREE.BufferGeometry(), placentaVesselMaterial);
+placenta.add(placentaVessels);
+{
+  let seed = 7;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const tubes = [];
+  const grow = (theta, phi, heading, width, length, depth) => {
+    // walk outwards in (theta, phi) on the disc, drifting a little, then maybe fork
+    const pts = [];
+    let t = theta, f = phi, h = heading;
+    const steps = Math.max(3, Math.round(length / 0.025));
+    for (let i = 0; i <= steps; i++) {
+      pts.push(placentaPoint(t, f, 0.25 * width, new THREE.Vector3()));
+      h += (rand() - 0.5) * 0.5;
+      // heading: 0 = straight out from the centre; keep it mostly outwards
+      const step = length / steps;
+      const out = Math.cos(h) * step, side = Math.sin(h) * step;
+      t = Math.min(PLACENTA_ARC * 0.85, t + out);
+      f += side / Math.max(Math.sin(t), 0.05);
+      if (t >= PLACENTA_ARC * 0.85) break;
+    }
+    if (pts.length < 2) return;
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const geo = new THREE.TubeGeometry(curve, pts.length * 3, width, 6, false);
+    // taper towards the tip
+    const pos = geo.attributes.position, uv = geo.attributes.uv, c = new THREE.Vector3(), p = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      const u = uv.getX(i);
+      curve.getPointAt(u, c);
+      p.fromBufferAttribute(pos, i).sub(c).multiplyScalar(1 - 0.55 * u).add(c);
+      pos.setXYZ(i, p.x, p.y, p.z);
+    }
+    geo.computeVertexNormals();
+    tubes.push(geo);
+    if (depth < 2) {
+      const forks = depth === 0 ? 2 : 1;
+      for (let k = 0; k < forks; k++) {
+        const at = pts[Math.min(pts.length - 1, 1 + Math.floor(rand() * (pts.length - 1)))];
+        const tt = Math.acos(THREE.MathUtils.clamp(at.y / at.length(), -1, 1));
+        const ff = Math.atan2(at.z, at.x);
+        grow(tt, ff, h + (rand() < 0.5 ? -1 : 1) * (0.5 + rand() * 0.5), width * 0.62, length * 0.55, depth + 1);
+      }
+    }
+  };
+  const main = 7;
+  for (let i = 0; i < main; i++) {
+    grow(0.03, (i + rand() * 0.6) / main * Math.PI * 2, (rand() - 0.5) * 0.4, 0.009, PLACENTA_ARC * 0.8, 0);
+  }
+  placentaVessels.geometry = mergeGeometries(tubes);
+  tubes.forEach((g) => g.dispose());
+}
 const cordEnd = placentaUnit.clone().multiplyScalar(0.985 - PLACENTA_DEPTH).multiply(WOMB);
 const placentaNormal = new THREE.Vector3(
   cordEnd.x / (WOMB.x * WOMB.x), cordEnd.y / (WOMB.y * WOMB.y), cordEnd.z / (WOMB.z * WOMB.z),
@@ -1943,17 +2015,72 @@ function kickFoot(side, out) {
    Umbilical cord (rebuilt as a tube that sways in the fluid)
    ========================================================================= */
 
+// Wharton's jelly is pale and glossy; through it show the three vessels winding round each other:
+// one wide vein (dark red) and two thinner arteries (blue-violet). The vessels swell the jelly a
+// little, so the cord looks like a soft twisted rope.
 const cordMaterial = new THREE.MeshPhysicalMaterial({
-  vertexColors: true, roughness: 0.32, sheen: 0.6, sheenColor: new THREE.Color('#ffd9e2'), clearcoat: 0.6, clearcoatRoughness: 0.3,
+  vertexColors: true, roughness: 0.3, sheen: 0.5, sheenColor: new THREE.Color('#ece4ff'), clearcoat: 0.9, clearcoatRoughness: 0.18,
 });
-const cord = new THREE.Mesh(new THREE.BufferGeometry(), cordMaterial);
+const CORD_SEG = 140;       // rings along the cord
+const CORD_RAD = 14;        // vertices round each ring
+const CORD_TWISTS = 12;     // turns of the vessels from navel to placenta
+const cordJelly = new THREE.Color('#ece5ee');
+const cordVein = new THREE.Color('#8e2340');
+const cordArtery = new THREE.Color('#4f4ea3');
+const VESSEL_DARK = new THREE.Color('#1c0816');
+const cordGeometry = new THREE.BufferGeometry();
+const cordVerts = (CORD_SEG + 1) * (CORD_RAD + 1);
+const cordPos = new Float32Array(cordVerts * 3);
+const cordNrm = new Float32Array(cordVerts * 3);
+const cordSwell = new Float32Array(cordVerts);        // radius factor from the vessels
+const cordSlope = new Float32Array(cordVerts);        // its change round the ring, for the normals
+{
+  const col = new Float32Array(cordVerts * 3);
+  const bump = (phase, centre, width) => {
+    const d = Math.abs(((phase - centre) % 1 + 1.5) % 1 - 0.5);
+    return THREE.MathUtils.smoothstep(width - d, 0, width);
+  };
+  const tint = new THREE.Color();
+  for (let i = 0; i <= CORD_SEG; i++) {
+    for (let j = 0; j <= CORD_RAD; j++) {
+      const k = i * (CORD_RAD + 1) + j;
+      const swellAt = (jj) => {
+        const ph = jj / CORD_RAD + (i / CORD_SEG) * CORD_TWISTS;
+        return 0.1 * bump(ph, 0, 0.2) + 0.07 * (bump(ph, 1 / 3, 0.14) + bump(ph, 2 / 3, 0.14));
+      };
+      const phase = j / CORD_RAD + (i / CORD_SEG) * CORD_TWISTS;
+      const vein = bump(phase, 0, 0.2);
+      const artery = bump(phase, 1 / 3, 0.14) + bump(phase, 2 / 3, 0.14);
+      cordSwell[k] = swellAt(j);
+      cordSlope[k] = (swellAt(j + 0.5) - swellAt(j - 0.5)) / (2 * Math.PI / CORD_RAD);
+      tint.copy(cordJelly).lerp(cordVein, 0.85 * vein).lerp(cordArtery, 0.8 * artery);
+      col[k * 3] = tint.r; col[k * 3 + 1] = tint.g; col[k * 3 + 2] = tint.b;
+    }
+  }
+  const index = [];
+  for (let i = 0; i < CORD_SEG; i++) {
+    for (let j = 0; j < CORD_RAD; j++) {
+      const a = i * (CORD_RAD + 1) + j, b = a + CORD_RAD + 1;
+      index.push(a, a + 1, b, b, a + 1, b + 1);
+    }
+  }
+  cordGeometry.setIndex(index);
+  cordGeometry.setAttribute('position', new THREE.BufferAttribute(cordPos, 3).setUsage(THREE.DynamicDrawUsage));
+  cordGeometry.setAttribute('normal', new THREE.BufferAttribute(cordNrm, 3).setUsage(THREE.DynamicDrawUsage));
+  cordGeometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
+}
+const cord = new THREE.Mesh(cordGeometry, cordMaterial);
+cord.frustumCulled = false;
 scene.add(cord);
 const cordCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
-const cordBase = new THREE.Color('#eadfe6');
-const cordArtery = new THREE.Color('#9b93d8');
-const cordVein = new THREE.Color('#d98b9b');
 const navel = new THREE.Vector3();
 const babyCenter = new THREE.Vector3();
+const cordP = new THREE.Vector3();
+const cordT = new THREE.Vector3();
+const cordN = new THREE.Vector3();
+const cordB = new THREE.Vector3();
+const cordDir = new THREE.Vector3();
+const cordAround = new THREE.Vector3();
 
 function updateCord(now, S) {
   const pts = cordCurve.points;
@@ -1972,23 +2099,40 @@ function updateCord(now, S) {
   const d = pts[2].distanceTo(babyCenter);
   if (d < 0.62 * S) pts[2].sub(babyCenter).setLength(0.62 * S).add(babyCenter);
 
-  const geo = new THREE.TubeGeometry(cordCurve, 90, 0.022 * S + 0.012, 10, false);
-  const uv = geo.attributes.uv;
-  const colors = new Float32Array(uv.count * 3);
-  for (let i = 0; i < uv.count; i++) {
-    const u = uv.getX(i);
-    const v = uv.getY(i);
-    const a = Math.sin(Math.PI * 2 * (v + u * 26));
-    const b = Math.sin(Math.PI * 2 * (v + 0.5 + u * 26));
-    const sa = THREE.MathUtils.smoothstep(a, 0.55, 0.95) * 0.75;
-    const sb = THREE.MathUtils.smoothstep(b, 0.6, 0.98) * 0.6;
-    colors[i * 3] = cordBase.r + (cordArtery.r - cordBase.r) * sa + (cordVein.r - cordBase.r) * sb;
-    colors[i * 3 + 1] = cordBase.g + (cordArtery.g - cordBase.g) * sa + (cordVein.g - cordBase.g) * sb;
-    colors[i * 3 + 2] = cordBase.b + (cordArtery.b - cordBase.b) * sa + (cordVein.b - cordBase.b) * sb;
+  // A tube with frames carried along the curve (parallel transport) from a fixed reference, so
+  // the vessel spirals don't jump round as the cord sways
+  const radius = 0.022 * S + 0.012;
+  cordCurve.getTangentAt(0, cordT);
+  cordN.set(0, 1, 0).addScaledVector(cordT, -cordT.y);
+  if (cordN.lengthSq() < 1e-4) cordN.set(1, 0, 0).addScaledVector(cordT, -cordT.x);
+  cordN.normalize();
+  for (let i = 0; i <= CORD_SEG; i++) {
+    const u = i / CORD_SEG;
+    cordCurve.getPointAt(u, cordP);
+    cordCurve.getTangentAt(u, cordT);
+    cordN.addScaledVector(cordT, -cordN.dot(cordT)).normalize();
+    cordB.crossVectors(cordT, cordN);
+    // the cord flares where it goes into the placenta
+    const flare = 1 + 0.7 * THREE.MathUtils.smoothstep(u, 0.93, 1);
+    for (let j = 0; j <= CORD_RAD; j++) {
+      const k = i * (CORD_RAD + 1) + j;
+      const a = (j / CORD_RAD) * Math.PI * 2;
+      const c = Math.cos(a), s = Math.sin(a);
+      cordDir.copy(cordN).multiplyScalar(c).addScaledVector(cordB, s);
+      cordAround.copy(cordN).multiplyScalar(-s).addScaledVector(cordB, c);
+      const r = radius * flare * (1 + cordSwell[k]);
+      cordPos[k * 3] = cordP.x + cordDir.x * r;
+      cordPos[k * 3 + 1] = cordP.y + cordDir.y * r;
+      cordPos[k * 3 + 2] = cordP.z + cordDir.z * r;
+      // tilt the normal against the swell's slope round the ring, so the vessels catch the light
+      cordDir.addScaledVector(cordAround, -cordSlope[k]).normalize();
+      cordNrm[k * 3] = cordDir.x;
+      cordNrm[k * 3 + 1] = cordDir.y;
+      cordNrm[k * 3 + 2] = cordDir.z;
+    }
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  cord.geometry.dispose();
-  cord.geometry = geo;
+  cordGeometry.attributes.position.needsUpdate = true;
+  cordGeometry.attributes.normal.needsUpdate = true;
 }
 
 /* =========================================================================
@@ -2337,7 +2481,10 @@ function applyMode(mode) {
   cord.visible = !isMoon;
   placenta.visible = !!m.placenta;
   moon.visible = isMoon;
-  if (m.placenta) placentaMaterial.color.set(m.placenta);
+  if (m.placenta) {
+    placentaMaterial.color.set(m.placenta);
+    placentaVesselMaterial.color.set(m.placenta).lerp(VESSEL_DARK, 0.35);
+  }
 
   if (m.baby) {
     for (const mat of [babyMaterial, gltfBaby.material]) {
