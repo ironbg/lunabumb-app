@@ -1501,7 +1501,8 @@ def main():
     ear_idx = np.flatnonzero(early_dist < 0.09)
     ear_w = 1 - np.array([smoothstep(0.06, 0.09, x) for x in early_dist[ear_idx]])
     # the pinna with a wide margin of scalp: redone from week 12 for the embryonic ear
-    ear_region = np.flatnonzero(np.min([op.shape.sdf(basis) for op in ear_ops], axis=0) < 0.03)
+    ear_d = np.min([op.shape.sdf(basis) for op in ear_ops], axis=0)
+    ear_region = np.flatnonzero(ear_d < 0.03)
     in_region = np.zeros(len(basis), bool)
     in_region[ear_region] = True
     on_rim = np.zeros(len(basis), bool)
@@ -1565,6 +1566,10 @@ def main():
                 n_fix[ear_idx] = n_sdf / np.maximum(np.linalg.norm(n_sdf, axis=1, keepdims=True), 1e-9)
                 weight_full = np.zeros(len(basis))
                 weight_full[ear_idx] = ear_w
+                if g < 12:
+                    # the raised relief is a clean height field: across its few long triangles its
+                    # own normals shade smoother than the SDF's, which change fast over the rim
+                    weight_full[ear_region] *= np.array([smoothstep(0.018, 0.03, x) for x in ear_d[ear_region]])
                 normal_fix[f"W{g}"] = (n_fix, weight_full)
             prev_ops = ops_g
             if g not in RIG_WEEKS:
