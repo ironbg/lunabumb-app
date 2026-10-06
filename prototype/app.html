@@ -1,0 +1,2978 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lunabump</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Sofia+Sans:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: one phone-width column with a fixed tab bar and the Luna moon in the middle;
+     the 3D scene is a night card on Today that opens full screen. Palette "Moonlight Calm":
+     milk by day, midnight sky by night; coral is kept for real emergencies only. */
+  :root {
+    --milk: #FFFAF5;
+    --ink: #2A2740;
+    --dusk: #6B6880;
+    --violet: #6E5BD0;
+    --mist: #ECE8FB;
+    --peach: #F6C8B5;
+    --sage: #9CC5A9;
+    --star: #FFE6A3;
+    --honey: #E9A93A;
+    --coral: #C2453E;
+    --midnight: #16152B;
+    --lavender: #B9AEF0;
+    --moonlight: #F3F0FF;
+
+    --bg: var(--milk);
+    --card: #FFFFFF;
+    --tint: var(--mist);
+    --fg: var(--ink);
+    --muted: var(--dusk);
+    --accent: var(--violet);
+    --on-accent: #FFFFFF;
+    --line: rgba(42, 39, 64, 0.12);
+    --shadow: 0 1px 2px rgba(42, 39, 64, 0.05), 0 8px 24px rgba(42, 39, 64, 0.06);
+    --safe-bg: #E3F1E7;
+    --safe-fg: #245C38;
+    --care-bg: #FBEBCB;
+    --care-fg: #6E4A0B;
+    --alert-bg: #F9E1DF;
+    --alert-fg: #9B2F29;
+    --alert: var(--coral);
+    --on-alert: #FFFFFF;
+    --mood-1: #8D87B5;
+    --mood-2: #B9AEF0;
+    --mood-3: #DCD3C2;
+    --mood-4: #F6C8B5;
+    --mood-5: #FFD98A;
+    --heat: 110, 91, 208;
+
+    --display: 'Lora', Georgia, 'Times New Roman', serif;
+    --body: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --radius: 22px;
+    --col: 480px;
+    --tabbar-h: 68px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16152B;
+      --card: #211F3E;
+      --tint: #2C2956;
+      --fg: #F3F0FF;
+      --muted: #B5AFD3;
+      --accent: #B9AEF0;
+      --on-accent: #16152B;
+      --line: rgba(243, 240, 255, 0.13);
+      --shadow: none;
+      --safe-bg: #1F3A2B;
+      --safe-fg: #A8D9B6;
+      --care-bg: #3D3017;
+      --care-fg: #F2CF86;
+      --alert-bg: #43201F;
+      --alert-fg: #F6A39C;
+      --mood-1: #6F6A99;
+      --mood-2: #8F84D6;
+      --mood-3: #8D8678;
+      --mood-4: #D9A48E;
+      --mood-5: #E8C26B;
+      --heat: 185, 174, 240;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16152B;
+    --card: #211F3E;
+    --tint: #2C2956;
+    --fg: #F3F0FF;
+    --muted: #B5AFD3;
+    --accent: #B9AEF0;
+    --on-accent: #16152B;
+    --line: rgba(243, 240, 255, 0.13);
+    --shadow: none;
+    --safe-bg: #1F3A2B;
+    --safe-fg: #A8D9B6;
+    --care-bg: #3D3017;
+    --care-fg: #F2CF86;
+    --alert-bg: #43201F;
+    --alert-fg: #F6A39C;
+    --mood-1: #6F6A99;
+    --mood-2: #8F84D6;
+    --mood-3: #8D8678;
+    --mood-4: #D9A48E;
+    --mood-5: #E8C26B;
+    --heat: 185, 174, 240;
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 400 16px/1.5 var(--body);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [tabindex="-1"]:focus { outline: none; }
+  a { color: var(--accent); }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .app { max-width: var(--col); margin: 0 auto; min-height: 100%; position: relative; }
+  .screen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 14px 16px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom, 0px));
+  }
+  .screen > * { min-width: 0; }
+  .page-title { font: 600 30px/1.15 var(--display); padding-top: 6px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .fine { font-size: 13px; color: var(--muted); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    min-width: 0;
+  }
+  .card h2 { font: 600 19px/1.25 var(--display); }
+  .card h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .card-soon { background: transparent; box-shadow: none; border-style: dashed; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row-between { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+  .row-between > * { min-width: 0; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .btn-quiet { background: var(--tint); color: var(--fg); }
+  .btn-line { background: transparent; color: var(--fg); border-color: var(--line); }
+  .btn-alert { background: var(--alert); color: var(--on-alert); }
+  .btn-block { width: 100%; }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn svg, .icon svg { width: 20px; height: 20px; flex: none; }
+  .link-btn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; text-align: left; }
+
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--tint); }
+  .seg button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 40px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* four Track tabs don't fit a phone at full width: let the row scroll sideways instead of squeezing */
+  #track-seg { overflow-x: auto; scrollbar-width: none; }
+  #track-seg::-webkit-scrollbar { display: none; }
+  #track-seg button { flex: 1 0 auto; padding: 6px 14px; }
+  .chip {
+    min-height: 40px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .pill-safe { background: var(--safe-bg); color: var(--safe-fg); }
+  .pill-care { background: var(--care-bg); color: var(--care-fg); }
+  .pill-avoid { background: var(--alert-bg); color: var(--alert-fg); }
+  .pill-example { background: var(--tint); color: var(--muted); }
+
+  .notice { border-radius: 16px; padding: 12px 14px; font-size: 15px; display: grid; gap: 8px; }
+  .notice-alert { background: var(--alert-bg); color: var(--alert-fg); }
+  .notice-care { background: var(--care-bg); color: var(--care-fg); }
+  .notice-calm { background: var(--tint); color: var(--fg); }
+  .notice strong { font-weight: 700; }
+  .notice .link-btn { color: inherit; text-decoration: underline; }
+
+  label.field { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+  .input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  textarea.input { min-height: 72px; resize: vertical; }
+
+  /* ---------- Today ---------- */
+  .today-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 6px; }
+  .today-head h1 { font: 600 27px/1.15 var(--display); margin-top: 4px; }
+  .today-head .sub { margin-top: 2px; color: var(--muted); font-size: 15px; }
+  .urgent-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1.5px solid var(--alert);
+    background: transparent;
+    color: var(--alert-fg);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .urgent-btn svg { width: 18px; height: 18px; }
+  .progress { display: grid; gap: 6px; }
+  .progress-track { position: relative; height: 8px; border-radius: 999px; background: var(--tint); overflow: hidden; }
+  .progress-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--peach), var(--accent)); }
+  .progress-tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bg); }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+
+  .luna-holder { position: relative; height: clamp(280px, 46vh, 460px); }
+  .luna-slot {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--midnight);
+    isolation: isolate;
+  }
+  .luna-slot iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: var(--midnight); }
+  .luna-hit { position: absolute; inset: 0; z-index: 2; border: 0; background: transparent; border-radius: inherit; }
+  .luna-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 36px 16px 14px;
+    background: linear-gradient(to top, rgba(14, 13, 31, 0.86), rgba(14, 13, 31, 0));
+    color: var(--moonlight);
+    pointer-events: none;
+  }
+  .luna-caption p:first-child { font: 600 17px/1.3 var(--display); }
+  .luna-caption p + p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  .luna-expand {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(243, 240, 255, 0.16);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .luna-expand svg { width: 16px; height: 16px; }
+  .luna-close {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(185, 174, 240, 0.3);
+    background: rgba(30, 27, 58, 0.9);
+    color: var(--moonlight);
+  }
+  .luna-close svg { width: 18px; height: 18px; }
+  .luna-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(circle at 50% 42%, rgba(255, 230, 163, 0.95), rgba(246, 200, 181, 0.6) 40%, rgba(22, 21, 43, 0) 75%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms ease;
+  }
+  .luna-flash.on { opacity: 1; }
+  .luna-slot.is-full, .luna-slot.is-stage {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: min(100%, var(--col));
+    transform: translateX(-50%);
+    border-radius: 0;
+  }
+  .luna-slot.is-full { z-index: 40; top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); }
+  .luna-slot.is-stage { z-index: 30; }
+  .luna-slot.is-full .luna-caption, .luna-slot.is-full .luna-hit,
+  .luna-slot.is-stage .luna-caption, .luna-slot.is-stage .luna-hit { display: none; }
+
+  .moods { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .mood {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 8px 2px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .mood svg { width: 38px; height: 38px; }
+  .mood[aria-checked="true"] { border-color: var(--accent); background: var(--tint); color: var(--fg); }
+
+  .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .quick button {
+    display: grid;
+    justify-items: start;
+    align-content: space-between;
+    gap: 14px;
+    min-height: 92px;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.2;
+    text-align: left;
+  }
+  .quick .icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--tint); color: var(--accent); }
+
+  .facts { display: grid; gap: 14px; }
+  .fact p { margin-top: 4px; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .checklist label { display: flex; gap: 12px; align-items: flex-start; padding: 6px 0; font-size: 15px; }
+  .checklist input { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--violet); }
+  .partner { background: var(--tint); border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; }
+
+  .articles { display: grid; gap: 10px; }
+  .article-row {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    text-align: left;
+  }
+  .article-row .icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--tint); color: var(--accent); }
+  .article-row strong { display: block; font-size: 16px; line-height: 1.3; }
+  .article-row span.meta { font-size: 13px; color: var(--muted); }
+  .article-row .chev { color: var(--muted); }
+  .article-row .chev svg { width: 18px; height: 18px; }
+
+  /* ---------- Track ---------- */
+  .levels { display: grid; gap: 8px; }
+  .levels input[type="range"] { width: 100%; accent-color: var(--violet); }
+  .levels-value { font-weight: 700; }
+  .entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .entry { display: grid; gap: 4px; padding: 12px 14px; border-radius: 16px; background: var(--tint); }
+  .entry-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+  .entry-main { font-weight: 700; }
+  .entry-note { font-size: 14px; }
+
+  .cal { display: grid; gap: 10px; }
+  .cal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .cal-head strong { font: 600 17px/1.2 var(--display); }
+  .cal-nav { display: flex; gap: 6px; }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal-dow { font-size: 11px; font-weight: 700; color: var(--muted); text-align: center; padding-bottom: 2px; }
+  .cal-day {
+    aspect-ratio: 1;
+    max-width: 100%;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 0;
+  }
+  .cal-day.is-today { border-color: var(--accent); }
+  .cal-day.is-picked { box-shadow: 0 0 0 2px var(--fg) inset; }
+  .cal-day:disabled { color: var(--muted); opacity: 0.5; cursor: default; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+  .tap-zone { display: grid; justify-items: center; gap: 14px; padding: 6px 0 4px; }
+  .tap-btn {
+    position: relative;
+    width: min(220px, 62vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 0;
+    background: radial-gradient(circle at 50% 38%, var(--star), var(--peach) 55%, #E7A98F);
+    color: var(--ink);
+    box-shadow: 0 12px 30px rgba(110, 91, 208, 0.25), inset 0 -10px 24px rgba(110, 91, 208, 0.18);
+    display: grid;
+    place-content: center;
+    gap: 2px;
+    font-weight: 700;
+    font-size: 16px;
+    text-align: center;
+    padding: 18px;
+    touch-action: manipulation;
+  }
+  .tap-btn .big { font: 600 54px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .tap-btn.is-stop { background: radial-gradient(circle at 50% 38%, #D6CFFA, var(--lavender) 55%, #8F84D6); }
+  .tap-btn:active { transform: scale(0.98); }
+  .spark { position: absolute; left: 50%; top: 30%; width: 22px; height: 22px; margin-left: -11px; pointer-events: none; color: var(--violet); animation: rise 700ms ease-out forwards; }
+  @keyframes rise { from { transform: translate(var(--dx, 0), 0) scale(0.6); opacity: 1; } to { transform: translate(var(--dx, 0), -90px) scale(1.2); opacity: 0; } }
+  .timer { font: 600 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .stat { padding: 10px 12px; border-radius: 14px; background: var(--tint); display: grid; gap: 2px; }
+  .stat b { font: 600 20px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .chart text { fill: var(--muted); font-size: 11px; font-family: var(--body); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Explore ---------- */
+  .food-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .food { display: grid; gap: 4px; padding: 12px 14px; border-radius: 16px; background: var(--tint); }
+  .food-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .food-top strong { font-size: 15px; min-width: 0; }
+  .food p { font-size: 14px; }
+
+  /* ---------- Me ---------- */
+  .kv { display: grid; gap: 2px; }
+  .kv span { font-size: 13px; color: var(--muted); }
+  .kv strong { font-size: 17px; }
+  .mode-cards { display: grid; gap: 8px; }
+  .mode-card {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    text-align: left;
+  }
+  .mode-card[aria-checked="true"] { border-color: var(--accent); background: var(--tint); }
+  .mode-card strong { display: block; }
+  .mode-card span { font-size: 14px; color: var(--muted); }
+  .mode-dot { width: 40px; height: 40px; border-radius: 50%; }
+  .mode-dot.dreamy { background: radial-gradient(circle at 40% 35%, #FFE6A3, #F6C8B5 35%, #6E5BD0 75%); }
+  .mode-dot.realistic { background: radial-gradient(circle at 40% 35%, #F4D3C2, #C98F7A 50%, #3A2A2E 85%); }
+  .mode-dot.moon { background: radial-gradient(circle at 62% 40%, #16152B 0 38%, transparent 39%), radial-gradient(circle at 45% 50%, #F3E6C4 0 46%, #2E2A5C 47%); }
+  .switch-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; }
+  .switch-row small { display: block; color: var(--muted); font-size: 13px; }
+  .switch { position: relative; width: 52px; height: 32px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--tint); border: 1px solid var(--line); transition: background 160ms ease; pointer-events: none; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 160ms ease; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stored { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
+  .stored li { display: flex; justify-content: space-between; gap: 10px; }
+  .stored b { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Tab bar ---------- */
+  .tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(100%, var(--col));
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--card);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    min-height: 54px;
+    padding: 6px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .tab svg { width: 24px; height: 24px; }
+  .tab[aria-current="page"] { color: var(--accent); }
+  .tab-luna { position: relative; }
+  .tab-luna .moon {
+    width: 56px;
+    height: 56px;
+    margin-top: -26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--midnight);
+    border: 3px solid var(--card);
+    box-shadow: 0 6px 18px rgba(22, 21, 43, 0.3);
+  }
+  .tab-luna .moon svg { width: 30px; height: 30px; }
+
+  /* ---------- Sheets ---------- */
+  /* a flex column, not a grid: an auto grid column would grow to the width of the scrolling chip row */
+  .sheet { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+  .sheet-backdrop { position: absolute; inset: 0; background: rgba(14, 13, 31, 0.5); border: 0; padding: 0; }
+  .sheet-panel {
+    position: relative;
+    width: min(100%, var(--col));
+    max-height: calc(100% - env(safe-area-inset-top, 0px) - 24px);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border-radius: 26px 26px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -10px 40px rgba(14, 13, 31, 0.25);
+  }
+  .sheet-head, .sheet-foot { flex: none; min-width: 0; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 18px 10px; border-bottom: 1px solid var(--line); }
+  .sheet-head h2 { font: 600 22px/1.2 var(--display); }
+  .sheet-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-height: 0; }
+  .sheet-luna .sheet-panel { height: calc(100% - env(safe-area-inset-top, 0px) - 24px); }
+  .sheet-body > * { min-width: 0; }
+  .sheet-foot { padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+  .article-body { display: grid; gap: 12px; font-size: 16px; }
+  .source { font-size: 13px; color: var(--muted); }
+
+  .flag-list { display: grid; gap: 8px; }
+  .flag-btn { width: 100%; text-align: left; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); font-weight: 600; font-size: 15px; }
+  .result { display: grid; gap: 14px; }
+  .result h3 { font: 600 24px/1.2 var(--display); color: var(--alert-fg); }
+  .result-what { font-weight: 700; }
+  .call { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+  .call b { font: 600 22px/1.2 var(--display); font-variant-numeric: tabular-nums; display: block; }
+  .call-label { display: block; font-size: 13px; color: var(--muted); }
+  .call-hint { display: block; font-weight: 600; font-size: 15px; color: var(--muted); }
+  .call .btn { min-height: 40px; padding: 8px 14px; }
+
+  /* ---------- Luna chat ---------- */
+  .luna-head { display: flex; gap: 12px; align-items: center; }
+  .luna-badge { width: 44px; height: 44px; border-radius: 50%; background: var(--midnight); display: grid; place-items: center; flex: none; }
+  .luna-badge svg { width: 26px; height: 26px; }
+  .chat { display: grid; gap: 12px; }
+  .msg { max-width: 92%; padding: 12px 14px; border-radius: 18px; display: grid; gap: 8px; font-size: 15px; }
+  .msg-me { justify-self: end; background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 6px; }
+  .msg-luna { justify-self: start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+  .msg-luna .notice { font-size: 14px; }
+  .suggest { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; max-width: 100%; }
+  .suggest .chip { flex: none; font-size: 14px; }
+  .ask { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .ask .btn { padding: 10px 14px; }
+
+  /* ---------- Onboarding ---------- */
+  .onboarding { position: fixed; inset: 0; z-index: 35; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; pointer-events: none; }
+  .ob-card {
+    pointer-events: auto;
+    width: min(100%, var(--col));
+    max-height: 70%;
+    overflow-y: auto;
+    background: var(--card);
+    border-radius: 28px 28px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    box-shadow: 0 -12px 40px rgba(14, 13, 31, 0.35);
+  }
+  .ob-card h1 { font: 600 27px/1.2 var(--display); }
+  .ob-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .ob-dots { display: flex; gap: 6px; }
+  .ob-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--tint); }
+  .ob-dots i.on { background: var(--accent); }
+  .ob-options { display: grid; gap: 8px; }
+  .ob-option { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); text-align: left; font-weight: 700; }
+  .ob-result { font-weight: 700; color: var(--accent); }
+  .ob-error { color: var(--alert-fg); font-weight: 600; font-size: 14px; }
+  .ob-actions { display: grid; gap: 10px; }
+  .ob-brand { display: flex; align-items: center; gap: 8px; font: 600 18px/1 var(--display); }
+  .ob-brand svg { width: 26px; height: 26px; }
+  .reveal {
+    position: fixed;
+    left: 50%;
+    top: calc(env(safe-area-inset-top, 0px) + 9vh);
+    transform: translateX(-50%);
+    width: min(100% - 32px, var(--col));
+    z-index: 36;
+    text-align: center;
+    color: var(--moonlight);
+    display: grid;
+    gap: 6px;
+    pointer-events: none;
+    text-shadow: 0 2px 18px rgba(14, 13, 31, 0.8);
+  }
+  .reveal h1 { font: 600 34px/1.15 var(--display); }
+  .reveal p { font-size: 17px; opacity: 0.9; }
+  .reveal-skip { position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); z-index: 37; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--tabbar-h) + 44px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 60;
+    max-width: min(100% - 32px, 440px);
+    padding: 10px 16px;
+    border-radius: 16px;
+    background: var(--fg);
+    color: var(--bg);
+    font-size: 14px;
+    font-weight: 600;
+    transition: opacity 200ms ease;
+  }
+  .toast.fade { opacity: 0; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spark { animation: none; display: none; }
+    .luna-flash, .toast, .switch span, .switch span::after { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ===================== Today ===================== -->
+  <section class="screen" id="screen-today" aria-labelledby="greeting">
+    <header class="today-head">
+      <div>
+        <p class="eyebrow" id="today-week"></p>
+        <h1 id="greeting"></h1>
+        <p class="sub" id="today-togo"></p>
+      </div>
+      <button type="button" class="urgent-btn" data-action="urgent" id="urgent-top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.4v.2"/></svg>
+        <span data-t="urgent"></span>
+      </button>
+    </header>
+
+    <div class="progress" id="progress">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div><i class="progress-tick" style="left:35%"></i><i class="progress-tick" style="left:70%"></i></div>
+      <div class="progress-labels"><span id="progress-tri"></span><span id="progress-of" class="num"></span></div>
+    </div>
+
+    <div class="luna-holder">
+      <div class="luna-slot" id="luna-slot">
+        <iframe id="luna-frame" title="Luna View" tabindex="-1"></iframe>
+        <div class="luna-flash" id="luna-flash"></div>
+        <div class="luna-caption" aria-hidden="true">
+          <div><p id="hero-compare"></p><p id="hero-numbers"></p></div>
+          <span class="luna-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg><span data-t="heroExpand"></span></span>
+        </div>
+        <button type="button" class="luna-hit" id="luna-open" data-action="luna-open"></button>
+        <button type="button" class="luna-close" id="luna-close" data-action="luna-close" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <section class="card" aria-labelledby="feeling-title">
+      <h2 id="feeling-title" data-t="feeling"></h2>
+      <div class="moods" role="radiogroup" aria-labelledby="feeling-title" id="moods-today"></div>
+      <p class="fine" id="mood-saved" hidden></p>
+    </section>
+
+    <nav class="quick" id="quick" aria-label="Quick actions"></nav>
+
+    <section class="card" aria-labelledby="week-title">
+      <div class="row-between"><h2 id="week-title" data-t="thisWeek"></h2><span class="pill pill-example" id="week-pill"></span></div>
+      <div class="facts" id="week-facts"></div>
+      <div>
+        <h3 data-t="todo"></h3>
+        <ul class="checklist" id="week-todo"></ul>
+      </div>
+      <div class="partner" id="week-partner"></div>
+    </section>
+
+    <section aria-labelledby="foryou-title" style="display:grid;gap:10px">
+      <h2 id="foryou-title" class="eyebrow" data-t="forYou"></h2>
+      <div class="articles" id="for-you"></div>
+    </section>
+
+    <p class="fine" data-t="disclaimer"></p>
+  </section>
+
+  <!-- ===================== Track ===================== -->
+  <section class="screen" id="screen-track" aria-labelledby="track-title" hidden>
+    <h1 class="page-title" id="track-title" data-t="tabs.track"></h1>
+    <div class="seg" role="tablist" aria-labelledby="track-title" id="track-seg">
+      <button type="button" role="tab" data-action="seg" data-seg="symptoms" id="tab-symptoms" aria-controls="panel-symptoms"></button>
+      <button type="button" role="tab" data-action="seg" data-seg="mood" id="tab-mood" aria-controls="panel-mood"></button>
+      <button type="button" role="tab" data-action="seg" data-seg="kicks" id="tab-kicks" aria-controls="panel-kicks"></button>
+      <button type="button" role="tab" data-action="seg" data-seg="contractions" id="tab-contractions" aria-controls="panel-contractions"></button>
+    </div>
+
+    <div class="screen-panel" id="panel-symptoms" role="tabpanel" aria-labelledby="tab-symptoms" style="display:grid;gap:18px"></div>
+    <div class="screen-panel" id="panel-mood" role="tabpanel" aria-labelledby="tab-mood" style="display:grid;gap:18px" hidden></div>
+    <div class="screen-panel" id="panel-kicks" role="tabpanel" aria-labelledby="tab-kicks" style="display:grid;gap:18px" hidden></div>
+    <div class="screen-panel" id="panel-contractions" role="tabpanel" aria-labelledby="tab-contractions" style="display:grid;gap:18px" hidden></div>
+  </section>
+
+  <!-- ===================== Explore ===================== -->
+  <section class="screen" id="screen-explore" aria-labelledby="explore-title" hidden>
+    <h1 class="page-title" id="explore-title" data-t="tabs.explore"></h1>
+    <section style="display:grid;gap:10px" aria-labelledby="read-title">
+      <h2 class="eyebrow" id="read-title" data-t="readThisWeek"></h2>
+      <div class="articles" id="explore-week"></div>
+    </section>
+    <section class="card" aria-labelledby="food-title">
+      <h2 id="food-title" data-t="canIEat"></h2>
+      <label class="visually-hidden" for="food-search" data-t="canIEat"></label>
+      <input class="input" type="search" id="food-search" autocomplete="off">
+      <ul class="food-list" id="food-list"></ul>
+      <p class="source" id="food-source"></p>
+    </section>
+    <div id="explore-groups" style="display:grid;gap:18px"></div>
+    <section class="card card-soon"><h2 data-t="clubs"></h2><p class="muted" data-t="clubsSoon"></p></section>
+    <section class="card card-soon"><h2 data-t="midwife"></h2><p class="muted" data-t="midwifeSoon"></p></section>
+  </section>
+
+  <!-- ===================== Me ===================== -->
+  <section class="screen" id="screen-me" aria-labelledby="me-title" hidden>
+    <h1 class="page-title" id="me-title" data-t="tabs.me"></h1>
+    <section class="card" id="me-profile" aria-label="Profile"></section>
+    <section class="card" aria-labelledby="me-baby-title">
+      <h2 id="me-baby-title" data-t="baby"></h2>
+      <div class="seg" role="radiogroup" aria-labelledby="me-baby-title" id="me-sex"></div>
+      <p class="fine" data-t="sexHint"></p>
+    </section>
+    <section class="card" aria-labelledby="me-view-title">
+      <h2 id="me-view-title" data-t="view3d"></h2>
+      <div class="mode-cards" role="radiogroup" aria-labelledby="me-view-title" id="me-modes"></div>
+    </section>
+    <section class="card" aria-labelledby="me-lang-title">
+      <h2 id="me-lang-title" data-t="language"></h2>
+      <div class="seg" role="group" aria-labelledby="me-lang-title">
+        <button type="button" data-action="lang" data-lang="en" lang="en">English</button>
+        <button type="button" data-action="lang" data-lang="bg" lang="bg">Български</button>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="me-care-title">
+      <h2 id="me-care-title" data-t="care"></h2>
+      <label class="field"><span data-t="unitPhone"></span><input class="input" type="tel" id="care-unit" autocomplete="off" inputmode="tel"></label>
+      <label class="field"><span data-t="doctorPhone"></span><input class="input" type="tel" id="care-doctor" autocomplete="off" inputmode="tel"></label>
+      <p class="fine" data-t="careHint"></p>
+    </section>
+    <section class="card" aria-labelledby="me-privacy-title" id="me-privacy"></section>
+    <section class="card card-soon"><h2 data-t="partner"></h2><p class="muted" data-t="partnerSoon"></p></section>
+    <section class="card" aria-labelledby="me-about-title">
+      <h2 id="me-about-title" data-t="about"></h2>
+      <p class="muted" data-t="aboutText"></p>
+      <p class="fine" data-t="restartHint"></p>
+    </section>
+  </section>
+
+  <!-- ===================== Tab bar ===================== -->
+  <nav class="tabbar" id="tabbar" aria-label="Main">
+    <button type="button" class="tab" data-action="tab" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg><span data-t="tabs.today"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8.5 14h2M13.5 14h2M8.5 17h2"/></svg><span data-t="tabs.track"></span></button>
+    <button type="button" class="tab tab-luna" data-action="luna"><span class="moon"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#F6C8B5" d="M19.5 4.6A12 12 0 1 0 27.4 22 9.6 9.6 0 0 1 19.5 4.6z"/><circle cx="20.5" cy="19.5" r="2.4" fill="#FFE6A3"/></svg></span><span data-t="tabs.luna"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span data-t="tabs.explore"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4"/></svg><span data-t="tabs.me"></span></button>
+  </nav>
+</div>
+
+<!-- ===================== Sheets ===================== -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <button type="button" class="sheet-backdrop" data-action="sheet-close" tabindex="-1" aria-hidden="true"></button>
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <div id="sheet-headline" style="min-width:0"><h2 id="sheet-title"></h2></div>
+      <button type="button" class="icon-btn" data-action="sheet-close" id="sheet-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+    <div class="sheet-foot" id="sheet-foot" hidden></div>
+  </div>
+</div>
+
+<!-- ===================== Onboarding ===================== -->
+<div class="onboarding" id="onboarding" hidden>
+  <div class="ob-card" id="ob-card" role="dialog" aria-modal="true" aria-labelledby="ob-title"></div>
+</div>
+<div class="reveal" id="reveal" hidden aria-live="polite"><h1 id="reveal-title"></h1><p id="reveal-sub"></p></div>
+<button type="button" class="btn btn-quiet reveal-skip" id="reveal-skip" data-action="reveal-skip" hidden></button>
+
+<div class="toast fade" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   Setup
+   ========================================================================= */
+
+// The Luna View page; the published artifact serves it as luna-view.html
+const LUNA_SRC = 'index.html';
+const KEY = 'lunabump.app';
+const LANG_KEY = 'lunabump.app.lang';
+const DAY_MS = 86400000;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const has = (s, list) => list.some((k) => s.includes(k));
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+/* ---------- Dates (local days, compared at noon so daylight saving never shifts them) ---------- */
+function isoOf(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function dateOf(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d, 12);
+}
+const todayISO = () => isoOf(new Date());
+function addDays(iso, n) {
+  const d = dateOf(iso);
+  d.setDate(d.getDate() + n);
+  return isoOf(d);
+}
+const daysBetween = (a, b) => Math.round((dateOf(b) - dateOf(a)) / DAY_MS);
+const validISO = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !Number.isNaN(dateOf(s).getTime());
+function at(iso, h, m) {
+  const d = dateOf(iso);
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
+
+/* =========================================================================
+   Copy (English is the source; Bulgarian follows)
+   ========================================================================= */
+
+const STR = {
+  en: {
+    locale: 'en-GB',
+    tabs: { today: 'Today', track: 'Track', luna: 'Luna', explore: 'Explore', me: 'Me' },
+    mainNav: 'Main',
+    greet: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Hello' },
+    weekDay: (w, d) => `Week ${w} · Day ${d}`,
+    toGo: (n) => (n > 1 ? `${n} days to go` : n === 1 ? '1 day to go' : n === 0 ? 'Your due date is today' : `${-n} ${n === -1 ? 'day' : 'days'} past your due date`),
+    tri: ['1st trimester', '2nd trimester', '3rd trimester'],
+    ofForty: (w) => `Week ${w} of 40`,
+    urgent: 'Urgent',
+    heroLoading: 'Loading your baby’s week…',
+    heroOpen: 'Open Luna View full screen',
+    heroExpand: 'Full screen',
+    heroEarly: 'The 3D view starts at week 8. This is week 8.',
+    close: 'Close',
+    feeling: 'How are you feeling today?',
+    moods: ['Awful', 'Low', 'Okay', 'Good', 'Great'],
+    moodSaved: (label) => `Saved: ${label}. Your month is in Track → Mood.`,
+    quickNav: 'Quick actions',
+    quick: { symptom: 'Log a symptom', kicks: 'Count kicks', contractions: 'Time contractions', luna: 'Ask Luna' },
+    thisWeek: 'This week',
+    yourBaby: 'Your baby',
+    yourBody: 'Your body',
+    herBody: 'How she may feel',
+    todo: 'To do',
+    partnerTip: 'Partner tip',
+    forPartner: 'How you can help',
+    forYou: 'Today for you',
+    minRead: (n) => `${n} min read`,
+    disclaimer: 'Lunabump is a prototype. It doesn’t replace your doctor or midwife. In an emergency, call 112.',
+
+    segs: { symptoms: 'Symptoms', mood: 'Mood', kicks: 'Kicks', contractions: 'Contractions' },
+    symQ: 'What are you feeling?',
+    symAll: 'Show all symptoms',
+    symFewer: 'Show fewer',
+    intensity: 'How strong?',
+    levels: ['Very mild', 'Mild', 'Moderate', 'Strong', 'Severe'],
+    note: 'Note (optional)',
+    notePh: 'Anything to remember or ask your doctor',
+    save: 'Save',
+    saved: 'Saved',
+    pickSymptom: 'Pick at least one symptom first.',
+    somethingWrong: 'Something feels wrong?',
+    seeUrgent: 'See urgent symptoms',
+    recent: 'Recent entries',
+    symEmpty: 'Nothing logged yet. Pick a symptom above to add your first entry.',
+    example: 'Example',
+    headacheHint: 'A severe headache that doesn’t go away with painkillers can be a sign of pre-eclampsia, especially with swelling or blurred vision.',
+    swellingHint: 'Sudden swelling of the face, hands or feet can be a sign of pre-eclampsia.',
+    symMonth: 'Your month',
+    symLegend: 'Darker days had stronger symptoms. Tap a day to see it.',
+    dayEmpty: 'Nothing logged on this day.',
+    weekdays: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    moodTitle: 'Your mood this month',
+    moodLegendTitle: 'Mood',
+    moodToday: 'Today',
+    lowMood: 'You’ve had a few hard days this week. Tell your midwife or doctor how you’re feeling; they can help. If you ever think about harming yourself, call 112.',
+    kicksTitle: 'Kick counter',
+    kicksEarly: 'Kick counting usually starts at week 28, but you can try it any time.',
+    kicksIntro: 'Count at a time when your baby is usually active. There’s no set number: you’re learning your baby’s own pattern.',
+    kickTap: 'Tap for each movement',
+    kickCount: (n) => (n === 1 ? '1 movement' : `${n} movements`),
+    kickFinish: 'Finish',
+    kickCancel: 'Cancel',
+    kickSession: (n, m) => `${n === 1 ? '1 movement' : `${n} movements`} in ${m} min`,
+    kickQuick: (n) => `${n === 1 ? '1 kick' : `${n} kicks`} logged in Luna View today`,
+    movementsChanged: 'Movements slowed down or changed? Call your maternity unit now. Don’t wait until tomorrow.',
+    whatToDo: 'What to do now',
+    pattern: 'Your baby’s pattern',
+    patternHint: 'Movements you logged in the last 7 days, by time of day',
+    sessions: 'Sessions',
+    kicksEmpty: 'No sessions yet. Tap the circle to start one.',
+    conTitle: 'Contraction timer',
+    conStart: 'Start',
+    conStop: 'Stop',
+    conStartHint: 'when a contraction begins',
+    conStopHint: 'when it ends',
+    conLastHour: 'Last hour',
+    conCountLabel: 'contractions',
+    conAvgLen: 'average length',
+    conAvgGap: 'average gap',
+    conEmpty: 'Press Start when a contraction begins and Stop when it ends. Lunabump works out how long they last and how far apart they are.',
+    conSample: 'Try with an example hour',
+    conClear: 'Clear the list',
+    conCleared: 'List cleared',
+    conPattern: 'Your contractions are coming every 5 minutes or more often. This is the time to call your maternity unit or midwife.',
+    conPreterm: 'You’re less than 37 weeks pregnant and having regular contractions. Call your maternity unit now.',
+    conLong: 'A contraction lasted longer than 2 minutes. Call your maternity unit now.',
+    conMany: 'That’s 6 or more contractions in 10 minutes. Call your maternity unit now.',
+    conBasis: 'Based on NHS advice. Always follow what your own midwife has told you.',
+    conLasted: (d) => `lasted ${d}`,
+    conApart: (g) => `${g} after the one before`,
+    conRunning: 'Contraction in progress',
+
+    lunaTitle: 'Luna',
+    lunaSub: 'AI assistant, not a doctor',
+    lunaHello: (name, w) => `Hi${name ? ` ${name}` : ''}. You’re in week ${w}. Ask me about this week, or pick a question below.`,
+    lunaProto: 'Prototype: Luna answers a set of prepared questions from NHS guidance. It isn’t live AI yet.',
+    askPh: (w) => `Ask about week ${w}…`,
+    askLabel: 'Your question',
+    send: 'Send',
+    source: 'Source',
+    lunaUnknown: 'I don’t have a checked source for that in this prototype, so I won’t guess. In the full app I answer from NHS, WHO, ACOG and NICE guidance and always show the source. Try one of the questions below, or ask your midwife or doctor.',
+    lunaTriageOnly: 'I’ve put the most important thing first. When you’ve called, I’m here if you have other questions.',
+    suggestLabel: 'Suggested questions',
+
+    readThisWeek: 'Read this week',
+    canIEat: 'Can I eat this?',
+    foodPh: 'Search, for example cheese',
+    status: { safe: 'Safe', care: 'With care', avoid: 'Avoid' },
+    noFood: 'No match. Ask Luna, or check with your midwife.',
+    groups: { food: 'Food and drink', body: 'Body and comfort', baby: 'Baby and birth', vitamins: 'Vitamins' },
+    clubs: 'Birth clubs',
+    clubsSoon: 'Chat with parents due in the same month as you. Coming in the full app.',
+    midwife: 'Ask a midwife',
+    midwifeSoon: 'Questions answered by a registered midwife. Coming in the full app.',
+
+    due: 'Due date',
+    edit: 'Edit',
+    cancel: 'Cancel',
+    name: 'Your name',
+    weekNow: (w, d) => `Week ${w}, day ${d} today`,
+    baby: 'Your baby',
+    sexes: { unknown: 'Not known', F: 'Girl', M: 'Boy' },
+    sexHint: 'Before week 12 the 3D baby looks the same either way.',
+    view3d: '3D view',
+    modes: {
+      dreamy: ['Dreamy', 'Glowing and gentle, with floating stars'],
+      realistic: ['Realistic', 'Closer to real anatomy, in neutral light'],
+      moon: ['Moon', 'A growing moon instead of the baby, if pictures of the baby feel like too much right now'],
+    },
+    language: 'Language',
+    care: 'Care team',
+    unitPhone: 'Maternity unit phone',
+    doctorPhone: 'Doctor or midwife phone',
+    careHint: 'These numbers appear on the urgent screens, next to 112.',
+    privacy: 'Privacy',
+    consent: {
+      device: ['Save my details and journal on this device', 'Off: everything is forgotten when you close the page.'],
+      luna: ['Let Luna use my week and symptoms to tailor answers', 'Luna only uses what you allow.'],
+      stats: ['Share anonymous usage statistics', 'In this prototype nothing is ever sent anywhere.'],
+    },
+    notSaved: 'Not saved on this device. Turn on the first switch to keep your details.',
+    stored: 'What’s stored',
+    storedWhere: 'Only in this browser, on this device. Nothing is sent anywhere.',
+    storedRows: { profile: 'Your details', moods: 'Mood check-ins', symptoms: 'Symptom entries', kicks: 'Kick sessions and kicks', contractions: 'Contractions' },
+    showData: 'Show my data',
+    deleteAll: 'Delete all my data',
+    deleteConfirm: 'This deletes your details and every entry from this device. It can’t be undone.',
+    deleteYes: 'Delete everything',
+    deleted: 'All your data has been deleted',
+    clearExamples: 'Remove example entries',
+    examplesCleared: 'Example entries removed',
+    partner: 'Partner Mode',
+    partnerSoon: 'Invite your partner with a code. They get their own view of each week. Coming in the full app.',
+    about: 'About this prototype',
+    aboutText: 'A clickable prototype of Lunabump. Answers and articles are prepared examples based on NHS guidance and haven’t been reviewed by a medical board yet.',
+    restartHint: 'To see the welcome screen again, delete your data under Privacy.',
+    dataTitle: 'Your data',
+    copy: 'Copy',
+    copied: 'Copied',
+    copyFailed: 'Couldn’t copy. Select the text and copy it yourself.',
+
+    urgentTitle: 'Something feels wrong?',
+    urgentIntro: 'Choose what’s happening. If you’re unsure, call your maternity unit: they would rather hear from you.',
+    levelTitle: { emergency: 'Call 112 now', now: 'Call your maternity unit now', today: 'Contact your midwife or doctor today' },
+    levelText: {
+      emergency: 'These can be signs of an emergency. Call 112 now and tell them you’re pregnant and how many weeks.',
+      now: 'Don’t wait until tomorrow, even if it’s the middle of the night. If you can’t reach them, or it feels like an emergency, call 112.',
+      today: 'Call today rather than waiting for your next appointment. If you feel worse, call your maternity unit, or 112 in an emergency.',
+    },
+    youChose: 'You chose',
+    emergencyNumber: 'Emergency number',
+    maternityUnit: 'Maternity unit',
+    doctor: 'Doctor or midwife',
+    addNumber: 'Add this number in Me → Care team',
+    callBtn: 'Call',
+    otherSymptom: 'Choose another symptom',
+
+    ob: {
+      welcomeTitle: 'Let’s meet your little moon.',
+      welcomeText: 'Lunabump shows your baby growing day by day, answers questions with sources, and keeps your data on your phone.',
+      start: 'Get started',
+      demo: 'Try the demo at week 24',
+      stageTitle: 'Where are you on your journey?',
+      stages: { pregnant: 'I’m pregnant', partner: 'I’m a partner', ttc: 'Trying to conceive' },
+      ttcTitle: 'Coming later',
+      ttcText: 'For now Lunabump starts at pregnancy. A version for trying to conceive is planned.',
+      back: 'Back',
+      next: 'Continue',
+      dateTitle: 'When is your baby due?',
+      methods: { due: 'Due date', lmp: 'Last period', ivf: 'IVF transfer' },
+      dateLabel: { due: 'Due date', lmp: 'First day of your last period', ivf: 'Embryo transfer date' },
+      ivfDay: 'Embryo age at transfer',
+      ivfDays: { 3: 'Day 3', 5: 'Day 5' },
+      result: (w, d, due) => `Week ${w}, day ${d} today · due ${due}`,
+      outOfRange: (w) => `That date puts you at week ${w}. Lunabump covers weeks 4 to 42, so please check it.`,
+      dateHint: 'Your doctor can correct the date later; everything is recalculated.',
+      nameTitle: 'What should we call you?',
+      namePh: 'Your first name (optional)',
+      modeTitle: 'How would you like to see your pregnancy?',
+      modeHint: 'You can change this any time in Me.',
+      privacyTitle: 'Your data, your choice',
+      privacyText: 'Nothing is switched on until you say so. You can change these any time in Me → Privacy.',
+      finish: 'Meet your baby',
+      finishMoon: 'See your moon',
+      revealTitle: 'Hello, little moon',
+      revealMoon: 'Your little moon',
+      skip: 'Skip',
+      demoName: 'Elena',
+      step: (i, n) => `Step ${i} of ${n}`,
+    },
+  },
+
+  bg: {
+    locale: 'bg-BG',
+    tabs: { today: 'Днес', track: 'Записи', luna: 'Luna', explore: 'Открий', me: 'Аз' },
+    mainNav: 'Основна навигация',
+    greet: { morning: 'Добро утро', afternoon: 'Добър ден', evening: 'Добър вечер', night: 'Здравей' },
+    weekDay: (w, d) => `Седмица ${w} · Ден ${d}`,
+    toGo: (n) => (n > 1 ? `Остават ${n} дни` : n === 1 ? 'Остава 1 ден' : n === 0 ? 'Терминът е днес' : `${-n} ${n === -1 ? 'ден' : 'дни'} след термина`),
+    tri: ['I триместър', 'II триместър', 'III триместър'],
+    ofForty: (w) => `Седмица ${w} от 40`,
+    urgent: 'Спешно',
+    heroLoading: 'Зареждаме седмицата на бебето…',
+    heroOpen: 'Отвори Luna View на цял екран',
+    heroExpand: 'Цял екран',
+    heroEarly: '3D изгледът започва от 8-а седмица. Това е 8-а седмица.',
+    close: 'Затвори',
+    feeling: 'Как се чувстваш днес?',
+    moods: ['Ужасно', 'Зле', 'Горе-долу', 'Добре', 'Чудесно'],
+    moodSaved: (label) => `Записано: ${label}. Целият месец е в Записи → Настроение.`,
+    quickNav: 'Бързи действия',
+    quick: { symptom: 'Запиши симптом', kicks: 'Брой ритници', contractions: 'Мери контракции', luna: 'Попитай Luna' },
+    thisWeek: 'Тази седмица',
+    yourBaby: 'Бебето',
+    yourBody: 'Твоето тяло',
+    herBody: 'Как може да се чувства тя',
+    todo: 'За тази седмица',
+    partnerTip: 'Съвет за партньора',
+    forPartner: 'Как можеш да помогнеш',
+    forYou: 'Днес за теб',
+    minRead: (n) => `${n} мин четене`,
+    disclaimer: 'Lunabump е прототип. Не замества лекаря или акушерката. При спешност звъни на 112.',
+
+    segs: { symptoms: 'Симптоми', mood: 'Настроение', kicks: 'Ритници', contractions: 'Контракции' },
+    symQ: 'Какво усещаш?',
+    symAll: 'Покажи всички симптоми',
+    symFewer: 'Покажи по-малко',
+    intensity: 'Колко силно?',
+    levels: ['Много слабо', 'Слабо', 'Умерено', 'Силно', 'Много силно'],
+    note: 'Бележка (по желание)',
+    notePh: 'Нещо, което искаш да запомниш или да питаш лекаря',
+    save: 'Запиши',
+    saved: 'Записано',
+    pickSymptom: 'Първо избери поне един симптом.',
+    somethingWrong: 'Нещо не е наред?',
+    seeUrgent: 'Виж спешните симптоми',
+    recent: 'Последни записи',
+    symEmpty: 'Още няма записи. Избери симптом отгоре, за да добавиш първия.',
+    example: 'Пример',
+    headacheHint: 'Силно главоболие, което не минава с болкоуспокояващи, може да е признак на прееклампсия, особено с отоци или замъглено зрение.',
+    swellingHint: 'Внезапният оток на лицето, ръцете или краката може да е признак на прееклампсия.',
+    symMonth: 'Твоят месец',
+    symLegend: 'По-тъмните дни са с по-силни симптоми. Докосни ден, за да го видиш.',
+    dayEmpty: 'Няма записи за този ден.',
+    weekdays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+    prevMonth: 'Предишен месец',
+    nextMonth: 'Следващ месец',
+    moodTitle: 'Настроението ти този месец',
+    moodLegendTitle: 'Настроение',
+    moodToday: 'Днес',
+    lowMood: 'Тази седмица имаше няколко трудни дни. Кажи на акушерката или лекаря как се чувстваш; те могат да помогнат. Ако някога мислиш да си навредиш, звъни на 112.',
+    kicksTitle: 'Брояч на ритници',
+    kicksEarly: 'Броенето на ритници обикновено започва от 28-а седмица, но можеш да го пробваш по всяко време.',
+    kicksIntro: 'Брой по време, когато бебето обикновено е активно. Няма определен брой: опознаваш собствения ритъм на бебето.',
+    kickTap: 'Докосни при всяко движение',
+    kickCount: (n) => (n === 1 ? '1 движение' : `${n} движения`),
+    kickFinish: 'Готово',
+    kickCancel: 'Откажи',
+    kickSession: (n, m) => `${n === 1 ? '1 движение' : `${n} движения`} за ${m} мин`,
+    kickQuick: (n) => `${n === 1 ? '1 ритник' : `${n} ритника`} днес, записани в Luna View`,
+    movementsChanged: 'Движенията намаляха или се промениха? Обади се в родилното отделение сега. Не чакай до утре.',
+    whatToDo: 'Какво да направиш сега',
+    pattern: 'Ритъмът на бебето',
+    patternHint: 'Движенията, записани през последните 7 дни, по часове',
+    sessions: 'Сесии',
+    kicksEmpty: 'Още няма сесии. Докосни кръга, за да започнеш.',
+    conTitle: 'Таймер за контракции',
+    conStart: 'Старт',
+    conStop: 'Стоп',
+    conStartHint: 'когато започне контракция',
+    conStopHint: 'когато свърши',
+    conLastHour: 'Последния час',
+    conCountLabel: 'контракции',
+    conAvgLen: 'средна продължителност',
+    conAvgGap: 'среден интервал',
+    conEmpty: 'Натисни Старт, когато започне контракция, и Стоп, когато свърши. Lunabump смята колко продължават и през колко време идват.',
+    conSample: 'Пробвай с примерен час',
+    conClear: 'Изчисти списъка',
+    conCleared: 'Списъкът е изчистен',
+    conPattern: 'Контракциите идват на всеки 5 минути или по-често. Време е да се обадиш в родилното отделение или на акушерката.',
+    conPreterm: 'Бременна си под 37 седмици и имаш редовни контракции. Обади се в родилното отделение сега.',
+    conLong: 'Контракция продължи повече от 2 минути. Обади се в родилното отделение сега.',
+    conMany: 'Това са 6 или повече контракции за 10 минути. Обади се в родилното отделение сега.',
+    conBasis: 'По препоръките на NHS. Винаги следвай указанията на своята акушерка.',
+    conLasted: (d) => `продължи ${d}`,
+    conApart: (g) => `${g} след предишната`,
+    conRunning: 'Контракцията продължава',
+
+    lunaTitle: 'Luna',
+    lunaSub: 'AI асистент, а не лекар',
+    lunaHello: (name, w) => `Здравей${name ? `, ${name}` : ''}. Сега си в ${w}-а седмица. Питай ме за тази седмица или избери въпрос отдолу.`,
+    lunaProto: 'Прототип: Luna отговаря на подготвени въпроси по насоките на NHS. Все още не е истински AI.',
+    askPh: (w) => `Питай за ${w}-а седмица…`,
+    askLabel: 'Твоят въпрос',
+    send: 'Изпрати',
+    source: 'Източник',
+    lunaUnknown: 'В този прототип нямам проверен източник за това, затова няма да гадая. В пълното приложение отговарям по насоките на NHS, WHO, ACOG и NICE и винаги показвам източника. Пробвай някой от въпросите отдолу или питай акушерката или лекаря.',
+    lunaTriageOnly: 'Сложих най-важното най-отгоре. След като се обадиш, тук съм, ако имаш още въпроси.',
+    suggestLabel: 'Предложени въпроси',
+
+    readThisWeek: 'За четене тази седмица',
+    canIEat: 'Мога ли да ям това?',
+    foodPh: 'Търси, например сирене',
+    status: { safe: 'Безопасно', care: 'С внимание', avoid: 'Избягвай' },
+    noFood: 'Няма съвпадение. Попитай Luna или акушерката.',
+    groups: { food: 'Храна и напитки', body: 'Тяло и удобство', baby: 'Бебе и раждане', vitamins: 'Витамини' },
+    clubs: 'Клубове по термин',
+    clubsSoon: 'Разговори с родители с термин в същия месец. Идва в пълното приложение.',
+    midwife: 'Попитай акушерка',
+    midwifeSoon: 'Отговори от регистрирана акушерка. Идва в пълното приложение.',
+
+    due: 'Термин',
+    edit: 'Промени',
+    cancel: 'Откажи',
+    name: 'Твоето име',
+    weekNow: (w, d) => `Днес: седмица ${w}, ден ${d}`,
+    baby: 'Бебето',
+    sexes: { unknown: 'Не знаем', F: 'Момиче', M: 'Момче' },
+    sexHint: 'Преди 12-а седмица 3D бебето изглежда еднакво и в двата случая.',
+    view3d: '3D изглед',
+    modes: {
+      dreamy: ['Мечта', 'Сияещ и нежен, с плаващи звезди'],
+      realistic: ['Реален', 'По-близо до истинската анатомия, с неутрална светлина'],
+      moon: ['Луна', 'Растяща луна вместо бебето, ако образите на бебето ти идват в повече сега'],
+    },
+    language: 'Език',
+    care: 'Медицински екип',
+    unitPhone: 'Телефон на родилното отделение',
+    doctorPhone: 'Телефон на лекаря или акушерката',
+    careHint: 'Тези номера се показват на спешните екрани до 112.',
+    privacy: 'Поверителност',
+    consent: {
+      device: ['Запазвай данните и дневника ми на това устройство', 'Изключено: всичко се забравя, когато затвориш страницата.'],
+      luna: ['Luna може да ползва седмицата и симптомите ми за по-точни отговори', 'Luna ползва само това, което позволиш.'],
+      stats: ['Споделяй анонимна статистика за ползването', 'В този прототип нищо не се изпраща никъде.'],
+    },
+    notSaved: 'Не се пази на това устройство. Включи първия превключвател, за да запазиш данните си.',
+    stored: 'Какво се пази',
+    storedWhere: 'Само в този браузър, на това устройство. Нищо не се изпраща никъде.',
+    storedRows: { profile: 'Твоите данни', moods: 'Записи на настроението', symptoms: 'Записи на симптоми', kicks: 'Сесии и ритници', contractions: 'Контракции' },
+    showData: 'Покажи данните ми',
+    deleteAll: 'Изтрий всичките ми данни',
+    deleteConfirm: 'Това изтрива данните ти и всички записи от това устройство. Не може да се върне.',
+    deleteYes: 'Изтрий всичко',
+    deleted: 'Всичките ти данни са изтрити',
+    clearExamples: 'Махни примерните записи',
+    examplesCleared: 'Примерните записи са махнати',
+    partner: 'Режим за партньора',
+    partnerSoon: 'Покани партньора си с код. Той получава свой изглед на всяка седмица. Идва в пълното приложение.',
+    about: 'За този прототип',
+    aboutText: 'Кликаем прототип на Lunabump. Отговорите и статиите са подготвени примери по насоките на NHS и още не са прегледани от медицински съвет.',
+    restartHint: 'За да видиш отново началния екран, изтрий данните си в „Поверителност“.',
+    dataTitle: 'Твоите данни',
+    copy: 'Копирай',
+    copied: 'Копирано',
+    copyFailed: 'Не успях да копирам. Маркирай текста и го копирай сама.',
+
+    urgentTitle: 'Нещо не е наред?',
+    urgentIntro: 'Избери какво се случва. Ако не си сигурна, обади се в родилното отделение: там предпочитат да ги потърсиш.',
+    levelTitle: { emergency: 'Обади се на 112 сега', now: 'Обади се в родилното отделение сега', today: 'Свържи се с акушерката или лекаря днес' },
+    levelText: {
+      emergency: 'Това може да са признаци на спешно състояние. Обади се на 112 сега и кажи, че си бременна и в коя седмица.',
+      now: 'Не чакай до утре, дори да е посред нощ. Ако не можеш да се свържеш или ситуацията изглежда спешна, обади се на 112.',
+      today: 'Обади се днес, вместо да чакаш следващия преглед. Ако ти стане по-зле, звъни в родилното отделение или на 112 при спешност.',
+    },
+    youChose: 'Избра',
+    emergencyNumber: 'Спешен номер',
+    maternityUnit: 'Родилно отделение',
+    doctor: 'Лекар или акушерка',
+    addNumber: 'Добави номера в Аз → Медицински екип',
+    callBtn: 'Обади се',
+    otherSymptom: 'Избери друг симптом',
+
+    ob: {
+      welcomeTitle: 'Да се запознаем с твоята малка луна.',
+      welcomeText: 'Lunabump показва как бебето расте ден след ден, отговаря на въпроси с източници и пази данните ти в телефона.',
+      start: 'Започни',
+      demo: 'Пробвай демото на 24-та седмица',
+      stageTitle: 'Къде си по пътя?',
+      stages: { pregnant: 'Бременна съм', partner: 'Партньор съм', ttc: 'Опитваме се да заченем' },
+      ttcTitle: 'Идва по-късно',
+      ttcText: 'Засега Lunabump започва от бременността. Планираме версия и за опитите за зачеване.',
+      back: 'Назад',
+      next: 'Напред',
+      dateTitle: 'Кога е терминът?',
+      methods: { due: 'Термин', lmp: 'Последен цикъл', ivf: 'Ин витро' },
+      dateLabel: { due: 'Термин', lmp: 'Първи ден на последния цикъл', ivf: 'Дата на ембриотрансфера' },
+      ivfDay: 'Възраст на ембриона при трансфера',
+      ivfDays: { 3: 'Ден 3', 5: 'Ден 5' },
+      result: (w, d, due) => `Днес: седмица ${w}, ден ${d} · термин ${due}`,
+      outOfRange: (w) => `С тази дата излиза ${w}-а седмица. Lunabump покрива от 4-та до 42-ра седмица, затова провери датата.`,
+      dateHint: 'Лекарят може да коригира датата по-късно; всичко се преизчислява.',
+      nameTitle: 'Как да се обръщаме към теб?',
+      namePh: 'Малкото ти име (по желание)',
+      modeTitle: 'Как искаш да виждаш бременността си?',
+      modeHint: 'Можеш да го смениш по всяко време в Аз.',
+      privacyTitle: 'Твоите данни, твоят избор',
+      privacyText: 'Нищо не е включено, докато не кажеш. Можеш да ги промениш по всяко време в Аз → Поверителност.',
+      finish: 'Запознай се с бебето',
+      finishMoon: 'Виж своята луна',
+      revealTitle: 'Здравей, малка луна',
+      revealMoon: 'Твоята малка луна',
+      skip: 'Пропусни',
+      demoName: 'Елена',
+      step: (i, n) => `Стъпка ${i} от ${n}`,
+    },
+  },
+};
+
+/* =========================================================================
+   Content: the weeks, topics, foods and red flags
+   (prepared from NHS guidance; to be reviewed by the medical board)
+   ========================================================================= */
+
+const NHS = {
+  movements: ['NHS · Your baby’s movements', 'https://www.nhs.uk/pregnancy/keeping-well/your-babys-movements/'],
+  foods: ['NHS · Foods to avoid in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/'],
+  exercise: ['NHS · Exercise in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/exercise/'],
+  vitamins: ['NHS · Vitamins and supplements in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/'],
+  sleep: ['NHS · Stillbirth: prevention', 'https://www.nhs.uk/conditions/stillbirth/prevention/'],
+  labour: ['NHS · Signs that labour has begun', 'https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/'],
+  nausea: ['NHS · Vomiting and morning sickness', 'https://www.nhs.uk/pregnancy/related-conditions/common-symptoms/vomiting-and-morning-sickness/'],
+  heartburn: ['NHS · Indigestion and heartburn in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/'],
+  glucose: ['NHS · Gestational diabetes', 'https://www.nhs.uk/conditions/gestational-diabetes/'],
+  preeclampsia: ['NHS · Pre-eclampsia', 'https://www.nhs.uk/conditions/pre-eclampsia/'],
+};
+
+const WEEKS = [
+  {
+    from: 4, to: 7,
+    baby: { en: 'The neural tube, which becomes the brain and spine, is forming, and a tiny heart starts to beat.', bg: 'Оформя се нервната тръба, от която ще станат главният и гръбначният мозък, а мъничкото сърце започва да бие.' },
+    body: { en: 'Tiredness, nausea and tender breasts are common now. Rest when you can.', bg: 'Умората, гаденето и чувствителните гърди са чести сега. Почивай, когато можеш.' },
+    todo: ['folic', 'firstVisit'],
+    partner: { en: 'Take over the cooking and keep plain crackers by the bed.', bg: 'Поеми готвенето и остави солени бисквити до леглото.' },
+  },
+  {
+    from: 8, to: 10,
+    baby: { en: 'Fingers and toes are forming, and all the major organs have started to develop.', bg: 'Оформят се пръстчетата, а всички основни органи вече са започнали да се развиват.' },
+    body: { en: 'Nausea and tiredness often peak around now. Small, frequent meals can help.', bg: 'Гаденето и умората често са най-силни точно сега. Малки и чести хранения може да помогнат.' },
+    todo: ['folic', 'vitaminD'],
+    partner: { en: 'Take over the cooking, keep crackers by the bed and come to the first appointment.', bg: 'Поеми готвенето, остави солени бисквити до леглото и ела на първия преглед.' },
+  },
+  {
+    from: 11, to: 13,
+    baby: { en: 'Your baby has first reflexes and is starting to grow nails.', bg: 'Бебето има първите си рефлекси и започват да растат ноктенцата.' },
+    body: { en: 'For many women nausea starts to ease by weeks 12 to 14.', bg: 'При много жени гаденето започва да отслабва към 12–14-а седмица.' },
+    todo: ['scan1', 'folic'],
+    partner: { en: 'Come to the screening, and plan together how and when you’ll share the news.', bg: 'Ела на скрининга и планирайте заедно как и кога ще споделите новината.' },
+  },
+  {
+    from: 14, to: 17,
+    baby: { en: 'Your baby can make facial expressions, and the skeleton is getting stronger.', bg: 'Бебето вече прави мимики, а скелетът укрепва.' },
+    body: { en: 'Often the most comfortable stretch: more energy, and the bump starts to show.', bg: 'Често най-приятният период: повече енергия, а коремчето започва да личи.' },
+    todo: ['anomaly', 'vaccines'],
+    partner: { en: 'Plan something relaxing together while energy is higher.', bg: 'Планирайте нещо спокойно заедно, докато има повече енергия.' },
+  },
+  {
+    from: 18, to: 21,
+    baby: { en: 'Your baby can hear sounds, and you may feel the first flutters (usually between weeks 16 and 24).', bg: 'Бебето чува звуци и може да усетиш първите леки движения (обикновено между 16-а и 24-та седмица).' },
+    body: { en: 'Your bump is growing; back ache and leg cramps can start.', bg: 'Коремът расте; може да се появят болки в гърба и крампи в краката.' },
+    todo: ['anomaly', 'pattern'],
+    partner: { en: 'Be at the anomaly scan and start planning the nursery.', bg: 'Бъди на феталната морфология и започнете да планирате детската стая.' },
+  },
+  {
+    from: 22, to: 25,
+    baby: { en: 'The lungs start making surfactant, and your baby can hear your voice.', bg: 'Белите дробове започват да образуват сърфактант, а бебето чува гласа ти.' },
+    body: { en: 'Stretch marks, back ache and heartburn are common.', bg: 'Стриите, болките в гърба и киселините са чести.' },
+    todo: ['glucose', 'pattern'],
+    partner: { en: 'Offer a lower-back massage in the evenings.', bg: 'Предложи масаж на кръста вечер.' },
+  },
+  {
+    from: 26, to: 29,
+    baby: { en: 'Your baby opens their eyes and has periods of REM sleep.', bg: 'Бебето отваря очи и вече има фази на REM сън.' },
+    body: { en: 'The third trimester starts at week 28. Back ache and poor sleep are common.', bg: 'Третият триместър започва от 28-а седмица. Болките в гърба и лошият сън са чести.' },
+    todo: ['sideSleep', 'glucose', 'classes'],
+    partner: { en: 'Get a pregnancy pillow and sign up for an antenatal class together.', bg: 'Купете възглавница за бременни и се запишете заедно на курс за раждане.' },
+  },
+  {
+    from: 30, to: 33,
+    baby: { en: 'Your baby is putting on fat and practising breathing movements.', bg: 'Бебето трупа мазнини и „тренира“ дишането.' },
+    body: { en: 'Breathlessness, heartburn and practice tightenings (Braxton Hicks) are common.', bg: 'Задухът, киселините и тренировъчните контракции (Braxton Hicks) са чести.' },
+    todo: ['bag', 'sideSleep'],
+    partner: { en: 'Pack the hospital bag together and test the route to the hospital.', bg: 'Пригответе заедно чантата за родилното и пробвайте маршрута до болницата.' },
+  },
+  {
+    from: 34, to: 36,
+    baby: { en: 'Most babies turn head-down by now.', bg: 'Повечето бебета вече са се обърнали с главата надолу.' },
+    body: { en: 'Your bump may drop lower, which can make breathing easier.', bg: 'Коремът може да се смъкне, което улеснява дишането.' },
+    todo: ['carSeat', 'signs'],
+    partner: { en: 'Fit the car seat and keep your phone charged.', bg: 'Монтирай столчето за кола и дръж телефона си зареден.' },
+  },
+  {
+    from: 37, to: 40,
+    baby: { en: 'From week 37 your baby is considered full term and ready to meet you.', bg: 'От 37-а седмица бебето се смята за доносено и е готово да се запознаете.' },
+    body: { en: 'Waiting is hard. Rest, and keep the maternity unit’s number close.', bg: 'Чакането е трудно. Почивай и дръж номера на родилното отделение подръка.' },
+    todo: ['unitNumber', 'timer'],
+    partner: { en: 'Stay reachable, take over the logistics and keep the contraction timer on your phone.', bg: 'Бъди на телефона, поеми логистиката и дръж таймера за контракции подръка.' },
+  },
+  {
+    from: 41, to: 42,
+    baby: { en: 'Most babies are born by week 42. Your team will talk with you about next steps, such as induction.', bg: 'Повечето бебета се раждат до 42-ра седмица. Екипът ти ще обсъди с теб следващите стъпки, например предизвикване на раждането.' },
+    body: { en: 'Keep noticing your baby’s movements and call straight away if they change.', bg: 'Продължавай да следиш движенията на бебето и звъни веднага, ако се променят.' },
+    todo: ['unitNumber', 'pattern'],
+    partner: { en: 'Stay reachable and take over the logistics.', bg: 'Бъди на телефона и поеми логистиката.' },
+  },
+];
+
+const TODO = {
+  folic: { en: 'Take 400 micrograms of folic acid every day until week 12', bg: 'Пий по 400 микрограма фолиева киселина всеки ден до 12-а седмица' },
+  firstVisit: { en: 'Book your first appointment with a doctor or midwife', bg: 'Запиши си първия преглед при лекар или акушерка' },
+  vitaminD: { en: 'Ask your doctor about vitamin D (10 micrograms a day is a common recommendation)', bg: 'Попитай лекаря за витамин D (често се препоръчват 10 микрограма на ден)' },
+  scan1: { en: 'First-trimester scan and screening, usually between weeks 11 and 14', bg: 'Ултразвук и скрининг на първия триместър, обикновено между 11-а и 14-а седмица' },
+  anomaly: { en: 'Book the mid-pregnancy anomaly scan, usually at weeks 18 to 21', bg: 'Запиши час за фетална морфология, обикновено между 18-а и 21-ва седмица' },
+  vaccines: { en: 'Ask which vaccines are recommended in pregnancy', bg: 'Попитай кои ваксини се препоръчват по време на бременност' },
+  pattern: { en: 'Start noticing your baby’s own pattern of movements', bg: 'Започни да опознаваш собствения ритъм на движенията на бебето' },
+  glucose: { en: 'Ask whether you need a glucose tolerance test (usually at weeks 24 to 28)', bg: 'Попитай дали ти трябва глюкозотолерантен тест (обикновено между 24-та и 28-а седмица)' },
+  sideSleep: { en: 'From week 28, go to sleep on your side', bg: 'От 28-а седмица заспивай на една страна' },
+  classes: { en: 'Sign up for an antenatal class', bg: 'Запиши се на курс за подготовка за раждане' },
+  bag: { en: 'Pack your hospital bag', bg: 'Приготви чантата за родилното' },
+  carSeat: { en: 'Fit the car seat', bg: 'Монтирай столчето за кола' },
+  signs: { en: 'Read the signs that labour has started', bg: 'Прочети признаците, че раждането е започнало' },
+  unitNumber: { en: 'Save your maternity unit’s phone number in Me', bg: 'Запиши телефона на родилното отделение в „Аз“' },
+  timer: { en: 'Try the contraction timer in Track', bg: 'Пробвай таймера за контракции в „Записи“' },
+};
+
+const TOPICS = [
+  {
+    id: 'movements', group: 'baby', min: 2, src: NHS.movements,
+    title: { en: 'Your baby’s movements', bg: 'Движенията на бебето' },
+    q: { en: 'How often should my baby move?', bg: 'Колко често трябва да мърда бебето?' },
+    kw: [' move', 'moving', 'movement', ' kick', 'мърда', 'движен', 'ритни', ' рита', 'ритник'],
+    a: {
+      en: [
+        'Most people start to feel movements between weeks 16 and 24. There’s no set number of movements you should feel each day: every baby has their own pattern.',
+        'Get to know your baby’s usual pattern. If your baby is moving less than usual, you can’t feel them moving any more, or the pattern changes, call your midwife or maternity unit immediately. Don’t wait until the next day, even in the middle of the night.',
+        'Don’t use a home heartbeat monitor (doppler) to check: it isn’t a reliable way to tell whether your baby is well.',
+      ],
+      bg: [
+        'Повечето жени започват да усещат движения между 16-а и 24-та седмица. Няма определен брой движения на ден: всяко бебе има свой ритъм.',
+        'Опознай обичайния ритъм на бебето. Ако то мърда по-малко от обикновено, ако вече не го усещаш или ритъмът се промени, обади се веднага на акушерката или в родилното отделение. Не чакай до следващия ден, дори да е посред нощ.',
+        'Не разчитай на домашен доплер (уред за слушане на сърдечния ритъм): той не показва надеждно дали бебето е добре.',
+      ],
+    },
+  },
+  {
+    id: 'caffeine', group: 'food', min: 1, src: NHS.foods,
+    title: { en: 'Caffeine', bg: 'Кофеин' },
+    q: { en: 'How much coffee is OK?', bg: 'Колко кафе е безопасно?' },
+    kw: ['coffee', 'caffeine', ' tea ', ' tea?', ' cola', 'energy drink', 'кафе', 'кофеин', ' чай', 'кока-кола', 'енергийн'],
+    a: {
+      en: [
+        'The usual advice is no more than 200 mg of caffeine a day.',
+        'As a guide, a cup of instant coffee has about 100 mg, a cup of tea about 75 mg and a can of cola about 40 mg. Filter coffee and coffee from coffee shops can contain more.',
+        'Caffeine is also in chocolate, energy drinks and some cold and flu remedies, so check labels and ask a pharmacist before taking medicines.',
+      ],
+      bg: [
+        'Обичайната препоръка е не повече от 200 mg кофеин на ден.',
+        'За ориентир: чаша разтворимо кафе съдържа около 100 mg, чаша чай около 75 mg, а кутия кола около 40 mg. Шварц кафето и кафето от кафенета може да съдържат повече.',
+        'Кофеин има и в шоколада, енергийните напитки и някои лекарства против настинка, затова чети етикетите и питай фармацевт, преди да пиеш лекарства.',
+      ],
+    },
+  },
+  {
+    id: 'food', group: 'food', min: 2, src: NHS.foods,
+    title: { en: 'Cheese, eggs and other foods', bg: 'Сирена, яйца и други храни' },
+    q: { en: 'Can I eat soft cheese?', bg: 'Мога ли да ям меко сирене?' },
+    kw: ['cheese', 'brie', 'camembert', 'feta', 'sushi', 'fish', ' egg', 'meat', 'salami', 'pâté', ' pate', ' liver', 'food', 'сирен', ' бри', 'камамбер', 'фета', 'суши', 'риба', 'яйц', 'месо', 'салам', 'луканк', 'пастет', 'черен дроб', 'храна'],
+    a: {
+      en: [
+        'Hard cheeses such as cheddar and parmesan are fine, even when unpasteurised. Pasteurised soft cheeses such as mozzarella, feta, halloumi, ricotta and cottage cheese are fine too.',
+        'Avoid mould-ripened soft cheeses such as brie and camembert, and soft blue cheeses such as gorgonzola, unless they’re cooked until steaming hot. Avoid unpasteurised milk. White brine cheese (sirene) is a soft cheese: choose pasteurised, or cook it until steaming hot.',
+        'Also avoid liver, raw or undercooked meat, sushi made with raw fish, and shark, swordfish and marlin. Cook cold cured meats such as salami until steaming hot, and eat eggs well cooked.',
+      ],
+      bg: [
+        'Твърдите сирена като чедър и пармезан са безопасни, дори от непастьоризирано мляко. Пастьоризираните меки сирена като моцарела, фета, халуми, рикота и извара също са наред.',
+        'Избягвай меките сирена с бяла плесен като бри и камамбер, както и меките сирена със синя плесен като горгонзола, освен ако не са сготвени до вдигане на пара. Избягвай непастьоризирано мляко. Бялото саламурено сирене е меко сирене: избирай пастьоризирано или го готви, докато се вдигне пара.',
+        'Избягвай още черен дроб, сурово или недопечено месо, суши със сурова риба, както и акула, риба меч и марлин. Сурово-сушените колбаси като салам и луканка готви до вдигане на пара, а яйцата яж добре сготвени.',
+      ],
+    },
+  },
+  {
+    id: 'sleep', group: 'baby', min: 1, src: NHS.sleep,
+    title: { en: 'Go to sleep on your side', bg: 'Заспивай на една страна' },
+    q: { en: 'Is it OK to sleep on my back?', bg: 'Мога ли да спя по гръб?' },
+    kw: ['sleep', 'on my back', 'lying on my back', 'спя', 'сън', 'по гръб', 'заспива'],
+    a: {
+      en: [
+        'From week 28, the safest way to go to sleep is on your side, left or right. Research shows that going to sleep on your back after 28 weeks raises the risk of stillbirth, probably because of the flow of blood and oxygen to the baby.',
+        'If you wake up on your back, don’t worry: just turn onto your side before you go back to sleep.',
+      ],
+      bg: [
+        'От 28-а седмица най-безопасно е да заспиваш на една страна, лява или дясна. Проучванията показват, че заспиването по гръб след 28-а седмица увеличава риска от мъртво раждане, вероятно заради притока на кръв и кислород към бебето.',
+        'Ако се събудиш по гръб, не се тревожи: просто се обърни на една страна, преди да заспиш отново.',
+      ],
+    },
+  },
+  {
+    id: 'exercise', group: 'body', min: 2, src: NHS.exercise,
+    title: { en: 'Staying active', bg: 'Движение и спорт' },
+    q: { en: 'What exercise is safe now?', bg: 'Какви упражнения са безопасни сега?' },
+    kw: ['exercise', 'sport', ' gym', ' run', 'swim', 'yoga', ' walk', 'workout', 'упражн', 'спорт', 'фитнес', 'тича', 'плува', 'йога', 'ходене', 'тренир'],
+    a: {
+      en: [
+        'If your pregnancy is going well, aim for 150 minutes of moderate activity a week, such as brisk walking, swimming or pregnancy yoga, including some muscle-strengthening exercise.',
+        'Avoid sports where you could fall or be hit in the tummy, such as hockey or mountain biking, and don’t scuba dive. In later pregnancy, avoid lying flat on your back for more than a few minutes.',
+        'Stop if you feel uncomfortable, too hot or unwell, and don’t exercise on an empty stomach. Tell your instructor you’re pregnant.',
+      ],
+      bg: [
+        'Ако бременността протича добре, стреми се към 150 минути умерено движение седмично, например бързо ходене, плуване или йога за бременни, включително упражнения за укрепване на мускулите.',
+        'Избягвай спортове, при които може да паднеш или да те ударят в корема, като хокей или планинско колоездене, и не се гмуркай с бутилка. В по-късната бременност не лежи по гръб повече от няколко минути.',
+        'Спри, ако ти е неудобно, много топло или не се чувстваш добре, и не тренирай на гладно. Кажи на инструктора, че си бременна.',
+      ],
+    },
+  },
+  {
+    id: 'vitamins', group: 'vitamins', min: 2, src: NHS.vitamins,
+    title: { en: 'Folic acid and vitamin D', bg: 'Фолиева киселина и витамин D' },
+    q: { en: 'Which vitamins do I need?', bg: 'Какви витамини ми трябват?' },
+    kw: ['vitamin', 'folic', 'supplement', ' iron', 'витамин', 'фолиев', 'добавк', 'желязо'],
+    a: {
+      en: [
+        'Take 400 micrograms of folic acid every day for the first 12 weeks of pregnancy. It lowers the chance of problems with the baby’s brain and spine. Some women are advised a higher dose (5 mg); your doctor will tell you if that’s you.',
+        'Vitamin D: 10 micrograms a day is advised, especially between October and March.',
+        'Don’t take vitamin A (retinol) supplements or cod liver oil, and avoid liver, because too much vitamin A can harm the baby. Your iron levels are checked with blood tests.',
+      ],
+      bg: [
+        'Пий 400 микрограма фолиева киселина всеки ден през първите 12 седмици. Тя намалява риска от проблеми с мозъка и гръбначния мозък на бебето. На някои жени се препоръчва по-висока доза (5 mg); лекарят ще ти каже, ако това важи за теб.',
+        'Витамин D: препоръчват се 10 микрограма на ден, особено между октомври и март.',
+        'Не приемай добавки с витамин A (ретинол) или рибено масло от черен дроб и избягвай черния дроб, защото твърде много витамин A може да навреди на бебето. Нивото на желязото се проверява с кръвни изследвания.',
+      ],
+    },
+  },
+  {
+    id: 'nausea', group: 'body', min: 2, src: NHS.nausea,
+    title: { en: 'Nausea and morning sickness', bg: 'Гадене и сутрешно неразположение' },
+    q: { en: 'What helps with nausea?', bg: 'Какво помага при гадене?' },
+    kw: ['nausea', 'sick', 'vomit', 'throw up', 'гаден', 'повръщ', 'неразполож', 'прилошава'],
+    a: {
+      en: [
+        'Rest when you can, since tiredness can make nausea worse. Try dry toast or a plain biscuit in the morning, and small, frequent meals of plain food.',
+        'Sip water little and often. Cold food may be easier than hot if smells bother you. Ginger may help some people.',
+        'Contact your midwife or doctor the same day if you can’t keep food or fluids down for 24 hours, your pee is very dark or you haven’t peed for 8 hours, you feel very weak or dizzy, or you have tummy pain, a high temperature or vomit blood.',
+      ],
+      bg: [
+        'Почивай, когато можеш, защото умората засилва гаденето. Опитай сух хляб или обикновена бисквита сутрин и малки, чести хранения с лека храна.',
+        'Пий вода често и на малки глътки. Студената храна може да се понася по-лесно от топлата, ако миризмите те дразнят. На някои хора помага джинджифилът.',
+        'Свържи се с акушерката или лекаря още същия ден, ако 24 часа не задържаш храна и течности, ако урината ти е много тъмна или не си уринирала от 8 часа, ако се чувстваш много отпаднала или замаяна, или ако имаш болка в корема, висока температура или повръщаш кръв.',
+      ],
+    },
+  },
+  {
+    id: 'heartburn', group: 'body', min: 1, src: NHS.heartburn,
+    title: { en: 'Heartburn', bg: 'Киселини' },
+    q: { en: 'What helps with heartburn?', bg: 'Какво помага при киселини?' },
+    kw: ['heartburn', 'indigestion', 'reflux', 'киселини', 'рефлукс', 'храносмилане'],
+    a: {
+      en: [
+        'Eat small meals often instead of three large ones, and don’t eat in the 3 hours before bed.',
+        'Prop up your head and shoulders in bed; sleeping on your left side can help too. Cut down on caffeine and on rich, spicy or fatty food.',
+        'A pharmacist can suggest an antacid: tell them you’re pregnant, as some aren’t suitable. See your midwife or doctor if it doesn’t get better. Heartburn that won’t go away with medicine, together with a headache or swelling, can be a sign of pre-eclampsia: call your maternity unit.',
+      ],
+      bg: [
+        'Хранѝ се често и на малки порции вместо три пъти с големи и не яж в последните 3 часа преди лягане.',
+        'Повдигни главата и раменете си в леглото; спането на лява страна също помага. Намали кофеина и тежките, пикантни или мазни храни.',
+        'Фармацевтът може да препоръча антиацид: кажи, че си бременна, защото някои не са подходящи. Ако не се подобри, иди при акушерката или лекаря. Киселини, които не минават с лекарства, заедно с главоболие или отоци, може да са признак на прееклампсия: обади се в родилното отделение.',
+      ],
+    },
+  },
+  {
+    id: 'glucose', group: 'baby', min: 1, src: NHS.glucose,
+    title: { en: 'The glucose test', bg: 'Глюкозотолерантният тест' },
+    q: { en: 'What is the glucose test?', bg: 'Какво е глюкозотолерантният тест?' },
+    kw: ['glucose', 'sugar', 'diabetes', 'ogtt', 'глюкоз', 'захар', 'диабет', 'обременяване'],
+    a: {
+      en: [
+        'The oral glucose tolerance test checks for gestational diabetes. It’s usually done between weeks 24 and 28. Some countries offer it to every pregnant woman, others to women with risk factors.',
+        'You don’t eat or drink for 8 to 10 hours before it, usually overnight; ask whether water is allowed. A blood sample is taken, you have a glucose drink and rest for 2 hours, and then a second sample is taken.',
+        'If the result shows gestational diabetes, your team will help you manage it, often starting with changes to food and activity.',
+      ],
+      bg: [
+        'Оралният глюкозотолерантен тест (обременяване с глюкоза) проверява за гестационен диабет. Обикновено се прави между 24-та и 28-а седмица. В някои държави се предлага на всички бременни, в други само при рискови фактори.',
+        '8 до 10 часа преди теста не ядеш и не пиеш, обикновено през нощта; попитай дали водата е позволена. Взима се кръв, изпиваш разтвор с глюкоза, почиваш 2 часа и се взима втора проба.',
+        'Ако резултатът покаже гестационен диабет, екипът ти ще помогне да го контролираш, често първо с промени в храненето и движението.',
+      ],
+    },
+  },
+  {
+    id: 'labour', group: 'baby', min: 2, src: NHS.labour,
+    title: { en: 'Signs that labour has started', bg: 'Признаци, че раждането е започнало' },
+    q: { en: 'How do I know labour has started?', bg: 'Как да разбера, че раждането е започнало?' },
+    kw: ['labour', 'labor', 'contraction', 'waters', 'birth', 'раждане', 'раждам', 'контракци', 'водите', 'тапа'],
+    a: {
+      en: [
+        'Signs include contractions or tightenings, a “show” (the plug of mucus from your cervix coming away), backache, an urge to go to the toilet, and your waters breaking.',
+        'Call your midwife or maternity unit if you think you’re in labour, or if contractions are regular and come every 5 minutes or more often.',
+        'Call straight away if your waters break, you have vaginal bleeding, your baby is moving less than usual, you’re less than 37 weeks pregnant and think you might be in labour, any contraction lasts longer than 2 minutes, or you have 6 or more contractions in 10 minutes.',
+      ],
+      bg: [
+        'Признаците включват контракции или стягания, отделяне на слузната тапа, болка в кръста, позиви за тоалетна и изтичане на околоплодните води.',
+        'Обади се на акушерката или в родилното отделение, ако мислиш, че раждането е започнало, или ако контракциите са редовни и идват на всеки 5 минути или по-често.',
+        'Обади се веднага, ако изтекат водите, имаш вагинално кървене, бебето мърда по-малко от обичайното, бременна си под 37 седмици и мислиш, че раждаш, някоя контракция продължава над 2 минути или имаш 6 или повече контракции за 10 минути.',
+      ],
+    },
+  },
+];
+const topicById = Object.fromEntries(TOPICS.map((tp) => [tp.id, tp]));
+
+const FOODS = [
+  { s: 'safe', en: ['Hard cheese (cheddar, parmesan)', 'Fine, even when unpasteurised.'], bg: ['Твърдо сирене (чедър, пармезан)', 'Безопасно, дори от непастьоризирано мляко.'] },
+  { s: 'safe', en: ['Pasteurised soft cheese (mozzarella, feta, halloumi, ricotta, cottage cheese)', 'Fine.'], bg: ['Пастьоризирано меко сирене (моцарела, фета, халуми, рикота, извара)', 'Безопасно.'] },
+  { s: 'care', en: ['White brine cheese (sirene)', 'Choose pasteurised, or cook it until steaming hot.'], bg: ['Бяло саламурено сирене', 'Избирай пастьоризирано или го готви, докато се вдигне пара.'] },
+  { s: 'avoid', en: ['Brie, camembert, chèvre', 'Avoid unless cooked until steaming hot.'], bg: ['Бри, камамбер, козе сирене с бяла кора', 'Избягвай, освен ако не е сготвено до вдигане на пара.'] },
+  { s: 'avoid', en: ['Soft blue cheese (gorgonzola, roquefort)', 'Avoid unless cooked until steaming hot.'], bg: ['Меко синьо сирене (горгонзола, рокфор)', 'Избягвай, освен ако не е сготвено до вдигане на пара.'] },
+  { s: 'avoid', en: ['Unpasteurised milk', 'Avoid.'], bg: ['Непастьоризирано мляко', 'Избягвай.'] },
+  { s: 'care', en: ['Eggs', 'Eat them well cooked.'], bg: ['Яйца', 'Яж ги добре сготвени.'] },
+  { s: 'avoid', en: ['Liver and liver pâté', 'Too much vitamin A for the baby.'], bg: ['Черен дроб и пастет от черен дроб', 'Твърде много витамин A за бебето.'] },
+  { s: 'care', en: ['Meat pâté (not liver)', 'Keep it chilled and eat it before the use-by date.'], bg: ['Месен пастет (не от черен дроб)', 'Дръж го в хладилник и го изяж преди срока на годност.'] },
+  { s: 'care', en: ['Cold cured meats (salami, chorizo, lukanka)', 'Cook until steaming hot before eating.'], bg: ['Сурово-сушени колбаси (салам, чоризо, луканка)', 'Готви ги до вдигане на пара, преди да ги ядеш.'] },
+  { s: 'avoid', en: ['Raw or rare meat', 'Cook until steaming hot all the way through.'], bg: ['Сурово или недопечено месо', 'Готви го, докато се вдигне пара навсякъде.'] },
+  { s: 'avoid', en: ['Sushi with raw fish', 'Avoid. Cooked or vegetarian sushi is fine.'], bg: ['Суши със сурова риба', 'Избягвай. Суши с готвена риба или вегетарианско е наред.'] },
+  { s: 'care', en: ['Tuna', 'No more than 4 cans or 2 tuna steaks a week.'], bg: ['Риба тон', 'Не повече от 4 консерви или 2 пържоли риба тон седмично.'] },
+  { s: 'care', en: ['Oily fish (salmon, mackerel, sardines)', 'Good for you, up to 2 portions a week.'], bg: ['Мазна риба (сьомга, скумрия, сардини)', 'Полезна, до 2 порции седмично.'] },
+  { s: 'avoid', en: ['Shark, swordfish, marlin', 'Avoid: too much mercury.'], bg: ['Акула, риба меч, марлин', 'Избягвай: твърде много живак.'] },
+  { s: 'care', en: ['Coffee and tea', 'Up to 200 mg of caffeine a day, about 2 cups of instant coffee.'], bg: ['Кафе и чай', 'До 200 mg кофеин на ден, около 2 чаши разтворимо кафе.'] },
+  { s: 'avoid', en: ['Alcohol', 'It’s safest not to drink at all.'], bg: ['Алкохол', 'Най-безопасно е изобщо да не пиеш.'] },
+];
+
+const SYMPTOMS = {
+  nausea: { en: 'Nausea', bg: 'Гадене' },
+  tired: { en: 'Tiredness', bg: 'Умора' },
+  breasts: { en: 'Tender breasts', bg: 'Чувствителни гърди' },
+  headache: { en: 'Headache', bg: 'Главоболие' },
+  constipation: { en: 'Constipation', bg: 'Запек' },
+  moody: { en: 'Mood swings', bg: 'Промени в настроението' },
+  backpain: { en: 'Back pain', bg: 'Болки в гърба' },
+  heartburn: { en: 'Heartburn', bg: 'Киселини' },
+  cramps: { en: 'Leg cramps', bg: 'Крампи в краката' },
+  ligament: { en: 'Pulling pain low in the bump', bg: 'Дърпаща болка ниско в корема' },
+  nose: { en: 'Blocked nose', bg: 'Запушен нос' },
+  swelling: { en: 'Swollen feet or ankles', bg: 'Подути стъпала или глезени' },
+  sleep: { en: 'Trouble sleeping', bg: 'Лош сън' },
+  braxton: { en: 'Practice tightenings', bg: 'Тренировъчни контракции' },
+  pelvic: { en: 'Pelvic pain', bg: 'Болка в таза' },
+  breathless: { en: 'Breathlessness', bg: 'Задух' },
+};
+const TRI_SYMPTOMS = [
+  ['nausea', 'tired', 'breasts', 'headache', 'constipation', 'moody'],
+  ['backpain', 'heartburn', 'cramps', 'ligament', 'nose', 'headache'],
+  ['heartburn', 'backpain', 'swelling', 'sleep', 'braxton', 'pelvic', 'breathless'],
+];
+
+// Rules, not AI: an urgent symptom always gets a clear action first
+const RED = [
+  {
+    id: 'emergency', level: 'emergency',
+    label: { en: 'Heavy bleeding, chest pain, trouble breathing, fainting or a fit', bg: 'Обилно кървене, болка в гърдите, затруднено дишане, припадък или гърч' },
+    match: (s) => has(s, ['heavy bleeding', 'chest pain', 'can’t breathe', "can't breathe", 'cannot breathe', 'struggling to breathe', 'fainted', 'passed out', 'seizure', 'unconscious', 'обилно кърв', 'болка в гърдите', 'не мога да дишам', 'задушавам', 'припаднах', 'загубих съзнание', 'гърч']),
+  },
+  {
+    id: 'bleeding', level: 'now',
+    label: { en: 'Bleeding from the vagina', bg: 'Кървене от влагалището' },
+    match: (s) => has(s, ['bleeding', 'bleed', 'spotting', 'кървя', 'кървене', 'кърви', 'зацапване']),
+  },
+  {
+    id: 'fluid', level: 'now',
+    label: { en: 'Fluid leaking, or your waters have broken', bg: 'Изтича течност или са изтекли водите' },
+    match: (s) => has(s, ['waters broke', 'waters have broken', 'my waters', 'leaking fluid', 'fluid leaking', 'leaking water', 'изтекоха водите', 'изтичат води', 'пукнаха водите', 'изтича течност', 'изтича вода']),
+  },
+  {
+    id: 'movements', level: 'now',
+    label: { en: 'Your baby is moving less, or differently', bg: 'Бебето мърда по-малко или различно' },
+    match: (s) => has(s, ['not moving', 'moving less', 'less movement', 'fewer movements', 'can’t feel', "can't feel", 'cannot feel', 'stopped moving', 'hasn’t moved', "hasn't moved", 'reduced movement', 'не мърда', 'мърда по-малко', 'по-малко движения', 'не усещам', 'спря да мърда', 'намалели движения']),
+  },
+  {
+    id: 'preeclampsia', level: 'now',
+    label: { en: 'Severe headache, blurred vision, flashing lights or sudden swelling of the face, hands or feet', bg: 'Силно главоболие, замъглено зрение, проблясъци или внезапен оток на лицето, ръцете или краката' },
+    match: (s) => has(s, ['blurred', 'flashing', 'severe headache', 'sudden swelling', 'swollen face', 'face is swollen', 'замъглено', 'проблясъци', 'силно главоболие', 'внезапен оток', 'подуто лице', 'лицето ми е подуто'])
+      || (has(s, ['headache', 'главобол']) && has(s, ['swollen', 'swelling', 'puffy', 'оток', 'подут', 'отекл'])),
+  },
+  {
+    id: 'pain', level: 'now',
+    label: { en: 'Severe or constant tummy pain, or pain below the ribs', bg: 'Силна или постоянна болка в корема или под ребрата' },
+    match: (s) => has(s, ['severe pain', 'strong pain', 'constant pain', 'below my ribs', 'under my ribs', 'силна болка', 'постоянна болка', 'под ребрата']),
+  },
+  {
+    id: 'preterm', level: 'now', before37: true,
+    label: { en: 'Regular tightenings or contractions before week 37', bg: 'Редовни стягания или контракции преди 37-а седмица' },
+    match: (s, w) => w < 37 && has(s, ['contraction', 'tightening', 'контракци', 'стягания', 'стяга ме']),
+  },
+  {
+    id: 'fever', level: 'today',
+    label: { en: 'A temperature of 38 °C or higher, or feeling very unwell', bg: 'Температура 38 °C или повече, или се чувстваш много зле' },
+    match: (s) => has(s, ['fever', 'temperature', 'chills', 'температура', 'треска', 'втрисане']),
+  },
+  {
+    id: 'itching', level: 'today',
+    label: { en: 'Intense itching, especially on the hands and feet', bg: 'Силен сърбеж, особено по дланите и стъпалата' },
+    match: (s) => has(s, [' itch', 'itching', 'itchy', 'сърб']),
+  },
+  {
+    id: 'vomiting', level: 'today',
+    label: { en: 'Can’t keep food or fluids down for 24 hours', bg: '24 часа не задържаш храна и течности' },
+    match: (s) => has(s, ['can’t keep', "can't keep", 'cannot keep', 'не задържам', 'повръщам всичко']),
+  },
+];
+const LEVEL_ORDER = { emergency: 0, now: 1, today: 2 };
+
+/* =========================================================================
+   State
+   ========================================================================= */
+
+const blank = () => ({
+  v: 1,
+  profile: null,
+  moods: {},
+  symptoms: [],
+  kickSessions: [],
+  kickTaps: [],
+  contractions: [],
+  activeKicks: null,
+  activeContraction: null,
+  checklist: {},
+  care: { unit: '', doctor: '' },
+});
+
+function loadData() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (parsed && parsed.v === 1) return { ...blank(), ...parsed, care: { ...blank().care, ...(parsed.care || {}) } };
+  } catch (err) { /* storage unavailable or unreadable */ }
+  return blank();
+}
+
+let data = loadData();
+let lang = (() => {
+  try { const saved = localStorage.getItem(LANG_KEY); if (saved === 'en' || saved === 'bg') return saved; } catch (err) { /* ignore */ }
+  return (navigator.language || '').toLowerCase().startsWith('bg') ? 'bg' : 'en';
+})();
+const t = () => STR[lang];
+const L = (obj) => (obj && (obj[lang] ?? obj.en)) || '';
+
+function save() {
+  if (!data.profile || !data.profile.consents || !data.profile.consents.device) return;
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (err) { /* storage full or blocked: keep working in memory */ }
+}
+function forgetStored() {
+  try { localStorage.removeItem(KEY); } catch (err) { /* ignore */ }
+}
+
+const ui = {
+  tab: 'today',
+  seg: 'symptoms',
+  symPicked: new Set(),
+  symLevel: 3,
+  symAll: false,
+  symNotice: '',
+  calMonth: { symptoms: null, mood: null },
+  calPick: { symptoms: null, mood: null },
+  editingProfile: false,
+  confirmDelete: false,
+  chat: [],
+  ob: null,
+  lunaView: 'hero',
+  heroVisible: true,
+  lunaState: null,
+  lunaReady: false,
+  lunaPaused: null,
+  lastFocus: null,
+};
+
+/* ---------- Derived pregnancy numbers ---------- */
+function gaDays() {
+  return data.profile ? 280 - daysBetween(todayISO(), data.profile.due) : 0;
+}
+function weekNow() { return Math.floor(gaDays() / 7); }
+function triOf(w) { return w < 14 ? 0 : w < 28 ? 1 : 2; }
+function lunaDays() { return Math.min(280, Math.max(56, gaDays())); }
+function blockFor(w) { return WEEKS.find((b) => w >= b.from && w <= b.to) || (w < 4 ? WEEKS[0] : WEEKS[WEEKS.length - 1]); }
+
+/* ---------- Formatting ---------- */
+function fmtDate(iso) {
+  if (!validISO(iso)) return '';
+  const d = dateOf(iso);
+  if (lang === 'bg') return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function fmtTime(ms) {
+  return new Date(ms).toLocaleTimeString(t().locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+function fmtDay(ms) {
+  const iso = isoOf(new Date(ms));
+  const diff = daysBetween(iso, todayISO());
+  if (diff === 0) return lang === 'bg' ? 'Днес' : 'Today';
+  if (diff === 1) return lang === 'bg' ? 'Вчера' : 'Yesterday';
+  return fmtDate(iso);
+}
+function fmtDur(ms) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+function monthTitle(iso) {
+  const label = dateOf(iso).toLocaleDateString(t().locale, { month: 'long', year: 'numeric' }).replace(' г.', '');
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/* ---------- Icons ---------- */
+const ICON = {
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
+  chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5c2.5-1 5-1 7.5.5v13c-2.5-1.5-5-1.5-7.5-.5zM19.5 5.5c-2.5-1-5-1-7.5.5v13c2.5-1.5 5-1.5 7.5-.5z"/></svg>',
+  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></svg>',
+  kick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 14 9l5.5.4-4.2 3.6 1.3 5.5L12 15.6l-4.6 2.9 1.3-5.5L4.5 9.4 10 9z"/></svg>',
+  wave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13h3l2-5 3.5 9 2.5-6 1.5 2h6.5"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 16.5h-8.5L6 20v-3.5H5A1.5 1.5 0 0 1 3.5 15V6.5A1.5 1.5 0 0 1 5 5z"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5v-.5a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.5"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 20 4l-6 16-2.5-6.5z"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.4v.2"/></svg>',
+  moon: '<svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#F6C8B5" d="M19.5 4.6A12 12 0 1 0 27.4 22 9.6 9.6 0 0 1 19.5 4.6z"/><circle cx="20.5" cy="19.5" r="2.4" fill="#FFE6A3"/></svg>',
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5 14.3 9l6.7.3-5.3 4.1 1.9 6.6L12 16.2 6.4 20l1.9-6.6L3 9.3 9.7 9z"/></svg>',
+};
+const MOUTHS = ['M8.3 16.4c2-2.4 5.4-2.4 7.4 0', 'M8.8 15.8c1.8-1.1 4.6-1.1 6.4 0', 'M9 15.2h6', 'M8.8 14.4c1.8 1.3 4.6 1.3 6.4 0', 'M8.2 13.8c2 2.8 5.6 2.8 7.6 0'];
+function face(level) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="var(--mood-${level})"/><circle cx="9.2" cy="10" r="1.1" fill="#2A2740"/><circle cx="14.8" cy="10" r="1.1" fill="#2A2740"/><path d="${MOUTHS[level - 1]}" fill="none" stroke="#2A2740" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+}
+
+/* =========================================================================
+   Luna View (the 3D scene, in an iframe that is never reloaded)
+   ========================================================================= */
+
+const frame = $('luna-frame');
+const slot = $('luna-slot');
+
+function postLuna(message) {
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'luna:set', ...message }, '*');
+}
+
+function startLuna(params) {
+  const q = new URLSearchParams({ app: '1', view: 'hero', lang, ...params });
+  frame.src = `${LUNA_SRC}?${q}`;
+}
+
+function kicksToday() {
+  const today = todayISO();
+  const taps = data.kickTaps.filter((ms) => isoOf(new Date(ms)) === today).length;
+  const sessions = data.kickSessions.filter((s) => isoOf(new Date(s.start)) === today).reduce((n, s) => n + s.count, 0);
+  return taps + sessions + (data.activeKicks ? data.activeKicks.count : 0);
+}
+
+function lunaSettings() {
+  const p = data.profile;
+  if (!p) return { lang, mode: 'moon', sex: 'unknown', days: tweenFrom };
+  return { lang, mode: p.mode, sex: p.sex, days: lunaDays(), kicks: kicksToday() };
+}
+
+function setLunaView(view) {
+  ui.lunaView = view;
+  slot.classList.toggle('is-full', view === 'full');
+  slot.classList.toggle('is-stage', view === 'stage');
+  $('luna-close').hidden = view !== 'full';
+  frame.tabIndex = view === 'full' ? 0 : -1;
+  document.documentElement.style.overflow = view === 'hero' ? '' : 'hidden';
+  const inset = view === 'stage' ? { top: 0, bottom: $('ob-card').offsetHeight } : view === 'hero' ? { top: 0, bottom: 64 } : { top: 0, bottom: 0 };
+  postLuna({ view: view === 'full' ? 'full' : 'hero', inset });
+  if (view === 'full') {
+    ui.lastFocus = document.activeElement;
+    $('luna-close').focus();
+  }
+  updateLunaRunning();
+}
+
+function updateLunaRunning() {
+  const running = !document.hidden && (ui.lunaView === 'stage' || ui.lunaView === 'full' || (ui.tab === 'today' && ui.heroVisible));
+  if (ui.lunaPaused === !running) return;
+  ui.lunaPaused = !running;
+  postLuna({ paused: !running });
+}
+
+function openLunaFull() {
+  if (!data.profile) return;
+  setLunaView('full');
+}
+
+function closeLunaFull() {
+  if (ui.lunaView !== 'full') return;
+  setLunaView('hero');
+  postLuna({ days: lunaDays() }); // the viewer may have scrubbed the timeline
+  if (ui.lastFocus && ui.lastFocus.focus) ui.lastFocus.focus();
+}
+
+window.addEventListener('message', (e) => {
+  if (e.source !== frame.contentWindow || !e.data || e.data.source !== 'luna-view') return;
+  const m = e.data;
+  if (m.type === 'luna:ready') {
+    ui.lunaReady = true;
+    ui.lunaPaused = null;
+    postLuna({ ...lunaSettings(), view: ui.lunaView === 'full' ? 'full' : 'hero' });
+    setLunaView(ui.lunaView);
+  } else if (m.type === 'luna:state') {
+    ui.lunaState = m;
+    renderHeroCaption();
+  } else if (m.type === 'luna:kick') {
+    if (!data.profile) return;
+    data.kickTaps.push(Date.now());
+    save();
+    postLuna({ kicks: kicksToday() });
+    if (ui.seg === 'kicks') renderKicks();
+  } else if (m.type === 'luna:mode' && data.profile && ['dreamy', 'realistic', 'moon'].includes(m.mode)) {
+    data.profile.mode = m.mode;
+    save();
+    renderMe();
+  } else if (m.type === 'luna:sex' && data.profile && ['unknown', 'F', 'M'].includes(m.sex)) {
+    data.profile.sex = m.sex;
+    save();
+    renderMe();
+  }
+});
+
+new IntersectionObserver((entries) => {
+  ui.heroVisible = entries[0].isIntersecting;
+  updateLunaRunning();
+}).observe($('luna-slot').parentElement);
+document.addEventListener('visibilitychange', updateLunaRunning);
+
+/* =========================================================================
+   Static copy
+   ========================================================================= */
+
+function pick(path) {
+  return path.split('.').reduce((o, k) => (o ? o[k] : undefined), t());
+}
+
+function renderStatic() {
+  document.documentElement.lang = lang;
+  for (const el of document.querySelectorAll('[data-t]')) {
+    const value = pick(el.dataset.t);
+    if (typeof value === 'string') el.textContent = value;
+  }
+  $('tabbar').setAttribute('aria-label', t().mainNav);
+  $('quick').setAttribute('aria-label', t().quickNav);
+  $('luna-close').setAttribute('aria-label', t().close);
+  $('sheet-close').setAttribute('aria-label', t().close);
+  $('food-search').placeholder = t().foodPh;
+  $('care-unit').placeholder = lang === 'bg' ? 'Добави номер' : 'Add a number';
+  $('care-doctor').placeholder = $('care-unit').placeholder;
+  for (const seg of ['symptoms', 'mood', 'kicks', 'contractions']) $(`tab-${seg}`).textContent = t().segs[seg];
+  for (const btn of document.querySelectorAll('[data-action="lang"]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
+}
+
+/* =========================================================================
+   Today
+   ========================================================================= */
+
+function greeting() {
+  const h = new Date().getHours();
+  const g = t().greet;
+  const word = h >= 5 && h < 12 ? g.morning : h < 18 && h >= 12 ? g.afternoon : h >= 18 && h < 22 ? g.evening : g.night;
+  const name = data.profile && data.profile.name;
+  return name ? `${word}, ${name}` : word;
+}
+
+function renderToday() {
+  const p = data.profile;
+  if (!p) return;
+  const ga = gaDays();
+  const w = Math.floor(ga / 7);
+  const d = ((ga % 7) + 7) % 7;
+  $('today-week').textContent = t().weekDay(w, d);
+  $('greeting').textContent = greeting();
+  $('today-togo').textContent = t().toGo(daysBetween(todayISO(), p.due));
+  $('progress-fill').style.width = `${Math.min(100, Math.max(0, (ga / 280) * 100))}%`;
+  $('progress-tri').textContent = t().tri[triOf(w)];
+  $('progress-of').textContent = t().ofForty(Math.min(w, 42));
+  renderHeroCaption();
+
+  // mood check-in
+  const today = data.moods[todayISO()];
+  $('moods-today').innerHTML = moodButtons(today ? today.v : 0);
+  if (today) {
+    $('mood-saved').hidden = false;
+    $('mood-saved').textContent = t().moodSaved(t().moods[today.v - 1]);
+  } else {
+    $('mood-saved').hidden = true;
+  }
+
+  // quick actions change with the trimester: kicks lead from 28 weeks, contractions appear from 37
+  const order = w >= 37 ? ['kicks', 'contractions', 'luna'] : w >= 28 ? ['kicks', 'symptom', 'luna'] : ['symptom', 'kicks', 'luna'];
+  const icons = { symptom: ICON.note, kicks: ICON.kick, contractions: ICON.wave, luna: ICON.chat };
+  $('quick').innerHTML = order.map((k) => `<button type="button" data-action="quick" data-go="${k}"><span class="icon">${icons[k]}</span><span>${esc(t().quick[k])}</span></button>`).join('');
+
+  // this week
+  const b = blockFor(w);
+  const partner = p.stage === 'partner';
+  $('week-pill').textContent = t().weekDay(w, d).split(' · ')[0];
+  $('week-facts').innerHTML = `
+    <div class="fact"><h3>${esc(t().yourBaby)}</h3><p>${esc(L(b.baby))}</p></div>
+    <div class="fact"><h3>${esc(partner ? t().herBody : t().yourBody)}</h3><p>${esc(L(b.body))}</p></div>`;
+  $('week-todo').innerHTML = b.todo.map((id) => `<li><label><input type="checkbox" data-todo="${id}" ${data.checklist[id] ? 'checked' : ''}><span>${esc(L(TODO[id]))}</span></label></li>`).join('');
+  $('week-partner').innerHTML = `<h3>${esc(partner ? t().forPartner : t().partnerTip)}</h3><p>${esc(L(b.partner))}</p>`;
+
+  $('for-you').innerHTML = forYou(w).map(articleRow).join('');
+}
+
+function moodButtons(current) {
+  return [1, 2, 3, 4, 5].map((v) => `<button type="button" class="mood" role="radio" aria-checked="${v === current}" data-action="mood" data-mood="${v}">${face(v)}<span>${esc(t().moods[v - 1])}</span></button>`).join('');
+}
+
+function renderHeroCaption() {
+  const s = ui.lunaState;
+  const early = data.profile && gaDays() < 56;
+  $('hero-compare').textContent = s ? s.compare : t().heroLoading;
+  $('hero-numbers').textContent = s ? (early ? t().heroEarly : `${s.numbers} · ${s.kind}`) : '';
+  $('luna-open').setAttribute('aria-label', `${t().heroOpen}. ${s && s.alt ? s.alt : ''}`.trim());
+}
+
+function forYou(w) {
+  const ids = w < 14 ? ['nausea', 'vitamins', 'food'] : w < 22 ? ['exercise', 'movements', 'food'] : w < 28 ? ['glucose', 'movements', 'sleep'] : w < 36 ? ['sleep', 'movements', 'heartburn'] : ['labour', 'movements', 'sleep'];
+  return ids.map((id) => topicById[id]);
+}
+
+function articleRow(tp) {
+  return `<button type="button" class="article-row" data-action="article" data-topic="${tp.id}"><span class="icon">${ICON.book}</span><span><strong>${esc(L(tp.title))}</strong><span class="meta">${esc(t().minRead(tp.min))} · ${esc(tp.src[0].split(' · ')[0])}</span></span><span class="chev">${ICON.chev}</span></button>`;
+}
+
+/* =========================================================================
+   Track
+   ========================================================================= */
+
+function renderTrack() {
+  if (!data.profile) return;
+  for (const seg of ['symptoms', 'mood', 'kicks', 'contractions']) {
+    $(`tab-${seg}`).setAttribute('aria-selected', String(ui.seg === seg));
+    $(`tab-${seg}`).tabIndex = ui.seg === seg ? 0 : -1;
+    $(`panel-${seg}`).hidden = ui.seg !== seg;
+  }
+  if (ui.seg === 'symptoms') renderSymptoms();
+  if (ui.seg === 'mood') renderMood();
+  if (ui.seg === 'kicks') renderKicks();
+  if (ui.seg === 'contractions') renderContractions();
+}
+
+/* ---------- Symptoms ---------- */
+function renderSymptoms() {
+  const w = weekNow();
+  const ids = ui.symAll ? Object.keys(SYMPTOMS) : TRI_SYMPTOMS[triOf(w)];
+  const chips = ids.map((id) => `<button type="button" class="chip" aria-pressed="${ui.symPicked.has(id)}" data-action="sym-chip" data-sym="${id}">${esc(L(SYMPTOMS[id]))}</button>`).join('');
+  const entries = [...data.symptoms].sort((a, b) => b.at - a.at).slice(0, 6);
+  if (!ui.calMonth.symptoms) ui.calMonth.symptoms = todayISO().slice(0, 7) + '-01';
+  const pickedDay = ui.calPick.symptoms;
+  const dayList = pickedDay ? data.symptoms.filter((e) => isoOf(new Date(e.at)) === pickedDay).sort((a, b) => a.at - b.at) : [];
+  $('panel-symptoms').innerHTML = `
+    <section class="card" aria-labelledby="sym-q">
+      <h2 id="sym-q">${esc(t().symQ)}</h2>
+      <div class="chips">${chips}</div>
+      <button type="button" class="link-btn" data-action="sym-all">${esc(ui.symAll ? t().symFewer : t().symAll)}</button>
+      <div class="levels">
+        <label for="sym-level" class="row-between"><span class="small" style="font-weight:600">${esc(t().intensity)}</span><span class="levels-value" id="sym-level-value">${esc(t().levels[ui.symLevel - 1])}</span></label>
+        <input type="range" id="sym-level" min="1" max="5" step="1" value="${ui.symLevel}" aria-valuetext="${esc(t().levels[ui.symLevel - 1])}">
+      </div>
+      <label class="field"><span>${esc(t().note)}</span><textarea class="input" id="sym-note" placeholder="${esc(t().notePh)}"></textarea></label>
+      ${ui.symNotice ? `<div class="notice notice-care" role="status">${ui.symNotice}</div>` : ''}
+      <button type="button" class="btn btn-block" data-action="sym-save">${esc(t().save)}</button>
+    </section>
+    <div class="notice notice-alert"><strong>${esc(t().somethingWrong)}</strong><button type="button" class="link-btn" data-action="urgent">${esc(t().seeUrgent)}</button></div>
+    <section class="card" aria-labelledby="sym-recent">
+      <h2 id="sym-recent">${esc(t().recent)}</h2>
+      ${entries.length ? `<ul class="entries">${entries.map(symEntry).join('')}</ul>` : `<p class="muted">${esc(t().symEmpty)}</p>`}
+    </section>
+    <section class="card" aria-labelledby="sym-cal-title">
+      <h2 id="sym-cal-title">${esc(t().symMonth)}</h2>
+      ${calendar('symptoms', (iso) => {
+        const level = Math.max(0, ...data.symptoms.filter((e) => isoOf(new Date(e.at)) === iso).map((e) => e.level));
+        return level ? `background:rgba(var(--heat),${(0.15 + level * 0.15).toFixed(2)});color:${level >= 4 ? 'var(--on-accent)' : 'inherit'}` : '';
+      })}
+      <p class="fine">${esc(t().symLegend)}</p>
+      ${pickedDay ? `<div><h3>${esc(fmtDate(pickedDay))}</h3>${dayList.length ? `<ul class="entries" style="margin-top:8px">${dayList.map(symEntry).join('')}</ul>` : `<p class="muted small">${esc(t().dayEmpty)}</p>`}</div>` : ''}
+    </section>`;
+}
+
+function symEntry(e) {
+  const names = e.items.map((id) => L(SYMPTOMS[id])).join(', ');
+  return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(e.at))} · ${esc(fmtTime(e.at))}</span>${e.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(names)}</div><div class="small muted">${esc(t().levels[e.level - 1])}</div>${e.note ? `<div class="entry-note">${esc(e.note)}</div>` : ''}</li>`;
+}
+
+/* ---------- Calendars ---------- */
+function calendar(kind, styleFor) {
+  const first = ui.calMonth[kind];
+  const start = dateOf(first);
+  const lead = (start.getDay() + 6) % 7; // Monday first
+  const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+  const today = todayISO();
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push('<span></span>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const iso = `${first.slice(0, 8)}${String(day).padStart(2, '0')}`;
+    const future = iso > today;
+    const cls = `cal-day${iso === today ? ' is-today' : ''}${ui.calPick[kind] === iso ? ' is-picked' : ''}`;
+    const style = future ? '' : styleFor(iso);
+    cells.push(`<button type="button" class="${cls}" ${future ? 'disabled' : ''} data-action="cal-day" data-cal="${kind}" data-day="${iso}" style="${style}" aria-label="${esc(fmtDate(iso))}">${day}</button>`);
+  }
+  const atCurrent = first === today.slice(0, 7) + '-01';
+  return `<div class="cal">
+    <div class="cal-head"><strong>${esc(monthTitle(first))}</strong><div class="cal-nav">
+      <button type="button" class="icon-btn" data-action="cal-prev" data-cal="${kind}" aria-label="${esc(t().prevMonth)}">${ICON.chevL}</button>
+      <button type="button" class="icon-btn" data-action="cal-next" data-cal="${kind}" aria-label="${esc(t().nextMonth)}" ${atCurrent ? 'disabled' : ''}>${ICON.chev}</button>
+    </div></div>
+    <div class="cal-grid">${t().weekdays.map((d) => `<span class="cal-dow">${d}</span>`).join('')}${cells.join('')}</div>
+  </div>`;
+}
+
+function shiftMonth(kind, n) {
+  const d = dateOf(ui.calMonth[kind]);
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  ui.calMonth[kind] = isoOf(d);
+}
+
+/* ---------- Mood ---------- */
+function renderMood() {
+  if (!ui.calMonth.mood) ui.calMonth.mood = todayISO().slice(0, 7) + '-01';
+  const today = data.moods[todayISO()];
+  const last7 = [...Array(7)].map((_, i) => data.moods[addDays(todayISO(), -i)]).filter(Boolean);
+  const hard = last7.filter((m) => m.v <= 2).length >= 3;
+  const picked = ui.calPick.mood;
+  const pickedMood = picked && data.moods[picked];
+  $('panel-mood').innerHTML = `
+    <section class="card" aria-labelledby="mood-today-title">
+      <h2 id="mood-today-title">${esc(t().feeling)}</h2>
+      <div class="moods" role="radiogroup" aria-labelledby="mood-today-title">${moodButtons(today ? today.v : 0)}</div>
+    </section>
+    ${hard ? `<div class="notice notice-calm" role="status">${esc(t().lowMood)}</div>` : ''}
+    <section class="card" aria-labelledby="mood-cal-title">
+      <h2 id="mood-cal-title">${esc(t().moodTitle)}</h2>
+      ${calendar('mood', (iso) => (data.moods[iso] ? `background:var(--mood-${data.moods[iso].v});color:#2A2740` : ''))}
+      <div class="legend" aria-label="${esc(t().moodLegendTitle)}">${t().moods.map((m, i) => `<span><i style="background:var(--mood-${i + 1})"></i>${esc(m)}</span>`).join('')}</div>
+      ${picked ? `<p class="small"><strong>${esc(fmtDate(picked))}:</strong> ${pickedMood ? `${esc(t().moods[pickedMood.v - 1])}${pickedMood.example ? ` <span class="pill pill-example">${esc(t().example)}</span>` : ''}` : esc(t().dayEmpty)}</p>` : ''}
+    </section>`;
+}
+
+/* ---------- Kicks ---------- */
+let tickTimer = 0;
+function renderKicks() {
+  const w = weekNow();
+  const active = data.activeKicks;
+  const sessions = [...data.kickSessions].sort((a, b) => b.start - a.start).slice(0, 8);
+  const quick = data.kickTaps.filter((ms) => isoOf(new Date(ms)) === todayISO()).length;
+  $('panel-kicks').innerHTML = `
+    <section class="card" aria-labelledby="kicks-title">
+      <h2 id="kicks-title">${esc(t().kicksTitle)}</h2>
+      <p class="muted small">${esc(w < 28 ? t().kicksEarly : t().kicksIntro)}</p>
+      <div class="tap-zone">
+        <button type="button" class="tap-btn" id="kick-tap" data-action="kick-tap"><span class="big num" id="kick-count">${active ? active.count : 0}</span><span>${esc(t().kickTap)}</span></button>
+        ${active ? `<div class="timer" id="kick-timer" aria-live="off">${fmtDur(Date.now() - active.start)}</div>
+        <div class="row" style="justify-content:center"><button type="button" class="btn" data-action="kick-finish">${esc(t().kickFinish)}</button><button type="button" class="btn btn-line" data-action="kick-cancel">${esc(t().kickCancel)}</button></div>` : ''}
+      </div>
+      ${quick ? `<p class="fine">${esc(t().kickQuick(quick))}</p>` : ''}
+    </section>
+    <div class="notice notice-alert"><strong>${esc(t().movementsChanged)}</strong><button type="button" class="link-btn" data-action="flag" data-flag="movements">${esc(t().whatToDo)}</button></div>
+    ${kickChart()}
+    <section class="card" aria-labelledby="sessions-title">
+      <h2 id="sessions-title">${esc(t().sessions)}</h2>
+      ${sessions.length ? `<ul class="entries">${sessions.map((s) => `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(s.start))} · ${esc(fmtTime(s.start))}</span>${s.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(t().kickSession(s.count, Math.max(1, Math.round((s.end - s.start) / 60000))))}</div></li>`).join('')}</ul>` : `<p class="muted">${esc(t().kicksEmpty)}</p>`}
+    </section>`;
+  clearInterval(tickTimer);
+  if (active) tickTimer = setInterval(() => { const el = $('kick-timer'); if (el) el.textContent = fmtDur(Date.now() - data.activeKicks.start); else clearInterval(tickTimer); }, 1000);
+}
+
+function kickChart() {
+  const since = Date.now() - 7 * DAY_MS;
+  const bins = new Array(8).fill(0);
+  for (const ms of data.kickTaps) if (ms >= since) bins[Math.floor(new Date(ms).getHours() / 3)] += 1;
+  for (const s of data.kickSessions) if (s.start >= since) bins[Math.floor(new Date(s.start).getHours() / 3)] += s.count;
+  const max = Math.max(...bins);
+  if (!max) return '';
+  const W = 320, H = 150, top = 14, bottom = 26, bw = 28, gap = (W - bins.length * bw) / bins.length;
+  const bars = bins.map((v, i) => {
+    const h = ((H - top - bottom) * v) / max;
+    const x = gap / 2 + i * (bw + gap);
+    return `<rect x="${x.toFixed(1)}" y="${(H - bottom - h).toFixed(1)}" width="${bw}" height="${Math.max(h, v ? 2 : 0).toFixed(1)}" rx="6" fill="var(--accent)" opacity="${v === max ? 1 : 0.55}"/>
+      ${v ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(H - bottom - h - 4).toFixed(1)}" text-anchor="middle">${v}</text>` : ''}
+      <text x="${(x + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${String(i * 3).padStart(2, '0')}</text>`;
+  }).join('');
+  return `<section class="card chart" aria-labelledby="pattern-title">
+    <h2 id="pattern-title">${esc(t().pattern)}</h2>
+    <p class="fine">${esc(t().patternHint)}</p>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t().patternHint)}"><line x1="0" x2="${W}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"/>${bars}</svg>
+  </section>`;
+}
+
+function sparkAt(btn) {
+  if (reduceMotion.matches) return;
+  const s = document.createElement('span');
+  s.className = 'spark';
+  s.style.setProperty('--dx', `${Math.round((Math.random() - 0.5) * 80)}px`);
+  s.innerHTML = ICON.star;
+  btn.appendChild(s);
+  setTimeout(() => s.remove(), 720);
+}
+
+/* ---------- Contractions ---------- */
+let conTimer = 0;
+function contractionAlerts(list) {
+  const now = Date.now();
+  const w = weekNow();
+  const recent = list.filter((c) => c.start > now - 60 * 60000);
+  const alerts = [];
+  if (list.some((c) => c.end - c.start > 120000 && c.start > now - 60 * 60000)) alerts.push(['alert', t().conLong]);
+  const inTen = list.filter((c) => c.start > now - 10 * 60000).length;
+  if (inTen >= 6) alerts.push(['alert', t().conMany]);
+  const last = recent.slice(-5);
+  const gaps = last.slice(1).map((c, i) => c.start - last[i].start);
+  // "every 5 minutes or more often": the average of the last few gaps, none of them much longer
+  const avgGap = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : Infinity;
+  const regular = last.length >= 4 && avgGap <= 5 * 60000 + 10000 && gaps.every((g) => g <= 7 * 60000);
+  if (regular && w < 37) alerts.push(['alert', t().conPreterm]);
+  else if (regular) alerts.push(['care', t().conPattern]);
+  return { alerts, recent };
+}
+
+function renderContractions() {
+  const list = [...data.contractions].sort((a, b) => a.start - b.start);
+  const active = data.activeContraction;
+  const { alerts, recent } = contractionAlerts(list);
+  const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  const lens = recent.map((c) => c.end - c.start);
+  const gaps = recent.slice(1).map((c, i) => c.start - recent[i].start);
+  const rows = [...list].reverse().slice(0, 12).map((c) => {
+    const i = list.indexOf(c);
+    const gap = i > 0 ? c.start - list[i - 1].start : 0;
+    return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(c.start))} · ${esc(fmtTime(c.start))}</span>${c.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(t().conLasted(fmtDur(c.end - c.start)))}</div>${gap && gap < 3 * 3600000 ? `<div class="small muted">${esc(t().conApart(fmtDur(gap)))}</div>` : ''}</li>`;
+  }).join('');
+  $('panel-contractions').innerHTML = `
+    <section class="card" aria-labelledby="con-title">
+      <h2 id="con-title">${esc(t().conTitle)}</h2>
+      ${alerts.map(([kind, text]) => `<div class="notice notice-${kind}" role="alert"><strong>${esc(text)}</strong>${kind === 'alert' ? `<button type="button" class="link-btn" data-action="flag" data-flag="${weekNow() < 37 ? 'preterm' : 'labour'}">${esc(t().whatToDo)}</button>` : ''}</div>`).join('')}
+      ${recent.length ? `<div><h3>${esc(t().conLastHour)}</h3><div class="stats" style="margin-top:8px">
+        <div class="stat"><b>${recent.length}</b><span>${esc(t().conCountLabel)}</span></div>
+        <div class="stat"><b>${fmtDur(avg(lens))}</b><span>${esc(t().conAvgLen)}</span></div>
+        <div class="stat"><b>${gaps.length ? fmtDur(avg(gaps)) : '–'}</b><span>${esc(t().conAvgGap)}</span></div>
+      </div></div>` : `<p class="muted small">${esc(t().conEmpty)}</p>`}
+      <div class="tap-zone">
+        <button type="button" class="tap-btn${active ? ' is-stop' : ''}" data-action="con-toggle"><span class="big">${esc(active ? t().conStop : t().conStart)}</span><span>${esc(active ? t().conStopHint : t().conStartHint)}</span></button>
+        ${active ? `<div class="timer" id="con-timer" aria-label="${esc(t().conRunning)}">${fmtDur(Date.now() - active)}</div>` : ''}
+      </div>
+      <p class="fine">${esc(t().conBasis)}</p>
+    </section>
+    ${rows ? `<section class="card"><ul class="entries">${rows}</ul><button type="button" class="btn btn-line" data-action="con-clear">${esc(t().conClear)}</button></section>` : `<button type="button" class="btn btn-quiet" data-action="con-sample">${esc(t().conSample)}</button>`}`;
+  clearInterval(conTimer);
+  if (active) conTimer = setInterval(() => { const el = $('con-timer'); if (el) el.textContent = fmtDur(Date.now() - data.activeContraction); else clearInterval(conTimer); }, 1000);
+}
+
+/* =========================================================================
+   Explore
+   ========================================================================= */
+
+function renderExplore() {
+  if (!data.profile) return;
+  $('explore-week').innerHTML = forYou(weekNow()).map(articleRow).join('');
+  renderFoods();
+  const groups = ['food', 'body', 'baby', 'vitamins'];
+  $('explore-groups').innerHTML = groups.map((g) => `<section style="display:grid;gap:10px" aria-labelledby="group-${g}"><h2 class="eyebrow" id="group-${g}">${esc(t().groups[g])}</h2><div class="articles">${TOPICS.filter((tp) => tp.group === g).map(articleRow).join('')}</div></section>`).join('');
+  $('food-source').innerHTML = `${esc(t().source)}: <a href="${NHS.foods[1]}" target="_blank" rel="noopener">${esc(NHS.foods[0])}</a>`;
+}
+
+function renderFoods() {
+  const q = $('food-search').value.trim().toLowerCase();
+  const items = FOODS.filter((f) => !q || f.en[0].toLowerCase().includes(q) || f.bg[0].toLowerCase().includes(q) || f.en[1].toLowerCase().includes(q) || f.bg[1].toLowerCase().includes(q));
+  $('food-list').innerHTML = items.length
+    ? items.map((f) => `<li class="food"><div class="food-top"><strong>${esc(L(f)[0])}</strong><span class="pill pill-${f.s}">${esc(t().status[f.s])}</span></div><p>${esc(L(f)[1])}</p></li>`).join('')
+    : `<li class="muted small">${esc(t().noFood)}</li>`;
+}
+$('food-search').addEventListener('input', renderFoods);
+
+/* =========================================================================
+   Me
+   ========================================================================= */
+
+function renderMe() {
+  const p = data.profile;
+  if (!p) return;
+  const ga = gaDays();
+  if (ui.editingProfile) {
+    $('me-profile').innerHTML = `
+      <label class="field"><span>${esc(t().name)}</span><input class="input" id="edit-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
+      <label class="field"><span>${esc(t().due)}</span><input class="input" type="date" id="edit-due" value="${esc(p.due)}" min="${addDays(todayISO(), -14)}" max="${addDays(todayISO(), 252)}"></label>
+      <p class="ob-error" id="edit-error" hidden></p>
+      <div class="row"><button type="button" class="btn" data-action="profile-save">${esc(t().save)}</button><button type="button" class="btn btn-line" data-action="profile-cancel">${esc(t().cancel)}</button></div>`;
+  } else {
+    $('me-profile').innerHTML = `
+      <div class="row-between"><div class="kv"><span>${esc(t().name)}</span><strong>${esc(p.name || '–')}</strong></div><button type="button" class="btn btn-quiet" data-action="profile-edit">${esc(t().edit)}</button></div>
+      <div class="kv"><span>${esc(t().due)}</span><strong>${esc(fmtDate(p.due))}</strong></div>
+      <p class="muted small">${esc(t().weekNow(Math.floor(ga / 7), ((ga % 7) + 7) % 7))}</p>`;
+  }
+  $('me-sex').innerHTML = ['unknown', 'F', 'M'].map((s) => `<button type="button" role="radio" aria-checked="${p.sex === s}" data-action="sex" data-sex="${s}">${esc(t().sexes[s])}</button>`).join('');
+  $('me-modes').innerHTML = modeCards(p.mode, 'mode');
+  $('care-unit').value = data.care.unit || '';
+  $('care-doctor').value = data.care.doctor || '';
+
+  const c = p.consents || {};
+  const counts = {
+    profile: 1,
+    moods: Object.keys(data.moods).length,
+    symptoms: data.symptoms.length,
+    kicks: data.kickSessions.length + data.kickTaps.length,
+    contractions: data.contractions.length,
+  };
+  const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions].some((e) => e.example);
+  $('me-privacy').innerHTML = `
+    <h2 id="me-privacy-title">${esc(t().privacy)}</h2>
+    ${['device', 'luna', 'stats'].map((k) => `<div class="switch-row"><label for="consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="consent-${k}" data-consent="${k}" ${c[k] ? 'checked' : ''}><span></span></span></div>`).join('')}
+    ${c.device ? '' : `<div class="notice notice-care">${esc(t().notSaved)}</div>`}
+    <div><h3>${esc(t().stored)}</h3><p class="fine" style="margin:4px 0 8px">${esc(t().storedWhere)}</p>
+      <ul class="stored">${Object.entries(counts).map(([k, n]) => `<li><span>${esc(t().storedRows[k])}</span><b>${n}</b></li>`).join('')}</ul></div>
+    <div class="row">
+      <button type="button" class="btn btn-quiet" data-action="export">${esc(t().showData)}</button>
+      ${hasExamples ? `<button type="button" class="btn btn-line" data-action="examples-clear">${esc(t().clearExamples)}</button>` : ''}
+    </div>
+    ${ui.confirmDelete
+      ? `<div class="notice notice-alert" role="alert"><strong>${esc(t().deleteConfirm)}</strong><div class="row"><button type="button" class="btn btn-alert" data-action="delete-confirm">${esc(t().deleteYes)}</button><button type="button" class="btn btn-line" data-action="delete-cancel">${esc(t().cancel)}</button></div></div>`
+      : `<button type="button" class="btn btn-line" style="color:var(--alert-fg);border-color:var(--alert)" data-action="delete-ask">${esc(t().deleteAll)}</button>`}`;
+}
+
+function modeCards(current, action) {
+  return ['dreamy', 'realistic', 'moon'].map((m) => `<button type="button" class="mode-card" role="radio" aria-checked="${current === m}" data-action="${action}" data-mode="${m}"><span class="mode-dot ${m}" aria-hidden="true"></span><span><strong>${esc(t().modes[m][0])}</strong><span>${esc(t().modes[m][1])}</span></span></button>`).join('');
+}
+
+for (const id of ['care-unit', 'care-doctor']) {
+  $(id).addEventListener('change', () => {
+    data.care[id === 'care-unit' ? 'unit' : 'doctor'] = $(id).value.trim();
+    save();
+  });
+}
+
+/* =========================================================================
+   Sheets: articles, urgent symptoms, Luna, data export
+   ========================================================================= */
+
+let sheetKind = null;
+function openSheet(kind, title, bodyHTML, footHTML) {
+  if (!sheetKind) ui.lastFocus = document.activeElement;
+  sheetKind = kind;
+  $('sheet-headline').innerHTML = typeof title === 'string' ? `<h2 id="sheet-title">${esc(title)}</h2>` : title.html;
+  $('sheet-body').innerHTML = bodyHTML;
+  $('sheet-foot').hidden = !footHTML;
+  $('sheet-foot').innerHTML = footHTML || '';
+  $('sheet').hidden = false;
+  $('sheet').classList.toggle('sheet-luna', kind === 'luna');
+  $('sheet-body').scrollTop = 0;
+  document.documentElement.style.overflow = 'hidden';
+  $('sheet-close').focus();
+}
+
+function closeSheet() {
+  if (!sheetKind) return;
+  sheetKind = null;
+  $('sheet').hidden = true;
+  if (ui.lunaView === 'hero') document.documentElement.style.overflow = '';
+  if (ui.lastFocus && ui.lastFocus.focus && document.contains(ui.lastFocus)) ui.lastFocus.focus();
+}
+
+function sourceLine(src, lng = lang) {
+  return `<p class="source">${esc(STR[lng].source)}: <a href="${src[1]}" target="_blank" rel="noopener">${esc(src[0])}</a></p>`;
+}
+
+function openArticle(id) {
+  const tp = topicById[id];
+  openSheet('article', L(tp.title), `<div class="article-body">${L(tp.a).map((p) => `<p>${esc(p)}</p>`).join('')}</div>${sourceLine(tp.src)}<p class="fine">${esc(t().aboutText)}</p>`,
+    `<button type="button" class="btn btn-quiet btn-block" data-action="luna-ask" data-topic="${tp.id}">${ICON.chat}<span>${esc(t().quick.luna)}</span></button>`);
+}
+
+function openUrgent() {
+  const w = weekNow();
+  const flags = RED.filter((f) => !f.before37 || w < 37);
+  openSheet('urgent', t().urgentTitle, `<p>${esc(t().urgentIntro)}</p><div class="flag-list">${flags.map((f) => `<button type="button" class="flag-btn" data-action="flag" data-flag="${f.id}">${esc(L(f.label))}</button>`).join('')}</div>${callBlock('emergency')}`);
+}
+
+function callRow(label, number, hint) {
+  if (!number) return `<div class="call"><div><span class="call-label">${esc(label)}</span><span class="call-hint">${esc(hint)}</span></div></div>`;
+  const tel = number.replace(/[^\d+]/g, '');
+  return `<div class="call"><div><span class="call-label">${esc(label)}</span><b>${esc(number)}</b></div>
+    <a class="btn btn-alert" href="tel:${esc(tel)}">${ICON.phone}<span>${esc(t().callBtn)}</span></a>
+    <button type="button" class="icon-btn" data-action="copy" data-copy="${esc(number)}" aria-label="${esc(t().copy)} ${esc(number)}">${ICON.copy}</button></div>`;
+}
+
+function callBlock(level) {
+  const rows = [callRow(t().emergencyNumber, '112')];
+  if (level !== 'emergency') {
+    rows.push(callRow(t().maternityUnit, data.care.unit, t().addNumber));
+    rows.push(callRow(t().doctor, data.care.doctor, t().addNumber));
+  }
+  return `<div style="display:grid;gap:8px">${rows.join('')}</div>`;
+}
+
+function openFlag(id) {
+  const f = id === 'labour' ? { id, level: 'now', label: { en: 'Contractions', bg: 'Контракции' } } : RED.find((r) => r.id === id);
+  if (!f) return;
+  const level = f.level;
+  openSheet('flag', t().levelTitle[level], `<div class="result">
+      <p><span class="muted small">${esc(t().youChose)}:</span><br><span class="result-what">${esc(L(f.label))}</span></p>
+      <p>${esc(t().levelText[level])}</p>
+      ${callBlock(level)}
+      ${id === 'preeclampsia' ? sourceLine(NHS.preeclampsia) : id === 'movements' ? sourceLine(NHS.movements) : id === 'preterm' || id === 'labour' || id === 'fluid' ? sourceLine(NHS.labour) : ''}
+    </div>`, `<button type="button" class="btn btn-line btn-block" data-action="urgent">${esc(t().otherSymptom)}</button>`);
+  $('sheet-headline').querySelector('h2').style.color = 'var(--alert-fg)';
+}
+
+/* ---------- Luna (prepared answers, triage first) ---------- */
+function suggestions() {
+  const tri = triOf(weekNow());
+  const ids = [['nausea', 'vitamins', 'caffeine', 'food'], ['movements', 'glucose', 'exercise', 'food'], ['sleep', 'labour', 'movements', 'heartburn']][tri];
+  return ids.map((id) => topicById[id]);
+}
+
+function lunaMessageHTML(msg) {
+  if (msg.from === 'me') return `<div class="msg msg-me">${esc(msg.text)}</div>`;
+  const parts = [];
+  for (const f of msg.flags || []) {
+    parts.push(`<div class="notice notice-alert"><strong>${esc(STR[msg.lang].levelTitle[f.level])}</strong><span>${esc(STR[msg.lang].levelText[f.level])}</span><button type="button" class="link-btn" data-action="flag" data-flag="${f.id}">${esc(STR[msg.lang].whatToDo)}</button></div>`);
+  }
+  if (msg.topic) {
+    const tp = topicById[msg.topic];
+    for (const p of tp.a[msg.lang]) parts.push(`<p>${esc(p)}</p>`);
+    parts.push(sourceLine(tp.src, msg.lang));
+  } else if (msg.text) {
+    parts.push(`<p>${esc(msg.text)}</p>`);
+  }
+  return `<div class="msg msg-luna">${parts.join('')}</div>`;
+}
+
+function renderLuna() {
+  const w = weekNow();
+  $('sheet-body').innerHTML = `<p class="fine">${esc(t().lunaProto)}</p><div class="chat" id="chat" aria-live="polite">${ui.chat.map(lunaMessageHTML).join('')}</div>`;
+  $('sheet-foot').hidden = false;
+  $('sheet-foot').innerHTML = `
+    <div class="suggest" role="group" aria-label="${esc(t().suggestLabel)}">${suggestions().map((tp) => `<button type="button" class="chip" data-action="luna-ask" data-topic="${tp.id}">${esc(L(tp.q))}</button>`).join('')}</div>
+    <form class="ask" id="ask-form"><label class="visually-hidden" for="ask-input">${esc(t().askLabel)}</label><input class="input" id="ask-input" autocomplete="off" placeholder="${esc(t().askPh(w))}"><button type="submit" class="btn" aria-label="${esc(t().send)}">${ICON.send}</button></form>`;
+  $('ask-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $('ask-input').value.trim();
+    if (!text) return;
+    askLuna(text);
+  });
+  const body = $('sheet-body');
+  body.scrollTop = body.scrollHeight;
+}
+
+function openLuna(topicId) {
+  if (!data.profile) return;
+  if (!ui.chat.length) ui.chat.push({ from: 'luna', lang, text: t().lunaHello(data.profile.name, weekNow()) });
+  openSheet('luna', { html: `<div class="luna-head"><span class="luna-badge">${ICON.moon}</span><div><h2 id="sheet-title">${esc(t().lunaTitle)}</h2><p class="fine">${esc(t().lunaSub)}</p></div></div>` }, '');
+  renderLuna();
+  if (topicId) askLuna(L(topicById[topicId].q), topicId);
+}
+
+function askLuna(text, topicId) {
+  const qLang = /[а-яё]/i.test(text) ? 'bg' : topicId ? lang : 'en';
+  const low = ` ${text.toLowerCase()} `;
+  const w = weekNow();
+  ui.chat.push({ from: 'me', text });
+  const flags = topicId ? [] : RED.filter((f) => f.match(low, w)).sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]).slice(0, 2);
+  let topic = topicId;
+  if (!topic) {
+    let best = 0;
+    for (const tp of TOPICS) {
+      const score = tp.kw.filter((k) => low.includes(k)).length;
+      if (score > best) { best = score; topic = tp.id; }
+    }
+  }
+  if (topic) ui.chat.push({ from: 'luna', lang: qLang, flags, topic });
+  else ui.chat.push({ from: 'luna', lang: qLang, flags, text: flags.length ? STR[qLang].lunaTriageOnly : STR[qLang].lunaUnknown });
+  renderLuna();
+  const input = $('ask-input');
+  if (input) input.value = '';
+}
+
+/* ---------- Export ---------- */
+function openExport() {
+  const json = JSON.stringify(data, null, 2);
+  openSheet('export', t().dataTitle, `<p class="fine">${esc(t().storedWhere)}</p><textarea class="input" id="export-text" readonly style="min-height:50vh;font:13px/1.4 ui-monospace,Menlo,monospace">${esc(json)}</textarea>`,
+    `<button type="button" class="btn btn-block" data-action="copy-export">${ICON.copy}<span>${esc(t().copy)}</span></button>`);
+}
+
+async function copyText(text, selectEl) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(t().copied);
+  } catch (err) {
+    if (selectEl) { selectEl.focus(); selectEl.select(); }
+    toast(t().copyFailed);
+  }
+}
+
+/* =========================================================================
+   Onboarding
+   ========================================================================= */
+
+const OB_STEPS = ['stage', 'date', 'name', 'privacy'];
+
+function startOnboarding() {
+  ui.ob = { step: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
+  $('onboarding').hidden = false;
+  tweenFrom = 150;
+  showTab('today');
+  renderOnboarding();
+  setLunaView('stage');
+  postLuna({ mode: 'moon', days: 150 });
+}
+
+function obDue() {
+  const o = ui.ob;
+  if (!validISO(o.date)) return null;
+  if (o.method === 'due') return o.date;
+  if (o.method === 'lmp') return addDays(o.date, 280);
+  return addDays(o.date, o.ivfDay === 3 ? 263 : 261);
+}
+
+function obGa() {
+  const due = obDue();
+  return due ? 280 - daysBetween(todayISO(), due) : null;
+}
+
+function obBounds() {
+  const today = todayISO();
+  const o = ui.ob;
+  const offset = o.method === 'due' ? 0 : o.method === 'lmp' ? -280 : o.ivfDay === 3 ? -263 : -261;
+  return { min: addDays(today, -14 + offset), max: addDays(today, 252 + offset) };
+}
+
+function renderOnboarding() {
+  const o = ui.ob;
+  const s = t().ob;
+  const i = OB_STEPS.indexOf(o.step);
+  const dots = i >= 0 ? `<div class="ob-dots" role="img" aria-label="${esc(s.step(i + 1, OB_STEPS.length))}">${OB_STEPS.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>` : '<span></span>';
+  const langSwitch = `<div class="seg" role="group" aria-label="${esc(t().language)}" style="flex:none"><button type="button" data-action="lang" data-lang="en" aria-pressed="${lang === 'en'}" lang="en">EN</button><button type="button" data-action="lang" data-lang="bg" aria-pressed="${lang === 'bg'}" lang="bg">BG</button></div>`;
+  let body = '';
+  if (o.step === 'welcome') {
+    body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span>${langSwitch}</div>
+      <h1 id="ob-title">${esc(s.welcomeTitle)}</h1>
+      <p class="muted">${esc(s.welcomeText)}</p>
+      <div class="ob-actions"><button type="button" class="btn btn-block" data-action="ob-start">${esc(s.start)}</button><button type="button" class="btn btn-quiet btn-block" data-action="ob-demo">${esc(s.demo)}</button></div>
+      <p class="fine">${esc(t().disclaimer)}</p>`;
+  } else if (o.step === 'stage') {
+    body = `<div class="ob-top">${dots}${langSwitch}</div>
+      <h1 id="ob-title">${esc(s.stageTitle)}</h1>
+      <div class="ob-options">${['pregnant', 'partner', 'ttc'].map((k) => `<button type="button" class="ob-option" data-action="ob-stage" data-stage="${k}">${esc(s.stages[k])}</button>`).join('')}</div>
+      <button type="button" class="btn btn-line" data-action="ob-back" data-to="welcome">${esc(s.back)}</button>`;
+  } else if (o.step === 'ttc') {
+    body = `<h1 id="ob-title">${esc(s.ttcTitle)}</h1><p class="muted">${esc(s.ttcText)}</p>
+      <button type="button" class="btn btn-line" data-action="ob-back" data-to="stage">${esc(s.back)}</button>`;
+  } else if (o.step === 'date') {
+    const ga = obGa();
+    const ok = ga !== null && ga >= 28 && ga <= 294;
+    const b = obBounds();
+    const result = ga === null ? '' : ok
+      ? `<p class="ob-result" role="status">${esc(s.result(Math.floor(ga / 7), ga % 7, fmtDate(obDue())))}</p>`
+      : `<p class="ob-error" role="alert">${esc(s.outOfRange(Math.floor(ga / 7)))}</p>`;
+    body = `<div class="ob-top">${dots}${langSwitch}</div>
+      <h1 id="ob-title">${esc(s.dateTitle)}</h1>
+      <div class="seg" role="radiogroup" aria-label="${esc(s.dateTitle)}">${['due', 'lmp', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${o.method === m}" data-action="ob-method" data-method="${m}">${esc(s.methods[m])}</button>`).join('')}</div>
+      ${o.method === 'ivf' ? `<div class="field"><span class="small" style="font-weight:600">${esc(s.ivfDay)}</span><div class="seg" role="radiogroup" aria-label="${esc(s.ivfDay)}">${[3, 5].map((d) => `<button type="button" role="radio" aria-checked="${o.ivfDay === d}" data-action="ob-ivfday" data-day="${d}">${esc(s.ivfDays[d])}</button>`).join('')}</div></div>` : ''}
+      <label class="field"><span>${esc(s.dateLabel[o.method])}</span><input class="input" type="date" id="ob-date" value="${esc(o.date)}" min="${b.min}" max="${b.max}"></label>
+      <div id="ob-date-result">${result}</div>
+      <p class="fine">${esc(s.dateHint)}</p>
+      <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="stage">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-next" data-to="name" id="ob-date-next" ${ok ? '' : 'disabled'}>${esc(s.next)}</button></div>`;
+  } else if (o.step === 'name') {
+    body = `<div class="ob-top">${dots}${langSwitch}</div>
+      <h1 id="ob-title">${esc(s.nameTitle)}</h1>
+      <input class="input" id="ob-name" value="${esc(o.name)}" placeholder="${esc(s.namePh)}" autocomplete="given-name" aria-labelledby="ob-title">
+      <h2 style="font:600 19px/1.25 var(--display)">${esc(s.modeTitle)}</h2>
+      <div class="mode-cards" role="radiogroup" aria-label="${esc(s.modeTitle)}">${modeCards(o.mode, 'ob-mode')}</div>
+      <p class="fine">${esc(s.modeHint)}</p>
+      <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="date">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-next" data-to="privacy">${esc(s.next)}</button></div>`;
+  } else if (o.step === 'privacy') {
+    body = `<div class="ob-top">${dots}${langSwitch}</div>
+      <h1 id="ob-title">${esc(s.privacyTitle)}</h1>
+      <p class="muted">${esc(s.privacyText)}</p>
+      <div>${['device', 'luna', 'stats'].map((k) => `<div class="switch-row"><label for="ob-consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="ob-consent-${k}" data-ob-consent="${k}" ${o.consents[k] ? 'checked' : ''}><span></span></span></div>`).join('')}</div>
+      <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="name">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-finish">${esc(o.mode === 'moon' ? s.finishMoon : s.finish)}</button></div>`;
+  }
+  $('ob-card').innerHTML = body;
+  $('ob-card').hidden = o.step === 'reveal';
+  if (ui.lunaView === 'stage') postLuna({ inset: { top: 0, bottom: o.step === 'reveal' ? 0 : $('ob-card').offsetHeight } });
+  const focusable = $('ob-card').querySelector('h1');
+  if (focusable) { focusable.tabIndex = -1; focusable.focus({ preventScroll: true }); }
+}
+
+// the moon waxes smoothly to the chosen week
+let tweenRaf = 0;
+let tweenFrom = 150;
+function tweenDays(target) {
+  cancelAnimationFrame(tweenRaf);
+  const from = tweenFrom;
+  const to = Math.min(280, Math.max(56, target));
+  if (reduceMotion.matches) { tweenFrom = to; postLuna({ days: to }); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 900);
+    const e = 1 - Math.pow(1 - k, 3);
+    tweenFrom = Math.round(from + (to - from) * e);
+    postLuna({ days: tweenFrom });
+    if (k < 1) tweenRaf = requestAnimationFrame(step);
+  };
+  tweenRaf = requestAnimationFrame(step);
+}
+
+function finishOnboarding(profile, withExamples) {
+  data = blank();
+  data.profile = profile;
+  if (withExamples) seedExamples();
+  save();
+  ui.chat = [];
+  ui.ob.step = 'reveal';
+  renderOnboarding();
+  renderAll();
+  // Reveal: the moon, a warm flash, then the baby on today's date
+  const s = t().ob;
+  const ga = gaDays();
+  $('reveal-title').textContent = profile.mode === 'moon' ? s.revealMoon : s.revealTitle;
+  $('reveal-sub').textContent = t().weekDay(Math.floor(ga / 7), ga % 7);
+  $('reveal').hidden = false;
+  $('reveal-skip').hidden = false;
+  $('reveal-skip').textContent = s.skip;
+  tweenDays(lunaDays());
+  const quick = reduceMotion.matches;
+  revealTimers.push(setTimeout(() => {
+    if (profile.mode !== 'moon') $('luna-flash').classList.add('on');
+  }, quick ? 0 : 900));
+  revealTimers.push(setTimeout(() => {
+    postLuna({ ...lunaSettings() });
+    $('luna-flash').classList.remove('on');
+  }, quick ? 50 : 1450));
+  revealTimers.push(setTimeout(endReveal, quick ? 1200 : 4200));
+}
+
+let revealTimers = [];
+function endReveal() {
+  revealTimers.forEach(clearTimeout);
+  revealTimers = [];
+  if (!ui.ob) return;
+  postLuna({ ...lunaSettings() });
+  $('luna-flash').classList.remove('on');
+  $('reveal').hidden = true;
+  $('reveal-skip').hidden = true;
+  $('onboarding').hidden = true;
+  ui.ob = null;
+  setLunaView('hero');
+  showTab('today');
+  $('greeting').tabIndex = -1;
+  $('greeting').focus({ preventScroll: true });
+}
+
+function seedExamples() {
+  const today = todayISO();
+  const moods = [4, 3, 4, 5, 3, 2, 4, 4, 5, 3, 4, 4, 3, 5];
+  moods.forEach((v, i) => { data.moods[addDays(today, -(i + 1))] = { v, example: true }; });
+  data.symptoms.push(
+    { id: uid(), at: at(addDays(today, -1), 21, 10), items: ['backpain'], level: 3, note: lang === 'bg' ? 'По-добре след разходка' : 'Better after a walk', example: true },
+    { id: uid(), at: at(addDays(today, -3), 8, 40), items: ['heartburn', 'sleep'], level: 2, note: '', example: true },
+    { id: uid(), at: at(addDays(today, -6), 19, 5), items: ['cramps'], level: 4, note: '', example: true },
+  );
+  const sessions = [[-1, 21, 5, 18, 10], [-2, 20, 40, 24, 10], [-3, 9, 15, 31, 8], [-4, 22, 0, 16, 10], [-5, 13, 30, 27, 9]];
+  for (const [d, h, m, len, n] of sessions) {
+    const start = at(addDays(today, d), h, m);
+    data.kickSessions.push({ start, end: start + len * 60000, count: n, example: true });
+  }
+}
+
+/* =========================================================================
+   Navigation and actions
+   ========================================================================= */
+
+function showTab(tab) {
+  ui.tab = tab;
+  for (const name of ['today', 'track', 'explore', 'me']) $(`screen-${name}`).hidden = name !== tab;
+  for (const btn of document.querySelectorAll('.tab[data-tab]')) {
+    if (btn.dataset.tab === tab) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  }
+  if (tab === 'track') renderTrack();
+  if (tab === 'explore') renderExplore();
+  if (tab === 'me') renderMe();
+  window.scrollTo(0, 0);
+  updateLunaRunning();
+}
+
+function renderAll() {
+  renderStatic();
+  renderToday();
+  if (ui.tab === 'track') renderTrack();
+  if (ui.tab === 'explore') renderExplore();
+  if (ui.tab === 'me') renderMe();
+}
+
+let toastTimer = 0;
+function toast(message) {
+  const el = $('toast');
+  el.textContent = message;
+  el.classList.remove('fade');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('fade'), 2400);
+}
+
+function setLang(next) {
+  lang = next;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (err) { /* ignore */ }
+  renderAll();
+  if (ui.ob) renderOnboarding();
+  if (sheetKind === 'luna') { $('sheet-headline').querySelector('#sheet-title').textContent = t().lunaTitle; renderLuna(); }
+  else if (sheetKind) closeSheet();
+  postLuna({ lang });
+}
+
+const ACTIONS = {
+  tab: (el) => { closeSheet(); showTab(el.dataset.tab); },
+  luna: () => openLuna(),
+  'luna-open': () => openLunaFull(),
+  'luna-close': () => closeLunaFull(),
+  mood: (el) => {
+    const v = Number(el.dataset.mood);
+    data.moods[todayISO()] = { v };
+    save();
+    renderToday();
+    if (ui.tab === 'track') renderTrack();
+    toast(t().saved);
+  },
+  quick: (el) => {
+    const go = el.dataset.go;
+    if (go === 'luna') return openLuna();
+    ui.seg = go === 'symptom' ? 'symptoms' : go;
+    showTab('track');
+  },
+  article: (el) => openArticle(el.dataset.topic),
+  urgent: () => openUrgent(),
+  flag: (el) => openFlag(el.dataset.flag),
+  'sheet-close': () => closeSheet(),
+  seg: (el) => { ui.seg = el.dataset.seg; ui.symNotice = ''; renderTrack(); },
+  'sym-chip': (el) => {
+    const id = el.dataset.sym;
+    if (ui.symPicked.has(id)) ui.symPicked.delete(id); else ui.symPicked.add(id);
+    el.setAttribute('aria-pressed', String(ui.symPicked.has(id)));
+  },
+  'sym-all': () => { ui.symAll = !ui.symAll; keepNote(renderSymptoms); },
+  'sym-save': () => {
+    if (!ui.symPicked.size) { ui.symNotice = esc(t().pickSymptom); keepNote(renderSymptoms); return; }
+    const items = [...ui.symPicked];
+    const level = ui.symLevel;
+    data.symptoms.push({ id: uid(), at: Date.now(), items, level, note: ($('sym-note').value || '').trim().slice(0, 500) });
+    save();
+    const hints = [];
+    if (items.includes('headache') && level >= 4) hints.push(t().headacheHint);
+    if (items.includes('swelling') && level >= 4) hints.push(t().swellingHint);
+    ui.symNotice = hints.length ? `${hints.map(esc).join(' ')} <button type="button" class="link-btn" data-action="flag" data-flag="preeclampsia">${esc(t().whatToDo)}</button>` : '';
+    ui.symPicked.clear();
+    ui.symLevel = 3;
+    renderSymptoms();
+    toast(t().saved);
+  },
+  'cal-prev': (el) => { shiftMonth(el.dataset.cal, -1); renderTrack(); },
+  'cal-next': (el) => { shiftMonth(el.dataset.cal, 1); renderTrack(); },
+  'cal-day': (el) => { ui.calPick[el.dataset.cal] = ui.calPick[el.dataset.cal] === el.dataset.day ? null : el.dataset.day; renderTrack(); },
+  'kick-tap': (el) => {
+    if (!data.activeKicks) data.activeKicks = { start: Date.now(), count: 0 };
+    data.activeKicks.count += 1;
+    save();
+    try { navigator.vibrate && navigator.vibrate(20); } catch (err) { /* not supported */ }
+    if (!$('kick-timer')) renderKicks(); else $('kick-count').textContent = data.activeKicks.count;
+    sparkAt($('kick-tap'));
+    postLuna({ kicks: kicksToday() });
+  },
+  'kick-finish': () => {
+    const a = data.activeKicks;
+    if (a && a.count) data.kickSessions.push({ start: a.start, end: Date.now(), count: a.count });
+    data.activeKicks = null;
+    save();
+    renderKicks();
+    if (a && a.count) toast(t().kickSession(a.count, Math.max(1, Math.round((Date.now() - a.start) / 60000))));
+  },
+  'kick-cancel': () => { data.activeKicks = null; save(); renderKicks(); postLuna({ kicks: kicksToday() }); },
+  'con-toggle': () => {
+    if (data.activeContraction) {
+      data.contractions.push({ start: data.activeContraction, end: Date.now() });
+      data.activeContraction = null;
+    } else {
+      data.activeContraction = Date.now();
+    }
+    try { navigator.vibrate && navigator.vibrate(30); } catch (err) { /* not supported */ }
+    save();
+    renderContractions();
+  },
+  'con-sample': () => {
+    const now = Date.now();
+    for (let i = 12; i >= 1; i--) {
+      const start = now - i * 285000 + Math.round((Math.random() - 0.5) * 30000);
+      data.contractions.push({ start, end: start + 50000 + Math.round(Math.random() * 20000), example: true });
+    }
+    save();
+    renderContractions();
+  },
+  'con-clear': () => { data.contractions = []; data.activeContraction = null; save(); renderContractions(); toast(t().conCleared); },
+  'luna-ask': (el) => { if (sheetKind === 'luna') askLuna(L(topicById[el.dataset.topic].q), el.dataset.topic); else openLuna(el.dataset.topic); },
+  lang: (el) => setLang(el.dataset.lang),
+  sex: (el) => { data.profile.sex = el.dataset.sex; save(); renderMe(); postLuna({ sex: data.profile.sex }); },
+  mode: (el) => { data.profile.mode = el.dataset.mode; save(); renderMe(); postLuna({ mode: data.profile.mode }); },
+  'profile-edit': () => { ui.editingProfile = true; renderMe(); $('edit-name').focus(); },
+  'profile-cancel': () => { ui.editingProfile = false; renderMe(); },
+  'profile-save': () => {
+    const due = $('edit-due').value;
+    const ga = validISO(due) ? 280 - daysBetween(todayISO(), due) : null;
+    if (ga === null || ga < 28 || ga > 294) {
+      $('edit-error').hidden = false;
+      $('edit-error').textContent = t().ob.outOfRange(ga === null ? 0 : Math.floor(ga / 7));
+      return;
+    }
+    data.profile.name = $('edit-name').value.trim().slice(0, 40);
+    data.profile.due = due;
+    ui.editingProfile = false;
+    save();
+    renderAll();
+    postLuna({ days: lunaDays() });
+    toast(t().saved);
+  },
+  export: () => openExport(),
+  'copy-export': () => copyText(JSON.stringify(data, null, 2), $('export-text')),
+  copy: (el) => copyText(el.dataset.copy),
+  'examples-clear': () => {
+    for (const [k, m] of Object.entries(data.moods)) if (m.example) delete data.moods[k];
+    data.symptoms = data.symptoms.filter((e) => !e.example);
+    data.kickSessions = data.kickSessions.filter((e) => !e.example);
+    data.contractions = data.contractions.filter((e) => !e.example);
+    save();
+    renderMe();
+    toast(t().examplesCleared);
+  },
+  'delete-ask': () => { ui.confirmDelete = true; renderMe(); },
+  'delete-cancel': () => { ui.confirmDelete = false; renderMe(); },
+  'delete-confirm': () => {
+    ui.confirmDelete = false;
+    data = blank();
+    forgetStored();
+    ui.chat = [];
+    toast(t().deleted);
+    startOnboarding();
+  },
+  'ob-start': () => { ui.ob.step = 'stage'; renderOnboarding(); },
+  'ob-demo': () => {
+    const due = addDays(todayISO(), 109);
+    finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
+  },
+  'ob-stage': (el) => {
+    ui.ob.stage = el.dataset.stage;
+    ui.ob.step = el.dataset.stage === 'ttc' ? 'ttc' : 'date';
+    renderOnboarding();
+  },
+  'ob-back': (el) => { ui.ob.step = el.dataset.to; renderOnboarding(); },
+  'ob-next': (el) => {
+    if (ui.ob.step === 'name') ui.ob.name = $('ob-name').value.trim().slice(0, 40);
+    ui.ob.step = el.dataset.to;
+    renderOnboarding();
+  },
+  'ob-method': (el) => { ui.ob.method = el.dataset.method; ui.ob.date = ''; renderOnboarding(); },
+  'ob-ivfday': (el) => { ui.ob.ivfDay = Number(el.dataset.day); renderOnboarding(); const ga = obGa(); if (ga !== null) tweenDays(ga); },
+  'ob-mode': (el) => {
+    ui.ob.name = $('ob-name') ? $('ob-name').value.trim().slice(0, 40) : ui.ob.name;
+    ui.ob.mode = el.dataset.mode;
+    renderOnboarding();
+  },
+  'ob-finish': () => {
+    const o = ui.ob;
+    finishOnboarding({ stage: o.stage, name: o.name, due: obDue(), method: o.method, mode: o.mode, sex: 'unknown', consents: { ...o.consents } }, false);
+  },
+  'reveal-skip': () => endReveal(),
+};
+
+// keep a half-written symptom note when the panel re-renders
+function keepNote(render) {
+  const note = $('sym-note') ? $('sym-note').value : '';
+  render();
+  if ($('sym-note')) $('sym-note').value = note;
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el || el.disabled) return;
+  const fn = ACTIONS[el.dataset.action];
+  if (fn) fn(el, e);
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'sym-level') {
+    ui.symLevel = Number(e.target.value);
+    const label = t().levels[ui.symLevel - 1];
+    $('sym-level-value').textContent = label;
+    e.target.setAttribute('aria-valuetext', label);
+  } else if (e.target.id === 'ob-date') {
+    ui.ob.date = e.target.value;
+    const ga = obGa();
+    const ok = ga !== null && ga >= 28 && ga <= 294;
+    const s = t().ob;
+    $('ob-date-result').innerHTML = ga === null ? '' : ok
+      ? `<p class="ob-result" role="status">${esc(s.result(Math.floor(ga / 7), ga % 7, fmtDate(obDue())))}</p>`
+      : `<p class="ob-error" role="alert">${esc(s.outOfRange(Math.floor(ga / 7)))}</p>`;
+    $('ob-date-next').disabled = !ok;
+    if (ok) tweenDays(ga);
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.dataset.todo) {
+    data.checklist[el.dataset.todo] = el.checked;
+    save();
+  } else if (el.dataset.obConsent) {
+    ui.ob.consents[el.dataset.obConsent] = el.checked;
+  } else if (el.dataset.consent && data.profile) {
+    data.profile.consents = { ...(data.profile.consents || {}), [el.dataset.consent]: el.checked };
+    if (el.dataset.consent === 'device') { if (el.checked) save(); else forgetStored(); }
+    else save();
+    renderMe();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (sheetKind) closeSheet();
+    else if (ui.lunaView === 'full') closeLunaFull();
+  }
+  // arrow keys move between the Track tabs
+  if (e.target.getAttribute && e.target.getAttribute('role') === 'tab' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    const segs = ['symptoms', 'mood', 'kicks', 'contractions'];
+    const i = segs.indexOf(ui.seg);
+    ui.seg = segs[(i + (e.key === 'ArrowRight' ? 1 : segs.length - 1)) % segs.length];
+    renderTrack();
+    $(`tab-${ui.seg}`).focus();
+  }
+});
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+
+renderStatic();
+if (data.profile && validISO(data.profile.due)) {
+  startLuna({ mode: data.profile.mode, sex: data.profile.sex, days: String(lunaDays()), kicks: String(kicksToday()) });
+  renderAll();
+  showTab('today');
+  setLunaView('hero');
+} else {
+  data = blank();
+  startLuna({ mode: 'moon', days: '150' });
+  startOnboarding();
+}
+</script>
+</body>
+</html>

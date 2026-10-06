@@ -547,6 +547,14 @@
     .hotspot::after, .loader svg { animation: none; }
     .toast, .loader { transition: none; }
   }
+
+  /* ---------- Inside the Lunabump app (app.html embeds this page) ----------
+     The app owns the brand, the language and the week; "hero" shows only the scene in a card,
+     "full" is the whole Luna View with the app's close button where the brand would be. */
+  .app-mode .brand, .app-mode .seg-mini, .app-mode .fps { display: none; }
+  .app-mode .topbar { justify-content: flex-end; }
+  .app-hero .topbar, .app-hero .hero, .app-hero .rail, .app-hero .dock, .app-hero .scrim,
+  .app-hero .hotspots, .app-hero .info, .app-hero .toast, .app-hero .modal { display: none !important; }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -561,6 +569,11 @@
 </script>
 </head>
 <body>
+<script>
+  if (/[?&]app=/.test(location.search) || location.hash === '#app') {
+    document.documentElement.classList.add('app-mode', /[?&]view=full/.test(location.search) ? 'app-full' : 'app-hero');
+  }
+</script>
 <canvas id="scene" role="img" aria-label="3D view of your baby at week 24, day 3: curled up in the womb, about 30 cm long, the size of an ear of corn."></canvas>
 
 <div class="scrim" aria-hidden="true"></div>
@@ -1097,8 +1110,32 @@ try {
   if (SEXES.includes(saved.sex)) state.sex = saved.sex;
 } catch (err) { /* storage unavailable: keep defaults */ }
 
+// Embedded in the Lunabump app (app.html): the app owns the language, mode, sex, week and kicks,
+// and tells this page about changes with postMessage; only the quality level stays this page's own
+const appParams = new URLSearchParams(location.search);
+const appMode = appParams.has('app') || location.hash === '#app';
+let appView = appParams.get('view') === 'full' ? 'full' : 'hero';
+const appInset = { top: 0, bottom: 0 };
+if (appMode) {
+  if (appParams.get('lang') in STR) state.lang = appParams.get('lang');
+  if (appParams.get('mode') in MODES) state.mode = appParams.get('mode');
+  if (SEXES.includes(appParams.get('sex'))) state.sex = appParams.get('sex');
+  const days = Number(appParams.get('days'));
+  if (days > 0) state.days = Math.round(Math.min(Math.max(days, FIRST_DAY), LAST_DAY));
+  state.kicks = Math.max(0, Math.round(Number(appParams.get('kicks')) || 0));
+}
+
+function postToApp(message) {
+  if (appMode && window.parent !== window) window.parent.postMessage({ source: 'luna-view', ...message }, '*');
+}
+
 function persist() {
   try {
+    if (appMode) {
+      const saved = JSON.parse(localStorage.getItem('lunabump.lunaView') || '{}');
+      localStorage.setItem('lunabump.lunaView', JSON.stringify({ ...saved, quality: state.quality }));
+      return;
+    }
     localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality, sex: state.sex }));
   } catch (err) { /* storage unavailable */ }
 }
@@ -2886,6 +2923,7 @@ function updateLabels() {
   renderSexEarly();
   canvas.setAttribute('aria-label', MODES[state.mode].moon ? s.moonAlt(w) : s.sceneAlt(s.sex.who[state.sex], w, d, size.len, size.compare));
   renderInfo();
+  postToApp({ type: 'luna:state', days: state.days, compare: size.compare, numbers: `≈ ${size.len} · ${size.wt}`, kind: size.kind, alt: canvas.getAttribute('aria-label') });
 }
 
 function updateStaticCopy() {
@@ -2961,22 +2999,30 @@ const sized = { w: 0, h: 0, pr: 0, composer: null };
 function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  if (!w || !h) return; // a hidden app tab: keep the buffers until it is shown again
   const pr = renderer.getPixelRatio();
   if (w !== sized.w || h !== sized.h || pr !== sized.pr || composer !== sized.composer) {
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
     Object.assign(sized, { w, h, pr, composer });
   }
-  const dock = $('dock').getBoundingClientRect();
-  const hero = document.querySelector('.hero').getBoundingClientRect();
-  document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
-  $('info').style.top = `${Math.round(hero.bottom + 14)}px`;
-  $('sex-panel').style.top = $('info').style.top;
-  const visibleCenter = (hero.bottom + dock.top) / 2;
+  // the visible band: between the heading and the dock, or the part of the app's card left uncovered
+  let top = appInset.top;
+  let bottom = h - appInset.bottom;
+  if (!(appMode && appView === 'hero')) {
+    const dock = $('dock').getBoundingClientRect();
+    const hero = document.querySelector('.hero').getBoundingClientRect();
+    document.documentElement.style.setProperty('--dock-h', `${Math.round(dock.height)}px`);
+    $('info').style.top = `${Math.round(hero.bottom + 14)}px`;
+    $('sex-panel').style.top = $('info').style.top;
+    top = hero.bottom;
+    bottom = dock.top;
+  }
+  const visibleCenter = (top + bottom) / 2;
   viewShift = Math.max(0, h / 2 - visibleCenter);
   const fullH = h + 2 * viewShift;
   const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const visibleH = Math.max(140, dock.top - hero.bottom);
+  const visibleH = Math.max(140, bottom - top);
   frameTan = Math.max(0.05, Math.min((tanHalf * visibleH) / fullH, (tanHalf * w * 0.82) / fullH));
   camera.aspect = w / h;
   if (viewShift > 1) camera.setViewOffset(w, h + 2 * viewShift, 0, 2 * viewShift, w, h);
@@ -3006,6 +3052,7 @@ for (const btn of document.querySelectorAll('#modes button')) {
   btn.addEventListener('click', () => {
     applyMode(btn.dataset.mode);
     persist();
+    postToApp({ type: 'luna:mode', mode: state.mode });
   });
 }
 $('modes').addEventListener('keydown', (e) => {
@@ -3018,6 +3065,7 @@ $('modes').addEventListener('keydown', (e) => {
   e.preventDefault();
   applyMode(order[next]);
   persist();
+  postToApp({ type: 'luna:mode', mode: state.mode });
   document.querySelector(`#modes button[data-mode="${order[next]}"]`).focus();
 });
 
@@ -3076,6 +3124,7 @@ function setSex(sex) {
   renderSex();
   updateLabels();
   toast(t().sex.toast[sex]);
+  postToApp({ type: 'luna:sex', sex });
 }
 
 $('sex-chip').addEventListener('click', () => ($('sex-panel').hidden ? openSexPanel() : closeSexPanel(false)));
@@ -3101,6 +3150,7 @@ $('quality').addEventListener('change', (e) => {
 });
 
 $('kick').addEventListener('click', () => {
+  postToApp({ type: 'luna:kick' }); // the app keeps the kick log and sends the new count back
   state.kicks += 1;
   $('kick-count').textContent = t().kicksToday(state.kicks);
   toast(t().toastKick(state.kicks));
@@ -3315,7 +3365,7 @@ function trackFps(dt) {
   }
 }
 
-renderer.setAnimationLoop((timestamp) => {
+const frameLoop = (timestamp) => {
   timer.update(timestamp);
   const rawDt = timer.getDelta();
   const dt = Math.min(rawDt, 0.05);
@@ -3416,7 +3466,8 @@ renderer.setAnimationLoop((timestamp) => {
     $('loader').classList.add('done');
     setTimeout(() => { $('loader').hidden = true; }, 700);
   }
-});
+};
+renderer.setAnimationLoop(frameLoop);
 
 /* =========================================================================
    Boot
@@ -3427,6 +3478,60 @@ updateStaticCopy();
 applyTier(state.quality === 'auto' ? detectTier() : Number(state.quality));
 camera.position.set(0.35, 0.18, 1).normalize().multiplyScalar(preferredDistance(sceneSize(gaOf(state.days))));
 loadSculptedBaby();
+
+/* ---------- Messages from the Lunabump app ---------- */
+
+function applyAppView(view) {
+  appView = view;
+  document.documentElement.classList.toggle('app-hero', view === 'hero');
+  document.documentElement.classList.toggle('app-full', view === 'full');
+  if (view === 'hero') {
+    closeInfo();
+    closeSexPanel(false);
+    if (state.playing) togglePlay(false);
+  }
+  userDistanceOverride = false;
+  resize();
+}
+
+let appPaused = false;
+if (appMode) {
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
+    const m = e.data;
+    if (m.type === 'luna:set') {
+      if (m.lang in STR && m.lang !== state.lang) setLang(m.lang);
+      if (m.mode in MODES && m.mode !== state.mode) applyMode(m.mode);
+      if (SEXES.includes(m.sex) && m.sex !== state.sex) {
+        state.sex = m.sex;
+        renderSex();
+        updateLabels();
+      }
+      if (Number.isFinite(m.days)) {
+        if (state.playing) togglePlay(false);
+        setDays(m.days);
+      }
+      if (Number.isFinite(m.kicks)) {
+        state.kicks = m.kicks;
+        $('kick-count').textContent = t().kicksToday(state.kicks);
+      }
+      if (m.inset) {
+        appInset.top = Math.max(0, Number(m.inset.top) || 0);
+        appInset.bottom = Math.max(0, Number(m.inset.bottom) || 0);
+      }
+      if (m.view === 'hero' || m.view === 'full') applyAppView(m.view);
+      else if (m.inset) resize();
+      if (typeof m.paused === 'boolean' && m.paused !== appPaused) {
+        appPaused = m.paused;
+        renderer.setAnimationLoop(appPaused ? null : frameLoop);
+      }
+    } else if (m.type === 'luna:kick') {
+      triggerKick(1, true);
+    }
+  });
+  applyAppView(appView);
+  postToApp({ type: 'luna:ready' });
+}
 </script>
 </body>
 </html>
