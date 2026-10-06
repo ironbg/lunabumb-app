@@ -1673,7 +1673,11 @@ def main():
     # The same again on the week-8 shape: occlusion and thickness belong to the shape, and the
     # basis' thin pinna would otherwise glow on the embryo's flat ear, where translucency is
     # strongest. The page blends the two by age.
-    rgb8, alpha8 = skin_colours(built[8][0], neutral[8], vertex_normals(neutral[8], tris), "W8")
+    n8 = vertex_normals(neutral[8], tris)
+    flat = np.linalg.norm(n8, axis=1) < 0.5   # vertices of collapsed triangles: take the SDF's normal
+    g8 = gradient(built[8][0], neutral[8][flat])
+    n8[flat] = g8 / np.maximum(np.linalg.norm(g8, axis=1, keepdims=True), 1e-9)
+    rgb8, alpha8 = skin_colours(built[8][0], neutral[8], n8, "W8")
     early_colour = np.concatenate([rgb8, alpha8[:, None]], axis=1)
 
     import bpy
