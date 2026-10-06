@@ -46,9 +46,8 @@
 
   html, body { touch-action: pan-x pan-y; }
 
-  /* Phones and tablets: no backdrop blur over the WebGL canvas. On Android, blurred panels on top
-     of a canvas that changes every frame make the browser drop the canvas for single frames (the
-     picture blinks out to the page background); denser glass looks almost the same. */
+  /* Phones and tablets: no backdrop blur over the WebGL canvas. Blurring what lies under the panels
+     again on every frame is costly on a phone GPU; denser glass looks almost the same. */
   @media (pointer: coarse) {
     :root { --glass: rgba(30, 27, 58, 0.82); --glass-strong: rgba(30, 27, 58, 0.92); }
     * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
@@ -1117,12 +1116,7 @@ const dayOf = (days) => days % 7;
 const canvas = $('scene');
 let renderer;
 try {
-  // On touch devices keep the drawing buffer between frames: with a discarded buffer some Android
-  // browsers show an empty canvas for a frame when the compositor and the page get out of step
-  renderer = new THREE.WebGLRenderer({
-    canvas, antialias: false, powerPreference: 'high-performance',
-    preserveDrawingBuffer: matchMedia('(pointer: coarse)').matches,
-  });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 } catch (err) {
   $('loader').hidden = true;
   $('fallback').textContent = STR[state.lang].noWebgl;
@@ -3302,6 +3296,12 @@ function trackFps(dt) {
   }
 }
 
+// Android WebView (the Claude app and other in-app browsers) can put the canvas on screen before the
+// GPU has finished drawing the frame: the picture blinks out to the page background for a frame or
+// a few, mostly in close-ups, where a frame takes the GPU longest (see Chromium issue 513436623).
+// Waiting for the GPU at the end of each frame hands the compositor only finished pictures.
+const waitForGpu = /Android/i.test(navigator.userAgent);
+
 renderer.setAnimationLoop((timestamp) => {
   timer.update(timestamp);
   const rawDt = timer.getDelta();
@@ -3395,6 +3395,7 @@ renderer.setAnimationLoop((timestamp) => {
   updateSparks(dt);
 
   composer.render(dt);
+  if (waitForGpu) renderer.getContext().finish();
   updateHotspotAnchors();
   updateHotspots();
 
