@@ -373,19 +373,26 @@ def add_chain(add, name, pts, radii, k, per_span=3):
     add(name, Chain([RoundCone(samples[i], samples[i + 1], rads[i], rads[i + 1]) for i in range(len(samples) - 1)]), k)
 
 
-def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
+def add_ears(add, sub, at, X, UP, FWD, R, g, feat, ops):
     """Both ears: plate, helix rim, antihelix with its crus, concha, tragus, antitragus and
     lobule. On the Ballard maturity scale the pinna is flat and soft around 24 weeks, well
     curved by 32-34 and firm at term, so the rim and the antihelix stand out more with age.
-    In the embryo (until ~10 weeks, easing out by ~13) the ear is different: a small upright
-    curl, taller than wide, made of a thick smooth rim shaped like a C that opens towards the
-    face and curls in at the bottom, around a small opening; no lobule or folds yet.
+    In the embryo (until ~10 weeks, easing out by ~13) the ear is different: a small curl
+    lying flat on the side of the head, low down by the jaw, taller than wide: a smooth
+    raised rim shaped like a C that opens towards the face and curls in at the bottom,
+    around a shallow pit; no lobule or folds yet, and nothing standing off the head.
     The same primitives take both shapes, so the growth morph can turn one into the other.
     Returns the left ear's centre for the rig."""
     curl = smoothstep(18, 36, g)
     early = 1 - smoothstep(9.5, 13.5, g)
-    H = 0.31 * R * (0.45 + 0.55 * feat)      # half the ear's height
+    # half the ear's height; the embryonic curl is about a fifth of the head's height
+    H = 0.31 * R * (0.45 + 0.55 * feat) * (1 + 0.4 * early)
     a, b = math.radians(22) * (0.3 + 0.7 * feat), math.radians(15)   # early ears lie flatter
+    head = [op for op in ops if op.group == "head"]
+
+    def head_sdf(p):
+        return eval_group(head, np.atleast_2d(p))
+
     anchor = None
     for sx, s in ((-1, "L"), (1, "R")):
         out = X * sx
@@ -393,8 +400,30 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
         back0 = -FWD * math.cos(a) + out * math.sin(a)     # so the back edge stands off the head
         up_e = UP * math.cos(b) + back0 * math.sin(b)      # and the top leans back
         back = back0 * math.cos(b) - UP * math.sin(b)
+        ey, ez = -0.15 - 0.3 * (1 - feat), -0.14
+        E = at(0.88 * sx, ey, ez)
+        if early > 0:
+            # The embryonic ear sits low, where the head is narrower than at the later ear's
+            # height: put it on the actual surface there and lay it in the surface's plane,
+            # otherwise it stands off the head like a peg
+            lo, hi = 0.3, 1.4
+            for _ in range(30):
+                mid = 0.5 * (lo + hi)
+                if head_sdf(at(mid * sx, ey, ez))[0] < 0:
+                    lo = mid
+                else:
+                    hi = mid
+            P = at(0.5 * (lo + hi) * sx, ey, ez)
+            n_s = unit(np.array([head_sdf(P + d)[0] - head_sdf(P - d)[0] for d in np.eye(3) * 1e-3]))
+            b_s = unit(-FWD - n_s * np.dot(-FWD, n_s))
+            u_s = unit(UP - n_s * np.dot(UP, n_s) - b_s * np.dot(UP, b_s))
+            n_e = unit(early * n_s + (1 - early) * n_e)
+            back = unit(early * b_s + (1 - early) * back)
+            back = unit(back - n_e * np.dot(back, n_e))
+            up_e = unit(early * u_s + (1 - early) * up_e)
+            up_e = unit(up_e - n_e * np.dot(up_e, n_e) - back * np.dot(up_e, back))
+            E = early * (P - n_s * 0.02 * H) + (1 - early) * E
         frame = np.stack([back, up_e, n_e], axis=1)
-        E = at(0.88 * sx, -0.15 - 0.3 * (1 - feat), -0.14)
 
         def ep(u, v, w):
             return E + back * u * H + up_e * v * H + n_e * w * H
@@ -405,10 +434,10 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
             return tuple(early * e + (1 - early) * l for l, e in zip(late, emb))
 
         ec = (0.06, -0.02)                        # centre of the embryonic curl
-        add("earRoot" + s, Ellipsoid(ep(*mix((-0.3, -0.05, 0.0), (ec[0] + 0.05, ec[1], -0.04))), np.array(mix((0.22, 0.72, 0.2), (0.24, 0.42, 0.12))) * H, frame),
+        add("earRoot" + s, Ellipsoid(ep(*mix((-0.3, -0.05, 0.0), (ec[0] + 0.05, ec[1], -0.3))), np.array(mix((0.22, 0.72, 0.2), (0.24, 0.42, 0.1))) * H, frame),
             (0.3 + 0.5 * soft * (1 - early) + 0.12 * early) * H)
-        add("earPlate" + s, Ellipsoid(ep(*mix((0.12, 0.0, 0.17), (ec[0] + 0.04, ec[1], 0.07))),
-                                      np.array(mix((0.6, 1.0, 0.12 + 0.08 * (1 - detail)), (0.3, 0.46, 0.08))) * H, frame),
+        add("earPlate" + s, Ellipsoid(ep(*mix((0.12, 0.0, 0.17), (ec[0] + 0.04, ec[1], -0.25))),
+                                      np.array(mix((0.6, 1.0, 0.12 + 0.08 * (1 - detail)), (0.24, 0.4, 0.07))) * H, frame),
             (0.25 + 0.6 * soft * (1 - early) + 0.08 * early) * H)
         rim_w = 0.2 + 0.12 * curl
         rim_late = [(-0.12, 0.04, 0.2), (-0.28, 0.45, rim_w), (-0.08, 0.9, rim_w), (0.34, 0.9, rim_w),
@@ -416,11 +445,12 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
         # embryonic rim: a C open towards the face (-u), from the front-top over the top, down the
         # back and round the bottom, ending curled in under the opening
         rim_emb = []
-        for t, rad, w in ((150, 1.0, 0.13), (100, 1.0, 0.2), (50, 1.0, 0.21), (0, 1.0, 0.21), (-50, 1.0, 0.2), (-100, 0.95, 0.17), (-145, 0.62, 0.13)):
+        # (the back of the rim lifts a little more than the front)
+        for t, rad, w in ((150, 1.0, 0.02), (100, 1.0, 0.05), (50, 1.0, 0.07), (0, 1.0, 0.08), (-50, 1.0, 0.07), (-100, 0.95, 0.05), (-145, 0.62, 0.02)):
             a_t = math.radians(t)
             rim_emb.append((ec[0] + 0.3 * rad * math.cos(a_t), ec[1] + 0.47 * rad * math.sin(a_t), w))
         rim = [mix(l, e) for l, e in zip(rim_late, rim_emb)]
-        rr = (0.085 + 0.035 * curl) * H * (1 - early) + 0.15 * H * early
+        rr = (0.085 + 0.035 * curl) * H * (1 - early) + 0.11 * H * early
         taper = mix((0.55, 0.85, 1, 1, 1, 0.95, 0.8), (0.7, 0.95, 1, 1, 1, 0.95, 0.8))
         add_chain(add, "earHelix" + s, [ep(*p) for p in rim], [t * rr for t in taper], (0.1 - 0.04 * early) * H)
         ah_w = (0.2 + 0.08 * curl) * (0.6 + 0.4 * detail)
@@ -429,15 +459,15 @@ def add_ears(add, sub, at, X, UP, FWD, R, g, feat):
         add_chain(add, "earAntihelix" + s, [ep(*p) for p in anti], [0.9 * ar, ar, ar, 0.8 * ar], 0.1 * H)
         add_chain(add, "earCrus" + s, [ep(0.32, 0.28, ah_w), ep(0.12, 0.42, 0.95 * ah_w), ep(-0.06, 0.46, 0.9 * ah_w)],
                   [0.9 * ar, 0.8 * ar, 0.65 * ar], 0.1 * H)
-        add("earLobule" + s, Ellipsoid(ep(*mix((0.2, -0.72, 0.12), (0.12, -0.3, 0.04))), np.array([0.3, 0.26, 0.11]) * H * (1 - 0.85 * early), frame), 0.2 * H)
-        # the hollow; in the embryo a round bowl in the middle of the button, a little deeper
-        sub("earConcha" + s, Ellipsoid(ep(*mix((-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), (ec[0] - 0.05, ec[1] - 0.06, 0.26))),
-                                       np.array(mix(tuple(np.array([0.3, 0.36, 0.3]) * (0.8 + 0.2 * detail)), (0.13, 0.18, 0.24))) * H, frame),
+        add("earLobule" + s, Ellipsoid(ep(*mix((0.2, -0.72, 0.12), (0.12, -0.3, 0.0))), np.array([0.3, 0.26, 0.11]) * H * (1 - 0.85 * early), frame), 0.2 * H)
+        # the hollow; in the embryo a shallow pit inside the curl
+        sub("earConcha" + s, Ellipsoid(ep(*mix((-0.02, -0.12, 0.42 + 0.1 * (1 - detail)), (ec[0] - 0.03, ec[1] - 0.05, 0.0))),
+                                       np.array(mix(tuple(np.array([0.3, 0.36, 0.3]) * (0.8 + 0.2 * detail)), (0.12, 0.16, 0.07))) * H, frame),
             (0.08 + 0.06 * (1 - detail) - 0.03 * early) * H)
-        add("earTragus" + s, Ellipsoid(ep(*mix((-0.36, -0.2, 0.24), (-0.22, -0.2, 0.08))), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail) * (1 - 0.5 * early), frame), 0.1 * H)
-        add("earAntitragus" + s, Ellipsoid(ep(*mix((0.12, -0.5, 0.25), (0.1, -0.3, 0.06))), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail) * (1 - 0.8 * early), frame), 0.1 * H)
+        add("earTragus" + s, Ellipsoid(ep(*mix((-0.36, -0.2, 0.24), (-0.22, -0.2, 0.02))), np.array([0.11, 0.15, 0.1]) * H * (0.4 + 0.6 * detail) * (1 - 0.5 * early), frame), 0.1 * H)
+        add("earAntitragus" + s, Ellipsoid(ep(*mix((0.12, -0.5, 0.25), (0.1, -0.3, 0.02))), np.array([0.1, 0.08, 0.08]) * H * (0.4 + 0.6 * detail) * (1 - 0.8 * early), frame), 0.1 * H)
         if s == "L":
-            anchor = ep(0.1, 0.05, 0.4)
+            anchor = ep(0.1, 0.05, 0.4 - 0.3 * early)
     return anchor
 
 
@@ -743,7 +773,7 @@ def build(g, overrides=None, sex=None, grow=1.0):
     add("cranium", Ellipsoid(at(0, 0.04, -0.06), (0.9 * R, 0.97 * R, 1.06 * R), HR), 0.05)
     add("face", Ellipsoid(at(0, -0.42, 0.4), (0.66 * R, 0.52 * R, 0.52 * R), HR), 0.22 * R)
     lid_lines = add_face(add, sub, at, HR, R, feat, fat, ops, g)
-    ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat)
+    ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat, ops)
     anchors = {
         "head": at(-0.25, 0.45, 0.6),
         "ear": ear_anchor,
