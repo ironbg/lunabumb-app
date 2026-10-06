@@ -310,7 +310,8 @@ CHEST = [(8, (0.135, 0.14, 0.125)), (20, (0.11, 0.125, 0.095)), (40, (0.128, 0.1
 BELLY = [(8, (0.125, 0.13, 0.125)), (20, (0.108, 0.125, 0.092)), (40, (0.126, 0.135, 0.106))]
 PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.098, 0.092, 0.07)), (40, (0.112, 0.096, 0.078))]
 GLUT_R = [(8, 0.05), (20, 0.065), (40, 0.08)]
-TAIL_R = [(8, 0.05), (10, 0.03), (11, 0.0)]
+# The embryonic tail has regressed by the end of week 8 (Carnegie stage 23): no tail at all here
+TAIL_R = [(8, 0.0), (40, 0.0)]
 # Crown–rump length in mm, to turn measured sizes into CRL units
 CRL_MM = [(8, 16), (12, 55), (16, 116), (20, 165), (24, 210), (28, 250), (32, 285), (36, 320), (40, 360)]
 
@@ -659,10 +660,11 @@ def build(g, overrides=None, sex=None, grow=1.0):
     # Buttocks: two rounded cheeks below the sacrum, parted by the gluteal cleft. They sit flush
     # with the line of the lower back rather than sticking out past it, but lower and further
     # back than the pelvis, so from behind and below they read as two shapes, not one block.
-    gr = 0.8 * table(GLUT_R, g) + 0.008 * fat
-    glut_shift = vec(0, 0.006, -0.015)
+    # The embryo has hardly any: they fill out from about week 10.
+    gr = (0.8 * table(GLUT_R, g) + 0.008 * fat) * (0.55 + 0.45 * smoothstep(9, 18, g))
+    glut_shift = vec(0, 0.006, -0.006)
     for s in "LR":
-        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.88, 0.92, 0.84]) * gr), 0.036 + 0.014 * (1 - feat))
+        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.86, 0.9, 0.7]) * gr), 0.036 + 0.014 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
     cleft = 0.007 * smoothstep(11, 18, g) * (1 + 0.3 * fat)

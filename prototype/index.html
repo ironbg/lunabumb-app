@@ -2015,18 +2015,18 @@ function kickFoot(side, out) {
    Umbilical cord (rebuilt as a tube that sways in the fluid)
    ========================================================================= */
 
-// Wharton's jelly is pale and glossy; through it show the three vessels winding round each other:
-// one wide vein (dark red) and two thinner arteries (blue-violet). The vessels swell the jelly a
-// little, so the cord looks like a soft twisted rope.
+// Wharton's jelly is a pale, bluish, glossy gel; the three vessels winding round each other inside
+// it (one wide vein, two thinner arteries) show through only softly, blurred by the gel. The coils
+// are uneven and the gel a little lumpy, as in a real cord: regular, sharp stripes look like candy.
 const cordMaterial = new THREE.MeshPhysicalMaterial({
-  vertexColors: true, roughness: 0.3, sheen: 0.5, sheenColor: new THREE.Color('#ece4ff'), clearcoat: 0.9, clearcoatRoughness: 0.18,
+  vertexColors: true, roughness: 0.38, sheen: 0.25, sheenColor: new THREE.Color('#dfe8ff'), clearcoat: 0.5, clearcoatRoughness: 0.25,
 });
 const CORD_SEG = 140;       // rings along the cord
 const CORD_RAD = 14;        // vertices round each ring
-const CORD_TWISTS = 12;     // turns of the vessels from navel to placenta
-const cordJelly = new THREE.Color('#ece5ee');
-const cordVein = new THREE.Color('#8e2340');
-const cordArtery = new THREE.Color('#4f4ea3');
+const CORD_TWISTS = 9;      // turns of the vessels from navel to placenta (on average)
+const cordJelly = new THREE.Color('#d5dbe5');
+const cordVein = new THREE.Color('#5e2a3c');
+const cordArtery = new THREE.Color('#4d4b7a');
 const VESSEL_DARK = new THREE.Color('#1c0816');
 const cordGeometry = new THREE.BufferGeometry();
 const cordVerts = (CORD_SEG + 1) * (CORD_RAD + 1);
@@ -2042,18 +2042,22 @@ const cordSlope = new Float32Array(cordVerts);        // its change round the ri
   };
   const tint = new THREE.Color();
   for (let i = 0; i <= CORD_SEG; i++) {
+    const u = i / CORD_SEG;
+    // uneven coiling, and the gel thicker in places
+    const twist = u * CORD_TWISTS + 0.7 * Math.sin(u * 7.3) + 0.35 * Math.sin(u * 17.1 + 1.2);
+    const lumps = 0.05 * Math.sin(u * 23 + 1.3) * Math.sin(u * 5.1);
     for (let j = 0; j <= CORD_RAD; j++) {
       const k = i * (CORD_RAD + 1) + j;
       const swellAt = (jj) => {
-        const ph = jj / CORD_RAD + (i / CORD_SEG) * CORD_TWISTS;
-        return 0.1 * bump(ph, 0, 0.2) + 0.07 * (bump(ph, 1 / 3, 0.14) + bump(ph, 2 / 3, 0.14));
+        const ph = jj / CORD_RAD + twist;
+        return lumps + 0.07 * bump(ph, 0, 0.26) + 0.045 * (bump(ph, 1 / 3, 0.18) + bump(ph, 2 / 3, 0.18));
       };
-      const phase = j / CORD_RAD + (i / CORD_SEG) * CORD_TWISTS;
-      const vein = bump(phase, 0, 0.2);
-      const artery = bump(phase, 1 / 3, 0.14) + bump(phase, 2 / 3, 0.14);
+      const phase = j / CORD_RAD + twist;
+      const vein = bump(phase, 0, 0.28);
+      const artery = bump(phase, 1 / 3, 0.2) + bump(phase, 2 / 3, 0.2);
       cordSwell[k] = swellAt(j);
       cordSlope[k] = (swellAt(j + 0.5) - swellAt(j - 0.5)) / (2 * Math.PI / CORD_RAD);
-      tint.copy(cordJelly).lerp(cordVein, 0.85 * vein).lerp(cordArtery, 0.8 * artery);
+      tint.copy(cordJelly).lerp(cordVein, 0.72 * vein).lerp(cordArtery, 0.58 * artery);
       col[k * 3] = tint.r; col[k * 3 + 1] = tint.g; col[k * 3 + 2] = tint.b;
     }
   }
@@ -2087,9 +2091,10 @@ function updateCord(now, S) {
   babyAnchor('navel', navel);
   babyRoot.getWorldPosition(babyCenter);
   const out = v2.copy(navel).sub(babyCenter).normalize();
-  pts[0].copy(navel);
+  // both ends sink a little into the body and the placenta, so the tube's open rims never show
+  pts[0].copy(navel).addScaledVector(out, -0.02 * S);
   pts[1].copy(navel).addScaledVector(out, 0.45 * S);
-  pts[4].copy(cordEnd);
+  pts[4].copy(cordEnd).addScaledVector(placentaNormal, 0.06);
   pts[3].copy(cordEnd).addScaledVector(placentaNormal, -0.7);
   pts[2].lerpVectors(pts[1], pts[3], 0.5);
   pts[2].x += Math.sin(now * 0.7) * 0.25;
@@ -2113,7 +2118,7 @@ function updateCord(now, S) {
     cordN.addScaledVector(cordT, -cordN.dot(cordT)).normalize();
     cordB.crossVectors(cordT, cordN);
     // the cord flares where it goes into the placenta
-    const flare = 1 + 0.7 * THREE.MathUtils.smoothstep(u, 0.93, 1);
+    const flare = 1 + 0.45 * THREE.MathUtils.smoothstep(u, 0.9, 1);
     for (let j = 0; j <= CORD_RAD; j++) {
       const k = i * (CORD_RAD + 1) + j;
       const a = (j / CORD_RAD) * Math.PI * 2;
