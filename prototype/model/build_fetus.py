@@ -1516,10 +1516,26 @@ def main():
         for g in chain:
             ops_g = built[g][0] if g in built else build(g)[0]
             prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=14 if g < 16 else 4)
-            if g < 16:
+            if g < 12:
+                # The embryonic ear is a low relief, but its vertices come from the big pinna and
+                # fold over each other when pressed straight onto it. Lay them out evenly on the
+                # head without the ear first, then raise the relief along the normals: a height
+                # field can't fold.
+                plain = Sculpt()
+                plain.junctions = ops_g.junctions
+                plain.extend(op for op in ops_g if not op.name.startswith("ear"))
+                prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
+                prev = relax_masked(plain, prev, A, deg, ear_idx, ear_w, iterations=150)
+                prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
+                q = prev[ear_idx]
+                nrm = gradient(plain, q, eps=0.002)
+                nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-9)
+                prev[ear_idx] = q + nrm * march_along(ops_g, q, nrm, max_t=0.03)[:, None]
+            elif g < 16:
                 # extra relaxation along the surface for the crowded early ear, face and neck
-                prev = relax_masked(ops_g, prev, A, deg, ear_idx, ear_w, iterations=150 if g < 12 else 60)
+                prev = relax_masked(ops_g, prev, A, deg, ear_idx, ear_w, iterations=60)
                 prev[ear_idx] = project(ops_g, prev[ear_idx], iterations=8, max_step=0.01)
+            if g < 16:
                 # the vertices lie on the SDF surface, so its gradient is the smooth normal the
                 # shape should have; using it hides the small creases left where the big ear
                 # folds down into the small embryonic one
