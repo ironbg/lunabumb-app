@@ -1518,14 +1518,15 @@ def main():
             prev = solve(prev_ops, prev, ops_g, f"W{g}", relax_steps=14 if g < 16 else 4)
             if g < 12:
                 # The embryonic ear is a low relief, but its vertices come from the big pinna and
-                # fold over each other when pressed straight onto it. Lay them out evenly on the
-                # head without the ear first, then raise the relief along the normals: a height
-                # field can't fold.
+                # fold over each other when pressed straight onto it. Untangle them on the head
+                # without the ear first, then raise the relief along the normals: a height field
+                # can't fold. A light relaxation keeps them spread along the curl, where the carry
+                # from the pinna's parts put them; a long one would pull them off it.
                 plain = Sculpt()
                 plain.junctions = ops_g.junctions
                 plain.extend(op for op in ops_g if not op.name.startswith("ear"))
                 prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
-                prev = relax_masked(plain, prev, A, deg, ear_idx, ear_w, iterations=150)
+                prev = relax_masked(plain, prev, A, deg, ear_idx, ear_w, iterations=60)
                 prev[ear_idx] = project(plain, prev[ear_idx], iterations=8, max_step=0.01)
                 q = prev[ear_idx]
                 nrm = gradient(plain, q, eps=0.002)
