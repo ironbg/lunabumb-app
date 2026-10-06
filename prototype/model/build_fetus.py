@@ -785,6 +785,9 @@ def build(g, overrides=None, sex=None, grow=1.0):
     ear_anchor = add_ears(add, sub, at, X, UP, FWD, R, g, feat, ops)
     anchors = {
         "head": at(-0.25, 0.45, 0.6),
+        # the middle of the face and a point straight out in front of it (for close-up views)
+        "face": at(0, -0.42, 0.85),
+        "faceFront": at(0, -0.42, 2.85),
         "ear": ear_anchor,
         "heart": j["chest"] + vec(-0.035, 0.02, table3(CHEST, g)[2] * 0.6),
         "hand": j["wrL"] + unit(j["tipL"] - j["wrL"]) * 0.3 * hand_len,

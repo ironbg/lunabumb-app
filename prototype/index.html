@@ -195,6 +195,18 @@
   .sex-panel .modes button { flex: 1 1 auto; padding-inline: 7px; font-size: 12.5px; }
   .sex-panel p { font-size: 13px; color: var(--muted); }
   .sex-panel .sex-early { color: var(--peach); }
+  .sex-panel h3 { margin: 16px 0 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .skins { display: flex; gap: 10px; margin-top: 10px; }
+  .skins button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    padding: 3px;
+    background: transparent;
+  }
+  .skins button span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(14, 13, 31, 0.2); }
+  .skins button[aria-checked="true"] { border-color: var(--star); }
 
   /* ---------- Tool rail ---------- */
   .rail {
@@ -302,6 +314,20 @@
   .kick-count { font-size: 12px; font-weight: 600; opacity: 0.75; font-variant-numeric: tabular-nums; }
 
   .timeline { display: grid; gap: 6px; }
+  .timeline-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
+  .week-step {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: rgba(243, 240, 255, 0.06);
+    color: var(--text);
+  }
+  .week-step svg { width: 16px; height: 16px; }
+  .week-step:disabled { opacity: 0.35; }
   .timeline input {
     -webkit-appearance: none;
     appearance: none;
@@ -337,7 +363,7 @@
     box-shadow: 0 0 0 5px rgba(255, 230, 163, 0.18), 0 0 18px rgba(255, 230, 163, 0.75);
   }
   /* Ticks are inset by the thumb radius so trimester borders line up with the thumb's travel */
-  .trimesters { display: flex; padding: 0 11px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .trimesters { display: flex; padding: 0 calc(11px + 40px); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .trimesters span { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .trimesters span + span { border-left: 1px solid var(--line); }
   .trimesters .t1 { flex: 0 0 18.75%; }
@@ -470,6 +496,7 @@
     transition: opacity 250ms ease;
   }
   .toast.fade { opacity: 0; }
+  .toast { pointer-events: none; } /* a status line: never in the way of the controls under it */
 
   .loader {
     position: fixed;
@@ -663,12 +690,24 @@
   </div>
   <p id="sex-hint"></p>
   <p class="sex-early" id="sex-early" hidden></p>
+  <h3 id="skin-title">Skin tone</h3>
+  <div class="skins" role="radiogroup" aria-labelledby="skin-title" id="skin-options">
+    <button type="button" role="radio" data-skin="1" aria-checked="true"><span style="--sw:#F3C9B4"></span></button>
+    <button type="button" role="radio" data-skin="2" aria-checked="false"><span style="--sw:#DDAA8C"></span></button>
+    <button type="button" role="radio" data-skin="3" aria-checked="false"><span style="--sw:#B07A59"></span></button>
+    <button type="button" role="radio" data-skin="4" aria-checked="false"><span style="--sw:#7B5240"></span></button>
+  </div>
+  <p id="skin-hint"></p>
 </aside>
 
 <nav class="rail" aria-label="Scene tools">
   <button type="button" class="tool" id="tool-explore" aria-pressed="true">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></span>
     <span class="tool-label" id="label-explore">Explore</span>
+  </button>
+  <button type="button" class="tool" id="tool-view">
+    <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3M15.5 4h3A1.5 1.5 0 0 1 20 5.5v3M20 15.5v3a1.5 1.5 0 0 1-1.5 1.5h-3M8.5 20h-3A1.5 1.5 0 0 1 4 18.5v-3"/><circle cx="12" cy="12" r="3.2"/></svg></span>
+    <span class="tool-label" id="label-view">Whole baby</span>
   </button>
   <button type="button" class="tool" id="tool-listen" aria-pressed="false">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12h4l2-5 3.5 10 2.5-7 1.5 2h5.5"/></svg></span>
@@ -700,7 +739,11 @@
     </button>
   </div>
   <div class="timeline">
-    <input type="range" id="timeline" min="56" max="280" step="1" value="171" aria-label="Pregnancy week" aria-valuetext="Week 24, day 3">
+    <div class="timeline-row">
+      <button type="button" class="week-step" id="week-prev" aria-label="Previous week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+      <input type="range" id="timeline" min="56" max="280" step="1" value="171" aria-label="Pregnancy week" aria-valuetext="Week 24, day 3">
+      <button type="button" class="week-step" id="week-next" aria-label="Next week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+    </div>
     <div class="trimesters" aria-hidden="true">
       <span class="t1"><b id="tri-1">1st</b><span class="range"> · 8–13</span></span>
       <span class="t2"><b id="tri-2">2nd</b><span class="range"> · 14–27</span></span>
@@ -847,7 +890,16 @@ const STR = {
     modeGroup: 'Visual mode',
     kick: 'Log kick',
     kicksToday: (n) => `${n} today`,
-    tools: { explore: 'Explore', listen: 'Listen', portrait: 'Portrait', play: 'Time-lapse', pause: 'Pause' },
+    tools: { explore: 'Explore', listen: 'Listen', portrait: 'Portrait', play: 'Time-lapse', pause: 'Pause', view: 'View' },
+    views: { whole: 'Whole baby', face: 'Face', hands: 'Hands', feet: 'Feet' },
+    prevWeek: 'Previous week',
+    nextWeek: 'Next week',
+    scenes: {
+      wave: ['Hands', 'Your baby moves their arms and hands, and often brings them up to the face.'],
+      kick: ['Kick', 'Most people first feel movements between weeks 16 and 24.'],
+      hiccup: ['Hiccups', 'Babies often hiccup in the womb. You may feel it as small, rhythmic jerks.'],
+      stretch: ['Stretch', 'Your baby stretches their arms and legs and then curls up again.'],
+    },
     toolGroup: 'Scene tools',
     language: 'Language',
     quality: 'Quality',
@@ -879,6 +931,9 @@ const STR = {
       early: 'Until about week 12, girls and boys look the same on the outside, so the model shows this shared early stage.',
       toast: { unknown: 'Showing the model without sex', F: 'Showing a baby girl', M: 'Showing a baby boy' },
       who: { unknown: 'your baby', F: 'your baby girl', M: 'your baby boy' },
+      skinTitle: 'Skin tone',
+      skins: ['Lightest', 'Light', 'Medium', 'Deep'],
+      skinHint: 'Before birth every baby’s skin is thin and pinkish. The tone shows more towards the end of pregnancy and keeps developing after birth.',
     },
     hotspots: {
       head: {
@@ -944,7 +999,16 @@ const STR = {
     modeGroup: 'Визуален режим',
     kick: 'Ритник',
     kicksToday: (n) => `${n} днес`,
-    tools: { explore: 'Разгледай', listen: 'Слушай', portrait: 'Портрет', play: 'Таймлапс', pause: 'Пауза' },
+    tools: { explore: 'Разгледай', listen: 'Слушай', portrait: 'Портрет', play: 'Таймлапс', pause: 'Пауза', view: 'Изглед' },
+    views: { whole: 'Цялото бебе', face: 'Лице', hands: 'Ръце', feet: 'Крачета' },
+    prevWeek: 'Предишна седмица',
+    nextWeek: 'Следваща седмица',
+    scenes: {
+      wave: ['Ръчички', 'Бебето движи ръцете си и често ги поднася към лицето.'],
+      kick: ['Ритник', 'Повечето жени усещат първите движения между 16-а и 24-та седмица.'],
+      hiccup: ['Хълцане', 'Бебетата често хълцат в утробата. Може да го усетиш като леки ритмични потрепвания.'],
+      stretch: ['Протягане', 'Бебето протяга ръчички и крачета и после пак се свива.'],
+    },
     toolGroup: 'Инструменти за сцената',
     language: 'Език',
     quality: 'Качество',
@@ -976,6 +1040,9 @@ const STR = {
       early: 'До около 12 седмица момичетата и момчетата изглеждат еднакво отвън, затова моделът показва този общ ранен етап.',
       toast: { unknown: 'Моделът е показан без пол', F: 'Показваме момиченце', M: 'Показваме момченце' },
       who: { unknown: 'бебето', F: 'момиченцето', M: 'момченцето' },
+      skinTitle: 'Тен на кожата',
+      skins: ['Най-светъл', 'Светъл', 'Среден', 'Тъмен'],
+      skinHint: 'Преди раждането кожата на всяко бебе е тънка и розовееща. Тенът личи повече към края на бременността и продължава да се развива след раждането.',
     },
     hotspots: {
       head: {
@@ -1099,8 +1166,20 @@ const state = {
   playing: false,
   activeHotspot: null,
   sex: 'unknown',
+  skin: 1,
+  view: 'whole',
 };
 const SEXES = ['unknown', 'F', 'M'];
+// Skin tones as multipliers on the mode's skin colour (linear RGB), plus how much the
+// translucency drops: darker skin lets less light through
+const SKIN_TONES = [
+  [1, 1, 1, 0],
+  [0.9, 0.8, 0.72, 0.1],
+  [0.7, 0.54, 0.43, 0.3],
+  [0.5, 0.36, 0.28, 0.45],
+];
+const babyBaseColor = new THREE.Color();
+const skinMul = new THREE.Color();
 
 try {
   const saved = JSON.parse(localStorage.getItem('lunabump.lunaView') || '{}');
@@ -1108,6 +1187,7 @@ try {
   if (saved.mode in MODES) state.mode = saved.mode;
   if (['auto', '0', '1', '2', '3'].includes(saved.quality)) state.quality = saved.quality;
   if (SEXES.includes(saved.sex)) state.sex = saved.sex;
+  if ([1, 2, 3, 4].includes(saved.skin)) state.skin = saved.skin;
 } catch (err) { /* storage unavailable: keep defaults */ }
 
 // Embedded in the Lunabump app (app.html): the app owns the language, mode, sex, week and kicks,
@@ -1120,6 +1200,8 @@ if (appMode) {
   if (appParams.get('lang') in STR) state.lang = appParams.get('lang');
   if (appParams.get('mode') in MODES) state.mode = appParams.get('mode');
   if (SEXES.includes(appParams.get('sex'))) state.sex = appParams.get('sex');
+  const skin = Number(appParams.get('skin'));
+  if ([1, 2, 3, 4].includes(skin)) state.skin = skin;
   const days = Number(appParams.get('days'));
   if (days > 0) state.days = Math.round(Math.min(Math.max(days, FIRST_DAY), LAST_DAY));
   state.kicks = Math.max(0, Math.round(Number(appParams.get('kicks')) || 0));
@@ -1136,7 +1218,7 @@ function persist() {
       localStorage.setItem('lunabump.lunaView', JSON.stringify({ ...saved, quality: state.quality }));
       return;
     }
-    localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality, sex: state.sex }));
+    localStorage.setItem('lunabump.lunaView', JSON.stringify({ lang: state.lang, mode: state.mode, quality: state.quality, sex: state.sex, skin: state.skin }));
   } catch (err) { /* storage unavailable */ }
 }
 
@@ -1578,7 +1660,7 @@ function computePose(ga, now) {
 }
 
 /* ---------- Movement: kicks, waves, spontaneous stretches ---------- */
-const motion = { kick: null, wave: null, nextSpontaneous: 8 };
+const motion = { kick: null, wave: null, stretch: null, hiccup: null, nextSpontaneous: 8 };
 const v1 = new THREE.Vector3();
 const v2 = new THREE.Vector3();
 
@@ -1591,8 +1673,23 @@ function envelope(m, now) {
 
 function applyMotion(now) {
   const ek = envelope(motion.kick, now);
-  if (ek > 0) {
-    const side = motion.kick.side;
+  if (ek > 0) extendLeg(motion.kick.side, ek);
+  const es = envelope(motion.stretch, now);
+  if (es > 0) {
+    extendLeg('L', 0.8 * es);
+    extendLeg('R', 0.8 * es);
+  }
+  const ew = Math.max(envelope(motion.wave, now), 0.7 * es);
+  if (ew > 0) {
+    const osc = motion.wave && envelope(motion.wave, now) > 0 ? Math.sin((now - motion.wave.t0) * 13) : 0;
+    pose.elL.p.add(v1.set(-0.05, 0.03, 0.02).multiplyScalar(ew));
+    pose.wrL.p.add(v1.set(-0.07 + osc * 0.03, 0.1, 0.07).multiplyScalar(ew));
+    pose.haL.p.add(v1.set(-0.09 + osc * 0.05, 0.14, 0.08).multiplyScalar(ew));
+  }
+}
+
+function extendLeg(side, ek) {
+  {
     const kn = pose['kn' + side];
     const an = pose['an' + side];
     const to = pose['to' + side];
@@ -1605,19 +1702,22 @@ function applyMotion(now) {
     kn.p.y -= 0.03 * ek;
     kn.p.z += 0.03 * ek;
   }
-  const ew = envelope(motion.wave, now);
-  if (ew > 0) {
-    const osc = Math.sin((now - motion.wave.t0) * 13);
-    pose.elL.p.add(v1.set(-0.05, 0.03, 0.02).multiplyScalar(ew));
-    pose.wrL.p.add(v1.set(-0.07 + osc * 0.03, 0.1, 0.07).multiplyScalar(ew));
-    pose.haL.p.add(v1.set(-0.09 + osc * 0.05, 0.14, 0.08).multiplyScalar(ew));
+}
+
+// Hiccups: a few quick jolts of the whole body, a little under a second apart
+function hiccupJolt(now) {
+  const h = motion.hiccup;
+  if (!h) return 0;
+  let j = 0;
+  for (let k = 0; k < h.n; k++) {
+    const x = (now - h.t0 - k * h.period) / 0.22;
+    if (x > 0 && x < 1) j += Math.sin(Math.PI * x) * (1 - x) * 1.6;
   }
+  return j * h.amp;
 }
 
 function motionActive(now) {
-  return envelope(motion.kick, now) > 0 || envelope(motion.wave, now) > 0
-    || (motion.kick && now - motion.kick.t0 < motion.kick.dur + 0.05)
-    || (motion.wave && now - motion.wave.t0 < motion.wave.dur + 0.05);
+  return [motion.kick, motion.wave, motion.stretch].some((m) => m && now - m.t0 < m.dur + 0.05);
 }
 
 /* ---------- Metaball mesh ---------- */
@@ -1900,6 +2000,13 @@ function updateGltfBaby(ga, now) {
   if (ek > 0) setKick(inf, dict, motion.kick.side, ek * grown);
   const ew = envelope(motion.wave, now);
   if (ew > 0) inf[dict.WAVE_L] = ew * grown * (0.85 + 0.15 * Math.sin((now - motion.wave.t0) * 13));
+  // a stretch: both legs and the arm reach out together, slower than a kick
+  const es = envelope(motion.stretch, now);
+  if (es > 0) {
+    if (!(ek > 0) || motion.kick.side !== 'L') setKick(inf, dict, 'L', 0.8 * es * grown);
+    if (!(ek > 0) || motion.kick.side !== 'R') setKick(inf, dict, 'R', 0.8 * es * grown);
+    inf[dict.WAVE_L] = Math.max(inf[dict.WAVE_L], 0.7 * es * grown);
+  }
 }
 
 /* ---------- Sex shapes: sparse morphs blended on the CPU ----------
@@ -2626,6 +2733,7 @@ function applyMode(mode) {
   }
 
   if (m.baby) {
+    babyBaseColor.set(m.baby.color);
     for (const mat of [babyMaterial, gltfBaby.material]) {
       if (!mat) continue;
       mat.color.set(m.baby.color);
@@ -2915,6 +3023,8 @@ function updateLabels() {
   $('head-down').textContent = s.headDown;
   $('head-down').hidden = ga < 34 || !!MODES[state.mode].moon;
 
+  $('week-prev').disabled = state.days - 7 < FIRST_DAY;
+  $('week-next').disabled = state.days + 7 > LAST_DAY;
   const input = $('timeline');
   input.value = String(state.days);
   input.setAttribute('aria-valuetext', s.timelineValue(w, d));
@@ -2937,6 +3047,9 @@ function updateStaticCopy() {
   $('kick-label').textContent = s.kick;
   $('kick-count').textContent = s.kicksToday(state.kicks);
   $('label-explore').textContent = s.tools.explore;
+  $('week-prev').setAttribute('aria-label', s.prevWeek);
+  $('week-next').setAttribute('aria-label', s.nextWeek);
+  renderViewLabel();
   $('label-listen').textContent = s.tools.listen;
   $('label-portrait').textContent = s.tools.portrait;
   $('label-play').textContent = state.playing ? s.tools.pause : s.tools.play;
@@ -3094,6 +3207,14 @@ function renderSex() {
   }
   $('sex-hint').textContent = s.hint;
   $('sex-early').textContent = s.early;
+  $('skin-title').textContent = s.skinTitle;
+  $('skin-hint').textContent = s.skinHint;
+  for (const btn of document.querySelectorAll('#skin-options button')) {
+    const on = Number(btn.dataset.skin) === state.skin;
+    btn.setAttribute('aria-checked', String(on));
+    btn.setAttribute('aria-label', s.skins[Number(btn.dataset.skin) - 1]);
+    btn.tabIndex = on ? 0 : -1;
+  }
   $('sex-close').setAttribute('aria-label', t().close);
   renderSexEarly();
 }
@@ -3130,6 +3251,23 @@ function setSex(sex) {
 $('sex-chip').addEventListener('click', () => ($('sex-panel').hidden ? openSexPanel() : closeSexPanel(false)));
 $('sex-close').addEventListener('click', () => closeSexPanel(true));
 for (const btn of document.querySelectorAll('#sex-options button')) btn.addEventListener('click', () => setSex(btn.dataset.sex));
+function setSkin(skin) {
+  if (![1, 2, 3, 4].includes(skin) || skin === state.skin) return;
+  state.skin = skin;
+  persist();
+  renderSex();
+  postToApp({ type: 'luna:skin', skin });
+}
+for (const btn of document.querySelectorAll('#skin-options button')) btn.addEventListener('click', () => setSkin(Number(btn.dataset.skin)));
+$('skin-options').addEventListener('keydown', (e) => {
+  let next = 0;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = state.skin % 4 + 1;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (state.skin + 2) % 4 + 1;
+  if (!next) return;
+  e.preventDefault();
+  setSkin(next);
+  document.querySelector(`#skin-options button[data-skin="${next}"]`).focus();
+});
 $('sex-options').addEventListener('keydown', (e) => {
   const i = SEXES.indexOf(state.sex);
   let next = -1;
@@ -3182,17 +3320,130 @@ function rippleAt(world) {
   shellMaterial.uniforms.uRippleT.value = 0;
 }
 
-let lastTap = 0;
-canvas.addEventListener('pointerup', (e) => {
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  const now = performance.now();
-  if (now - lastTap < 320) {
-    if (!MODES[state.mode].moon) motion.wave = { t0: elapsed, dur: 1.6, amp: 1 };
-    lastTap = 0;
-  } else {
-    lastTap = now;
+/* ---------- Scenes: a tap on the scene plays the next movement ---------- */
+const SCENES = ['wave', 'kick', 'hiccup', 'stretch'];
+let sceneIndex = -1;
+
+function playScene(name, quiet) {
+  const now = elapsed;
+  if (MODES[state.mode].moon || name === 'kick') {
+    triggerKick(quiet ? 0.55 : 1, false);
+  } else if (name === 'wave') {
+    motion.wave = { t0: now, dur: 1.6, amp: 1 };
+  } else if (name === 'hiccup') {
+    motion.hiccup = { t0: now, n: 4, period: 0.85, amp: quiet ? 0.6 : 1 };
+    babyAnchor('heart', v1);
+    rippleAt(v1);
+  } else if (name === 'stretch') {
+    motion.stretch = { t0: now, dur: 2.4, amp: quiet ? 0.6 : 1 };
   }
+  if (!quiet && !MODES[state.mode].moon) {
+    const [title, text] = t().scenes[name];
+    toast(`${title}: ${text}`);
+  }
+}
+
+let tapStart = null;
+canvas.addEventListener('pointerdown', (e) => {
+  tapStart = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId };
 });
+canvas.addEventListener('pointercancel', () => { tapStart = null; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!tapStart || e.pointerId !== tapStart.id) return;
+  const moved = Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y);
+  const quick = performance.now() - tapStart.t < 350;
+  tapStart = null;
+  if (moved > 10 || !quick || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  sceneIndex = (sceneIndex + 1) % SCENES.length;
+  playScene(SCENES[sceneIndex]);
+});
+
+/* ---------- Views: the camera moves to the face, hands or feet and follows them ---------- */
+const VIEWS = ['whole', 'face', 'hands', 'feet'];
+const viewCam = { active: false, foot: 'footL', home: new THREE.Vector3(0, 0.15, 1), t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), anchor: new THREE.Vector3(), dir: new THREE.Vector3(), dist: 0 };
+const viewTmp = new THREE.Vector3();
+const viewCenter = new THREE.Vector3();
+
+const hasFace = () => gltfBaby.ready && gltfBaby.rig.anchors.face;
+function viewAnchor(view, out) {
+  if (view === 'face') return babyAnchor(hasFace() ? 'face' : 'head', out);
+  if (view === 'hands') return babyAnchor('hand', out);
+  // one foot: the point between the two can be empty space when the legs are apart
+  if (view === 'feet') return babyAnchor(viewCam.foot, out);
+  return out.set(0, 0, 0);
+}
+
+// Where the camera looks from: straight at the face (the rig's face-forward direction), at the
+// hands from in front of the face, and at the feet from outside the curled-up legs
+function viewDirection(view, anchor, out) {
+  if (view === 'whole') return out.copy(viewCam.home).normalize();
+  babyRoot.getWorldPosition(viewCenter);
+  const faceFwd = hasFace() ? babyAnchor('faceFront', out).sub(babyAnchor('face', viewTmp)).normalize() : babyAnchor('navel', out).sub(viewCenter).normalize();
+  if (view === 'face') return out;
+  if (view === 'hands') return out.addScaledVector(viewTmp.copy(anchor).sub(viewCenter).normalize(), 0.35).normalize();
+  babyAnchor('groin', viewTmp);
+  return out.multiplyScalar(0.35).add(viewTmp.subVectors(anchor, viewTmp).normalize()).normalize();
+}
+
+function setView(view) {
+  // remember the angle of the whole-baby view, to come back to it
+  if (state.view === 'whole' && view !== 'whole' && !viewCam.active) viewCam.home.copy(camera.position).sub(controls.target);
+  state.view = view;
+  const S = sceneSize(gaOf(state.days));
+  viewCam.active = true;
+  viewCam.t0 = elapsed;
+  viewCam.fromPos.copy(camera.position);
+  viewCam.fromTarget.copy(controls.target);
+  if (view === 'feet') {
+    // the foot on the viewer's side is the one more likely to be in sight
+    const dl = babyAnchor('footL', viewTmp).distanceTo(camera.position);
+    viewCam.foot = babyAnchor('footR', v2).distanceTo(camera.position) < dl ? 'footR' : 'footL';
+  }
+  viewAnchor(view, viewCam.anchor);
+  viewDirection(view, viewCam.anchor, viewCam.dir);
+  viewCam.dist = view === 'whole' ? preferredDistance(S) : Math.max(controls.minDistance + 0.05, ({ face: 0.78, hands: 0.72, feet: 0.7 })[view] * S);
+  userDistanceOverride = view !== 'whole';
+  lastInteraction = elapsed;
+  closeInfo();
+  renderViewLabel();
+}
+
+function updateViewCamera(now) {
+  if (state.view === 'whole' && !viewCam.active) return;
+  const prev = viewTmp.copy(viewCam.anchor);
+  viewAnchor(state.view, viewCam.anchor);
+  if (viewCam.active) {
+    const k = reduceMotionQuery.matches ? 1 : Math.min(1, (now - viewCam.t0) / 1.1);
+    const e = k * k * (3 - 2 * k);
+    controls.target.lerpVectors(viewCam.fromTarget, viewCam.anchor, e);
+    camera.position.lerpVectors(viewCam.fromPos, v2.copy(viewCam.anchor).addScaledVector(viewCam.dir, viewCam.dist), e);
+    if (k >= 1) viewCam.active = false;
+  } else {
+    // follow the gentle sway, keeping whatever angle the viewer has turned to
+    prev.subVectors(viewCam.anchor, prev);
+    controls.target.add(prev);
+    camera.position.add(prev);
+  }
+}
+
+function renderViewLabel() {
+  const label = t().views[state.view];
+  $('label-view').textContent = label;
+  $('tool-view').setAttribute('aria-label', `${t().tools.view}: ${label}`);
+}
+
+$('tool-view').addEventListener('click', () => {
+  if (MODES[state.mode].moon) return;
+  setView(VIEWS[(VIEWS.indexOf(state.view) + 1) % VIEWS.length]);
+});
+
+/* ---------- Previous and next week ---------- */
+function stepWeek(n) {
+  if (state.playing) togglePlay(false);
+  setDays(state.days + 7 * n);
+}
+$('week-prev').addEventListener('click', () => stepWeek(-1));
+$('week-next').addEventListener('click', () => stepWeek(1));
 
 $('tool-explore').addEventListener('click', () => {
   state.explore = !state.explore;
@@ -3328,6 +3579,7 @@ let flip = 0.2;
 const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
 const qFlip = new THREE.Quaternion();
 const qSway = new THREE.Quaternion();
+const qHic = new THREE.Quaternion();
 const zAxis = new THREE.Vector3(0, 0, 1);
 const yAxis = new THREE.Vector3(0, 1, 0);
 const heartWorld = new THREE.Vector3();
@@ -3386,7 +3638,8 @@ const frameLoop = (timestamp) => {
 
   // Spontaneous little movements from the second trimester on
   if (!reduce && !m.moon && ga >= 12 && now > motion.nextSpontaneous) {
-    triggerKick(0.55, false);
+    const r = Math.random();
+    playScene(r < 0.6 ? 'kick' : r < 0.8 ? 'wave' : r < 0.92 ? 'hiccup' : 'stretch', true);
     motion.nextSpontaneous = now + 9 + Math.random() * 9;
   }
 
@@ -3397,8 +3650,10 @@ const frameLoop = (timestamp) => {
   flip += (flipTarget - flip) * Math.min(1, rawDt * 3);
   qFlip.setFromAxisAngle(zAxis, flip);
   qSway.setFromAxisAngle(yAxis, reduce ? 0 : Math.sin(now * 0.3) * 0.06);
-  babyRoot.quaternion.copy(qSway).multiply(qFlip).multiply(qYaw);
-  babyRoot.position.y = reduce ? 0 : Math.sin(now * 0.5) * 0.04 * S;
+  const jolt = hiccupJolt(now);
+  qHic.setFromAxisAngle(zAxis, -0.05 * jolt);
+  babyRoot.quaternion.copy(qSway).multiply(qFlip).multiply(qHic).multiply(qYaw);
+  babyRoot.position.y = (reduce ? 0 : Math.sin(now * 0.5) * 0.04 * S) + 0.012 * jolt * S;
   babyRoot.updateMatrixWorld(true);
 
   if (!m.moon) {
@@ -3419,12 +3674,13 @@ const frameLoop = (timestamp) => {
 
   // Camera: frame the baby unless the viewer has zoomed by hand
   const preferred = preferredDistance(S);
-  if (!userDistanceOverride && now - lastInteraction > 1) {
+  updateViewCamera(now, S);
+  if (state.view === 'whole' && !userDistanceOverride && now - lastInteraction > 1) {
     const dist = camera.position.distanceTo(controls.target);
     const nextDist = dist + (preferred - dist) * Math.min(1, dt * 2.5);
     camera.position.sub(controls.target).setLength(nextDist).add(controls.target);
   }
-  controls.autoRotate = !reduce && now - lastInteraction > 8 && !state.playing;
+  controls.autoRotate = !reduce && now - lastInteraction > 8 && !state.playing && state.view === 'whole' && !viewCam.active;
   controls.update(dt);
 
   // Uniforms
@@ -3445,7 +3701,12 @@ const frameLoop = (timestamp) => {
   $('bpm').classList.toggle('beat', pulse > 0.6);
   placeLights();
   if (m.baby) {
-    babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency;
+    // skin tone: every fetus is thin-skinned and pinkish; the chosen tone shows more with age
+    const tone = SKIN_TONES[state.skin - 1];
+    const toneK = 0.2 + 0.8 * THREE.MathUtils.smoothstep(ga, 16, 34);
+    skinMul.setRGB(1 + (tone[0] - 1) * toneK, 1 + (tone[1] - 1) * toneK, 1 + (tone[2] - 1) * toneK);
+    for (const mat of [babyMaterial, gltfBaby.material]) if (mat) mat.color.copy(babyBaseColor).multiply(skinMul);
+    babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency * (1 - tone[3] * toneK);
     babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);
     babyAnchor('heart', heartWorld);
     babyUniforms.uHeartPos.value.copy(heartWorld).applyMatrix4(camera.matrixWorldInverse);
@@ -3489,6 +3750,7 @@ function applyAppView(view) {
     closeInfo();
     closeSexPanel(false);
     if (state.playing) togglePlay(false);
+    if (state.view !== 'whole') setView('whole');
   }
   userDistanceOverride = false;
   resize();
@@ -3506,6 +3768,10 @@ if (appMode) {
         state.sex = m.sex;
         renderSex();
         updateLabels();
+      }
+      if ([1, 2, 3, 4].includes(m.skin) && m.skin !== state.skin) {
+        state.skin = m.skin;
+        renderSex();
       }
       if (Number.isFinite(m.days)) {
         if (state.playing) togglePlay(false);

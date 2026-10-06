@@ -198,10 +198,54 @@
   .seg button[aria-pressed="true"], .seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
 
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  /* four Track tabs don't fit a phone at full width: let the row scroll sideways instead of squeezing */
-  #track-seg { overflow-x: auto; scrollbar-width: none; }
-  #track-seg::-webkit-scrollbar { display: none; }
-  #track-seg button { flex: 1 0 auto; padding: 6px 14px; }
+  /* ---------- Tools ---------- */
+  .tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tool-tile {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-height: 124px;
+    padding: 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    text-align: left;
+  }
+  .tool-tile .icon { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: 14px; background: var(--tint); color: var(--accent); }
+  .tool-tile .icon svg { width: 22px; height: 22px; }
+  .tool-tile strong { font-size: 16px; line-height: 1.25; }
+  .tool-tile .sub { font-size: 13px; color: var(--muted); line-height: 1.3; }
+  .tool-head { display: flex; align-items: center; gap: 10px; padding-top: 6px; }
+  .tool-head .page-title { padding-top: 0; font-size: 26px; }
+  .seg[role="radiogroup"] button[aria-checked="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
+  .week-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .week-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--tint); }
+  .week-row.is-now { box-shadow: 0 0 0 2px var(--accent) inset; }
+  .week-row p { font-size: 15px; margin: 2px 0; }
+  .week-row .btn { min-height: 38px; padding: 6px 12px; font-size: 14px; }
+  .photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .photo { position: relative; padding: 0; border: 0; border-radius: 14px; overflow: hidden; aspect-ratio: 3 / 4; background: var(--tint); }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo span { position: absolute; left: 6px; bottom: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(14, 13, 31, 0.6); color: var(--moonlight); }
+  .photo-big { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 16px; background: var(--tint); }
+  .checklist .check-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .checklist .done { color: var(--muted); text-decoration: line-through; }
+  .icon-btn.small-icon { width: 32px; height: 32px; flex: none; }
+  .name-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  .name-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0 4px 4px; font-weight: 600; min-width: 0; }
+  .icon-btn.fav { width: 36px; height: 36px; color: var(--muted); }
+  .icon-btn.fav.on { color: var(--coral); }
+  .plan-list { margin: 0; display: grid; gap: 10px; }
+  .plan-list dt { font-size: 13px; color: var(--muted); }
+  .plan-list dd { margin: 0; font-weight: 600; }
+  .next-appt { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); text-align: left; }
+  .next-appt .icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--tint); color: var(--accent); }
+  .next-appt .icon svg { width: 22px; height: 22px; }
+  .skins { display: flex; gap: 10px; }
+  .skins button { width: 42px; height: 42px; padding: 3px; border-radius: 50%; border: 2px solid transparent; background: transparent; }
+  .skins button span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(42, 39, 64, 0.2); }
+  .skins button[aria-checked="true"] { border-color: var(--accent); }
   .chip {
     min-height: 40px;
     padding: 7px 14px;
@@ -535,7 +579,8 @@
     width: min(100%, var(--col));
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    /* the middle column only holds the moon, so the long labels ("Инструменти") get more room */
+    grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 0.8fr) repeat(2, minmax(0, 1fr));
     align-items: end;
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     background: var(--card);
@@ -550,9 +595,10 @@
     border: 0;
     background: transparent;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 10.5px;
     font-weight: 700;
   }
+  .tab > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tab svg { width: 24px; height: 24px; }
   .tab[aria-current="page"] { color: var(--accent); }
   .tab-luna { position: relative; }
@@ -679,7 +725,8 @@
     font-weight: 600;
     transition: opacity 200ms ease;
   }
-  .toast.fade { opacity: 0; pointer-events: none; }
+  .toast { pointer-events: none; } /* a status line: never in the way of the button under it */
+  .toast.fade { opacity: 0; }
 
   @media (prefers-reduced-motion: reduce) {
     .spark { animation: none; display: none; }
@@ -732,6 +779,8 @@
 
     <nav class="quick" id="quick" aria-label="Quick actions"></nav>
 
+    <div id="today-next"></div>
+
     <section class="card" aria-labelledby="week-title">
       <div class="row-between"><h2 id="week-title" data-t="thisWeek"></h2><span class="pill pill-example" id="week-pill"></span></div>
       <div class="facts" id="week-facts"></div>
@@ -750,20 +799,19 @@
     <p class="fine" data-t="disclaimer"></p>
   </section>
 
-  <!-- ===================== Track ===================== -->
-  <section class="screen" id="screen-track" aria-labelledby="track-title" hidden>
-    <h1 class="page-title" id="track-title" data-t="tabs.track"></h1>
-    <div class="seg" role="tablist" aria-labelledby="track-title" id="track-seg">
-      <button type="button" role="tab" data-action="seg" data-seg="symptoms" id="tab-symptoms" aria-controls="panel-symptoms"></button>
-      <button type="button" role="tab" data-action="seg" data-seg="mood" id="tab-mood" aria-controls="panel-mood"></button>
-      <button type="button" role="tab" data-action="seg" data-seg="kicks" id="tab-kicks" aria-controls="panel-kicks"></button>
-      <button type="button" role="tab" data-action="seg" data-seg="contractions" id="tab-contractions" aria-controls="panel-contractions"></button>
-    </div>
+  <!-- ===================== Tools ===================== -->
+  <section class="screen" id="screen-tools" aria-labelledby="tools-title" hidden>
+    <h1 class="page-title" id="tools-title" data-t="tabs.tools"></h1>
+    <p class="muted small" id="tools-intro"></p>
+    <div class="tool-grid" id="tool-grid"></div>
+  </section>
 
-    <div class="screen-panel" id="panel-symptoms" role="tabpanel" aria-labelledby="tab-symptoms" style="display:grid;gap:18px"></div>
-    <div class="screen-panel" id="panel-mood" role="tabpanel" aria-labelledby="tab-mood" style="display:grid;gap:18px" hidden></div>
-    <div class="screen-panel" id="panel-kicks" role="tabpanel" aria-labelledby="tab-kicks" style="display:grid;gap:18px" hidden></div>
-    <div class="screen-panel" id="panel-contractions" role="tabpanel" aria-labelledby="tab-contractions" style="display:grid;gap:18px" hidden></div>
+  <section class="screen" id="screen-tool" aria-labelledby="tool-title" hidden>
+    <header class="tool-head">
+      <button type="button" class="icon-btn" data-action="tool-back" id="tool-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <h1 class="page-title" id="tool-title"></h1>
+    </header>
+    <div id="tool-body" style="display:grid;grid-template-columns:minmax(0,1fr);gap:18px"></div>
   </section>
 
   <!-- ===================== Explore ===================== -->
@@ -797,6 +845,9 @@
     <section class="card" aria-labelledby="me-view-title">
       <h2 id="me-view-title" data-t="view3d"></h2>
       <div class="mode-cards" role="radiogroup" aria-labelledby="me-view-title" id="me-modes"></div>
+      <h3 id="me-skin-title" data-t="skinTone"></h3>
+      <div class="skins" role="radiogroup" aria-labelledby="me-skin-title" id="me-skin"></div>
+      <p class="fine" data-t="skinHint"></p>
     </section>
     <section class="card" aria-labelledby="me-lang-title">
       <h2 id="me-lang-title" data-t="language"></h2>
@@ -823,7 +874,7 @@
   <!-- ===================== Tab bar ===================== -->
   <nav class="tabbar" id="tabbar" aria-label="Main">
     <button type="button" class="tab" data-action="tab" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg><span data-t="tabs.today"></span></button>
-    <button type="button" class="tab" data-action="tab" data-tab="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8.5 14h2M13.5 14h2M8.5 17h2"/></svg><span data-t="tabs.track"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span data-t="tabs.tools"></span></button>
     <button type="button" class="tab tab-luna" data-action="luna"><span class="moon"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#F6C8B5" d="M19.5 4.6A12 12 0 1 0 27.4 22 9.6 9.6 0 0 1 19.5 4.6z"/><circle cx="20.5" cy="19.5" r="2.4" fill="#FFE6A3"/></svg></span><span data-t="tabs.luna"></span></button>
     <button type="button" class="tab" data-action="tab" data-tab="explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span data-t="tabs.explore"></span></button>
     <button type="button" class="tab" data-action="tab" data-tab="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4"/></svg><span data-t="tabs.me"></span></button>
@@ -900,7 +951,7 @@ function at(iso, h, m) {
 const STR = {
   en: {
     locale: 'en-GB',
-    tabs: { today: 'Today', track: 'Track', luna: 'Luna', explore: 'Explore', me: 'Me' },
+    tabs: { today: 'Today', tools: 'Tools', luna: 'Luna', explore: 'Explore', me: 'Me' },
     mainNav: 'Main',
     greet: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Hello' },
     weekDay: (w, d) => `Week ${w} · Day ${d}`,
@@ -915,7 +966,7 @@ const STR = {
     close: 'Close',
     feeling: 'How are you feeling today?',
     moods: ['Awful', 'Low', 'Okay', 'Good', 'Great'],
-    moodSaved: (label) => `Saved: ${label}. Your month is in Track → Mood.`,
+    moodSaved: (label) => `Saved: ${label}. Your month is in Tools → Mood.`,
     quickNav: 'Quick actions',
     quick: { symptom: 'Log a symptom', kicks: 'Count kicks', contractions: 'Time contractions', luna: 'Ask Luna' },
     thisWeek: 'This week',
@@ -1025,6 +1076,9 @@ const STR = {
     baby: 'Your baby',
     sexes: { unknown: 'Not known', F: 'Girl', M: 'Boy' },
     sexHint: 'Before week 12 the 3D baby looks the same either way.',
+    skinTone: 'Skin tone',
+    skins: ['Lightest', 'Light', 'Medium', 'Deep'],
+    skinHint: 'Before birth every baby’s skin is thin and pinkish. The tone shows more towards the end of pregnancy.',
     view3d: '3D view',
     modes: {
       dreamy: ['Dreamy', 'Glowing and gentle, with floating stars'],
@@ -1045,7 +1099,7 @@ const STR = {
     notSaved: 'Not saved on this device. Turn on the first switch to keep your details.',
     stored: 'What’s stored',
     storedWhere: 'Only in this browser, on this device. Nothing is sent anywhere.',
-    storedRows: { profile: 'Your details', moods: 'Mood check-ins', symptoms: 'Symptom entries', kicks: 'Kick sessions and kicks', contractions: 'Contractions' },
+    storedRows: { profile: 'Your details', moods: 'Mood check-ins', symptoms: 'Symptom entries', kicks: 'Kick sessions and kicks', contractions: 'Contractions', weights: 'Weight entries', appointments: 'Appointments', photos: 'Bump photos' },
     showData: 'Show my data',
     deleteAll: 'Delete all my data',
     deleteConfirm: 'This deletes your details and every entry from this device. It can’t be undone.',
@@ -1116,7 +1170,7 @@ const STR = {
 
   bg: {
     locale: 'bg-BG',
-    tabs: { today: 'Днес', track: 'Записи', luna: 'Luna', explore: 'Открий', me: 'Аз' },
+    tabs: { today: 'Днес', tools: 'Инструменти', luna: 'Luna', explore: 'Открий', me: 'Аз' },
     mainNav: 'Основна навигация',
     greet: { morning: 'Добро утро', afternoon: 'Добър ден', evening: 'Добър вечер', night: 'Здравей' },
     weekDay: (w, d) => `Седмица ${w} · Ден ${d}`,
@@ -1131,7 +1185,7 @@ const STR = {
     close: 'Затвори',
     feeling: 'Как се чувстваш днес?',
     moods: ['Ужасно', 'Зле', 'Горе-долу', 'Добре', 'Чудесно'],
-    moodSaved: (label) => `Записано: ${label}. Целият месец е в Записи → Настроение.`,
+    moodSaved: (label) => `Записано: ${label}. Целият месец е в Инструменти → Настроение.`,
     quickNav: 'Бързи действия',
     quick: { symptom: 'Запиши симптом', kicks: 'Брой ритници', contractions: 'Мери контракции', luna: 'Попитай Luna' },
     thisWeek: 'Тази седмица',
@@ -1241,6 +1295,9 @@ const STR = {
     baby: 'Бебето',
     sexes: { unknown: 'Не знаем', F: 'Момиче', M: 'Момче' },
     sexHint: 'Преди 12-а седмица 3D бебето изглежда еднакво и в двата случая.',
+    skinTone: 'Тен на кожата',
+    skins: ['Най-светъл', 'Светъл', 'Среден', 'Тъмен'],
+    skinHint: 'Преди раждането кожата на всяко бебе е тънка и розовееща. Тенът личи повече към края на бременността.',
     view3d: '3D изглед',
     modes: {
       dreamy: ['Мечта', 'Сияещ и нежен, с плаващи звезди'],
@@ -1261,7 +1318,7 @@ const STR = {
     notSaved: 'Не се пази на това устройство. Включи първия превключвател, за да запазиш данните си.',
     stored: 'Какво се пази',
     storedWhere: 'Само в този браузър, на това устройство. Нищо не се изпраща никъде.',
-    storedRows: { profile: 'Твоите данни', moods: 'Записи на настроението', symptoms: 'Записи на симптоми', kicks: 'Сесии и ритници', contractions: 'Контракции' },
+    storedRows: { profile: 'Твоите данни', moods: 'Записи на настроението', symptoms: 'Записи на симптоми', kicks: 'Сесии и ритници', contractions: 'Контракции', weights: 'Записи за тегло', appointments: 'Прегледи', photos: 'Снимки на коремчето' },
     showData: 'Покажи данните ми',
     deleteAll: 'Изтрий всичките ми данни',
     deleteConfirm: 'Това изтрива данните ти и всички записи от това устройство. Не може да се върне.',
@@ -1745,12 +1802,26 @@ const blank = () => ({
   activeContraction: null,
   checklist: {},
   care: { unit: '', doctor: '' },
+  weights: [],
+  weightSetup: null,
+  photoIndex: [],
+  appointments: [],
+  questions: [],
+  bag: { checked: {}, custom: [] },
+  shopping: { checked: {}, custom: [] },
+  plan: {},
+  names: { favs: [] },
 });
 
 function loadData() {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (parsed && parsed.v === 1) return { ...blank(), ...parsed, care: { ...blank().care, ...(parsed.care || {}) } };
+    if (parsed && parsed.v === 1) {
+      const base = blank();
+      const merged = { ...base, ...parsed };
+      for (const key of ['care', 'bag', 'shopping', 'names']) merged[key] = { ...base[key], ...(parsed[key] || {}) };
+      return merged;
+    }
   } catch (err) { /* storage unavailable or unreadable */ }
   return blank();
 }
@@ -1773,7 +1844,10 @@ function forgetStored() {
 
 const ui = {
   tab: 'today',
-  seg: 'symptoms',
+  tool: null,
+  returnTool: null,
+  names: { list: 'F', lang: null, query: '' },
+  calc: { method: 'due', ivfDay: 5, date: '' },
   symPicked: new Set(),
   symLevel: 3,
   symAll: false,
@@ -1874,7 +1948,7 @@ function kicksToday() {
 function lunaSettings() {
   const p = data.profile;
   if (!p) return { lang, mode: 'moon', sex: 'unknown', days: tweenFrom };
-  return { lang, mode: p.mode, sex: p.sex, days: lunaDays(), kicks: kicksToday() };
+  return { lang, mode: p.mode, sex: p.sex, skin: p.skin || 1, days: lunaDays(), kicks: kicksToday() };
 }
 
 function setLunaView(view) {
@@ -1909,6 +1983,13 @@ function closeLunaFull() {
   if (ui.lunaView !== 'full') return;
   setLunaView('hero');
   postLuna({ days: lunaDays() }); // the viewer may have scrubbed the timeline
+  if (ui.returnTool) {
+    // opened from a tool ("See in 3D"): go back to it
+    const tool = ui.returnTool;
+    ui.returnTool = null;
+    openTool(tool);
+    return;
+  }
   if (ui.lastFocus && ui.lastFocus.focus) ui.lastFocus.focus();
 }
 
@@ -1928,9 +2009,13 @@ window.addEventListener('message', (e) => {
     data.kickTaps.push(Date.now());
     save();
     postLuna({ kicks: kicksToday() });
-    if (ui.seg === 'kicks') renderKicks();
+    if (ui.tool === 'kicks') renderKicks();
   } else if (m.type === 'luna:mode' && data.profile && ['dreamy', 'realistic', 'moon'].includes(m.mode)) {
     data.profile.mode = m.mode;
+    save();
+    renderMe();
+  } else if (m.type === 'luna:skin' && data.profile && [1, 2, 3, 4].includes(m.skin)) {
+    data.profile.skin = m.skin;
     save();
     renderMe();
   } else if (m.type === 'luna:sex' && data.profile && ['unknown', 'F', 'M'].includes(m.sex)) {
@@ -1967,7 +2052,7 @@ function renderStatic() {
   $('food-search').placeholder = t().foodPh;
   $('care-unit').placeholder = lang === 'bg' ? 'Добави номер' : 'Add a number';
   $('care-doctor').placeholder = $('care-unit').placeholder;
-  for (const seg of ['symptoms', 'mood', 'kicks', 'contractions']) $(`tab-${seg}`).textContent = t().segs[seg];
+  $('tools-intro').textContent = T().intro;
   for (const btn of document.querySelectorAll('[data-action="lang"]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
 }
 
@@ -2010,6 +2095,8 @@ function renderToday() {
   // quick actions change with the trimester: kicks lead from 28 weeks, contractions appear from 37
   const order = w >= 37 ? ['kicks', 'contractions', 'luna'] : w >= 28 ? ['kicks', 'symptom', 'luna'] : ['symptom', 'kicks', 'luna'];
   const icons = { symptom: ICON.note, kicks: ICON.kick, contractions: ICON.wave, luna: ICON.chat };
+  const next = nextAppointment();
+  $('today-next').innerHTML = next ? `<button type="button" class="next-appt" data-action="tool" data-tool="appointments"><span class="icon">${TOOL_ICON.appointments}</span><span><span class="eyebrow">${esc(T().nextAppointment)}</span><strong style="display:block">${esc(apptTitle(next))}</strong><span class="small muted">${esc(fmtDate(next.date))}${next.time ? ` · ${esc(next.time)}` : ''}${next.place ? ` · ${esc(next.place)}` : ''}</span></span><span class="chev">${ICON.chev}</span></button>` : '';
   $('quick').innerHTML = order.map((k) => `<button type="button" data-action="quick" data-go="${k}"><span class="icon">${icons[k]}</span><span>${esc(t().quick[k])}</span></button>`).join('');
 
   // this week
@@ -2050,19 +2137,6 @@ function articleRow(tp) {
    Track
    ========================================================================= */
 
-function renderTrack() {
-  if (!data.profile) return;
-  for (const seg of ['symptoms', 'mood', 'kicks', 'contractions']) {
-    $(`tab-${seg}`).setAttribute('aria-selected', String(ui.seg === seg));
-    $(`tab-${seg}`).tabIndex = ui.seg === seg ? 0 : -1;
-    $(`panel-${seg}`).hidden = ui.seg !== seg;
-  }
-  if (ui.seg === 'symptoms') renderSymptoms();
-  if (ui.seg === 'mood') renderMood();
-  if (ui.seg === 'kicks') renderKicks();
-  if (ui.seg === 'contractions') renderContractions();
-}
-
 /* ---------- Symptoms ---------- */
 function renderSymptoms() {
   const w = weekNow();
@@ -2072,7 +2146,7 @@ function renderSymptoms() {
   if (!ui.calMonth.symptoms) ui.calMonth.symptoms = todayISO().slice(0, 7) + '-01';
   const pickedDay = ui.calPick.symptoms;
   const dayList = pickedDay ? data.symptoms.filter((e) => isoOf(new Date(e.at)) === pickedDay).sort((a, b) => a.at - b.at) : [];
-  $('panel-symptoms').innerHTML = `
+  $('tool-body').innerHTML = `
     <section class="card" aria-labelledby="sym-q">
       <h2 id="sym-q">${esc(t().symQ)}</h2>
       <div class="chips">${chips}</div>
@@ -2147,7 +2221,7 @@ function renderMood() {
   const hard = last7.filter((m) => m.v <= 2).length >= 3;
   const picked = ui.calPick.mood;
   const pickedMood = picked && data.moods[picked];
-  $('panel-mood').innerHTML = `
+  $('tool-body').innerHTML = `
     <section class="card" aria-labelledby="mood-today-title">
       <h2 id="mood-today-title">${esc(t().feeling)}</h2>
       <div class="moods" role="radiogroup" aria-labelledby="mood-today-title">${moodButtons(today ? today.v : 0)}</div>
@@ -2168,7 +2242,7 @@ function renderKicks() {
   const active = data.activeKicks;
   const sessions = [...data.kickSessions].sort((a, b) => b.start - a.start).slice(0, 8);
   const quick = data.kickTaps.filter((ms) => isoOf(new Date(ms)) === todayISO()).length;
-  $('panel-kicks').innerHTML = `
+  $('tool-body').innerHTML = `
     <section class="card" aria-labelledby="kicks-title">
       <h2 id="kicks-title">${esc(t().kicksTitle)}</h2>
       <p class="muted small">${esc(w < 28 ? t().kicksEarly : t().kicksIntro)}</p>
@@ -2253,7 +2327,7 @@ function renderContractions() {
     const gap = i > 0 ? c.start - list[i - 1].start : 0;
     return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(c.start))} · ${esc(fmtTime(c.start))}</span>${c.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(t().conLasted(fmtDur(c.end - c.start)))}</div>${gap && gap < 3 * 3600000 ? `<div class="small muted">${esc(t().conApart(fmtDur(gap)))}</div>` : ''}</li>`;
   }).join('');
-  $('panel-contractions').innerHTML = `
+  $('tool-body').innerHTML = `
     <section class="card" aria-labelledby="con-title">
       <h2 id="con-title">${esc(t().conTitle)}</h2>
       ${alerts.map(([kind, text]) => `<div class="notice notice-${kind}" role="alert"><strong>${esc(text)}</strong>${kind === 'alert' ? `<button type="button" class="link-btn" data-action="flag" data-flag="${weekNow() < 37 ? 'preterm' : 'labour'}">${esc(t().whatToDo)}</button>` : ''}</div>`).join('')}
@@ -2271,6 +2345,850 @@ function renderContractions() {
     ${rows ? `<section class="card"><ul class="entries">${rows}</ul><button type="button" class="btn btn-line" data-action="con-clear">${esc(t().conClear)}</button></section>` : `<button type="button" class="btn btn-quiet" data-action="con-sample">${esc(t().conSample)}</button>`}`;
   clearInterval(conTimer);
   if (active) conTimer = setInterval(() => { const el = $('con-timer'); if (el) el.textContent = fmtDur(Date.now() - data.activeContraction); else clearInterval(conTimer); }, 1000);
+}
+
+/* =========================================================================
+   Tools (every one free: safety tools are never behind a paywall)
+   ========================================================================= */
+
+const TOOL_STR = {
+  en: {
+    intro: 'Every tool is free. Safety tools are never behind a paywall.',
+    names: {
+      kicks: ['Kick counter', 'Learn your baby’s pattern'],
+      contractions: ['Contraction timer', 'Is it labour?'],
+      symptoms: ['Symptoms', 'Log how you feel'],
+      mood: ['Mood', 'Your month at a glance'],
+      weeks: ['Week by week', 'Size and milestones'],
+      weight: ['My weight', 'Log it, see the trend'],
+      bump: ['My bump', 'A photo each week'],
+      appointments: ['Appointments', 'Scans and check-ups'],
+      questions: ['Questions', 'To ask your doctor'],
+      bag: ['Hospital bag', 'What to pack'],
+      plan: ['Birth plan', 'Your preferences'],
+      names: ['Baby names', 'Save your favourites'],
+      shopping: ['For the baby', 'What you’ll need'],
+      duedate: ['Due date calculator', 'Check the dates'],
+    },
+    back: 'All tools',
+    today: (n) => `${n} today`,
+    photos: (n) => (n === 1 ? '1 photo' : `${n} photos`),
+    packed: (a, b) => `${a} of ${b} packed`,
+    thisWeek: 'This week',
+    seeIn3d: 'See in 3D',
+    weeksRange: (a, b) => (a === b ? `Week ${a}` : `Weeks ${a}–${b}`),
+    week: (w) => `Week ${w}`,
+    noSize: 'The 3D view and the sizes start at week 8.',
+    // weight
+    logWeight: 'Log your weight',
+    kg: 'kg',
+    weightKg: 'Weight (kg)',
+    date: 'Date',
+    save: 'Save',
+    weightBad: 'Enter a weight between 30 and 250 kg.',
+    gainSoFar: (g) => `${g >= 0 ? '+' : '−'}${Math.abs(g).toFixed(1)} kg since before pregnancy`,
+    setupTitle: 'Before pregnancy (optional)',
+    heightCm: 'Height (cm)',
+    preWeight: 'Weight before pregnancy (kg)',
+    rangeText: (bmi, lo, hi) => `With a BMI of ${bmi.toFixed(1)} before pregnancy, a gain of about ${lo}–${hi} kg over the whole pregnancy is usual.`,
+    bodyNote: 'Every body is different. Your midwife or doctor can tell you what’s right for you.',
+    weightEmpty: 'No entries yet. Log your weight above to see the trend.',
+    trend: 'Your trend',
+    weekAxis: 'week',
+    remove: 'Remove',
+    // bump
+    addPhoto: 'Add this week’s photo',
+    bumpTip: 'Same spot, same pose, same distance each time makes the best time-lapse.',
+    photosLocal: 'Photos stay on this device. They are never uploaded.',
+    photosMemory: 'Saving is switched off in Privacy, so photos are forgotten when you close the page.',
+    play: 'Play the time-lapse',
+    bumpEmpty: 'No photos yet.',
+    photoFailed: 'That image couldn’t be read. Try another one.',
+    deletePhoto: 'Delete this photo',
+    deletePhotoConfirm: 'Delete this photo? It can’t be undone.',
+    // appointments
+    newAppointment: 'New appointment',
+    kind: 'Type',
+    kinds: { checkup: 'Check-up', scan: 'Ultrasound scan', blood: 'Blood test', glucose: 'Glucose test', other: 'Other' },
+    titleOpt: 'Title (optional)',
+    time: 'Time',
+    place: 'Place',
+    notes: 'Notes',
+    add: 'Add',
+    upcoming: 'Upcoming',
+    past: 'Past',
+    noUpcoming: 'Nothing planned yet.',
+    needDate: 'Choose a date.',
+    nextAppointment: 'Next appointment',
+    // questions
+    suggested: 'Suggested for this stage',
+    myQuestions: 'My questions',
+    questionPh: 'Write your own question',
+    noQuestions: 'Add a suggested question or write your own.',
+    asked: 'Asked',
+    // bag
+    bagSections: { you: 'For you', partner: 'For your birth partner', baby: 'For the baby' },
+    addItem: 'Add an item',
+    hospitalList: 'Your hospital may give you its own list: follow that one first.',
+    // plan
+    planIntro: 'A birth plan tells your midwife what you’d like. Births don’t always go to plan, and that’s fine.',
+    planSummary: 'Your plan',
+    copyPlan: 'Copy the plan',
+    planEmpty: 'Choose a few options above and your plan appears here.',
+    askHospital: 'Ask your hospital what they offer.',
+    // names
+    girls: 'Girls',
+    boys: 'Boys',
+    favourites: 'Favourites',
+    namesBg: 'Bulgarian names',
+    namesEn: 'English names',
+    searchNames: 'Search names',
+    noFavourites: 'Tap the heart next to a name to save it.',
+    copyFavourites: 'Copy favourites',
+    // due date
+    calcIntro: 'Check what a date means without changing your profile.',
+    resultDue: 'Due date',
+    resultNow: 'Today',
+    useDate: 'Use as my due date',
+    dueUpdated: 'Due date updated',
+  },
+  bg: {
+    intro: 'Всички инструменти са безплатни. Безопасността никога не е платена.',
+    names: {
+      kicks: ['Брояч на ритници', 'Опознай ритъма на бебето'],
+      contractions: ['Таймер за контракции', 'Раждане ли е?'],
+      symptoms: ['Симптоми', 'Запиши как се чувстваш'],
+      mood: ['Настроение', 'Месецът ти с един поглед'],
+      weeks: ['Седмица по седмица', 'Размер и етапи'],
+      weight: ['Моето тегло', 'Записи и тенденция'],
+      bump: ['Моето коремче', 'Снимка всяка седмица'],
+      appointments: ['Прегледи', 'Ехографии и консултации'],
+      questions: ['Въпроси', 'Към лекаря'],
+      bag: ['Чанта за родилното', 'Какво да приготвиш'],
+      plan: ['План за раждането', 'Твоите желания'],
+      names: ['Имена', 'Запази любимите'],
+      shopping: ['За бебето', 'Какво ще ти трябва'],
+      duedate: ['Калкулатор за термина', 'Провери датите'],
+    },
+    back: 'Всички инструменти',
+    today: (n) => `${n} днес`,
+    photos: (n) => (n === 1 ? '1 снимка' : `${n} снимки`),
+    packed: (a, b) => `${a} от ${b} готови`,
+    thisWeek: 'Тази седмица',
+    seeIn3d: 'Виж в 3D',
+    weeksRange: (a, b) => (a === b ? `Седмица ${a}` : `Седмици ${a}–${b}`),
+    week: (w) => `Седмица ${w}`,
+    noSize: '3D изгледът и размерите започват от 8-а седмица.',
+    logWeight: 'Запиши теглото си',
+    kg: 'кг',
+    weightKg: 'Тегло (кг)',
+    date: 'Дата',
+    save: 'Запиши',
+    weightBad: 'Въведи тегло между 30 и 250 кг.',
+    gainSoFar: (g) => `${g >= 0 ? '+' : '−'}${Math.abs(g).toFixed(1).replace('.', ',')} кг спрямо преди бременността`,
+    setupTitle: 'Преди бременността (по желание)',
+    heightCm: 'Ръст (см)',
+    preWeight: 'Тегло преди бременността (кг)',
+    rangeText: (bmi, lo, hi) => `При индекс на телесна маса ${bmi.toFixed(1).replace('.', ',')} преди бременността обичайно е да се качат около ${lo}–${hi} кг за цялата бременност.`,
+    bodyNote: 'Всяко тяло е различно. Акушерката или лекарят ще ти кажат какво е подходящо за теб.',
+    weightEmpty: 'Още няма записи. Запиши теглото си отгоре, за да видиш тенденцията.',
+    trend: 'Тенденция',
+    weekAxis: 'седмица',
+    remove: 'Премахни',
+    addPhoto: 'Добави снимка за тази седмица',
+    bumpTip: 'Едно и също място, поза и разстояние всеки път дават най-хубав таймлапс.',
+    photosLocal: 'Снимките остават на това устройство. Никога не се качват никъде.',
+    photosMemory: 'Запазването е изключено в „Поверителност“, затова снимките се забравят, когато затвориш страницата.',
+    play: 'Пусни таймлапса',
+    bumpEmpty: 'Още няма снимки.',
+    photoFailed: 'Не успях да прочета тази снимка. Опитай с друга.',
+    deletePhoto: 'Изтрий снимката',
+    deletePhotoConfirm: 'Да изтрия ли снимката? Не може да се върне.',
+    newAppointment: 'Нов преглед',
+    kind: 'Вид',
+    kinds: { checkup: 'Консултация', scan: 'Ехография', blood: 'Кръвни изследвания', glucose: 'Глюкозен тест', other: 'Друго' },
+    titleOpt: 'Заглавие (по желание)',
+    time: 'Час',
+    place: 'Място',
+    notes: 'Бележки',
+    add: 'Добави',
+    upcoming: 'Предстоящи',
+    past: 'Минали',
+    noUpcoming: 'Още нищо не е планирано.',
+    needDate: 'Избери дата.',
+    nextAppointment: 'Следващ преглед',
+    suggested: 'Предложени за този етап',
+    myQuestions: 'Моите въпроси',
+    questionPh: 'Напиши свой въпрос',
+    noQuestions: 'Добави предложен въпрос или напиши свой.',
+    asked: 'Зададен',
+    bagSections: { you: 'За теб', partner: 'За партньора при раждането', baby: 'За бебето' },
+    addItem: 'Добави нещо',
+    hospitalList: 'Родилното може да ти даде свой списък: следвай първо него.',
+    planIntro: 'Планът за раждането казва на акушерката какво би искала. Раждането не винаги върви по план и това е нормално.',
+    planSummary: 'Твоят план',
+    copyPlan: 'Копирай плана',
+    planEmpty: 'Избери няколко възможности отгоре и планът ще се появи тук.',
+    askHospital: 'Попитай в болницата какво предлагат.',
+    girls: 'Момичета',
+    boys: 'Момчета',
+    favourites: 'Любими',
+    namesBg: 'Български имена',
+    namesEn: 'Английски имена',
+    searchNames: 'Търси име',
+    noFavourites: 'Докосни сърцето до името, за да го запазиш.',
+    copyFavourites: 'Копирай любимите',
+    calcIntro: 'Провери какво означава дадена дата, без да променяш профила си.',
+    resultDue: 'Термин',
+    resultNow: 'Днес',
+    useDate: 'Ползвай като мой термин',
+    dueUpdated: 'Терминът е обновен',
+  },
+};
+const T = () => TOOL_STR[lang];
+
+// Sizes by week, the same table Luna View uses (until week 19 by length, from week 20 by weight)
+const SIZES = [
+  [8, 'a raspberry', 'малина', 1.6, 1], [9, 'a cherry', 'череша', 2.3, 2], [10, 'a strawberry', 'ягода', 3.1, 4],
+  [11, 'a fig', 'смокиня', 4.1, 7], [12, 'a plum', 'слива', 5.4, 14], [13, 'a lemon', 'лимон', 7.4, 23],
+  [14, 'a peach', 'праскова', 8.7, 43], [15, 'an apple', 'ябълка', 10.1, 70], [16, 'an avocado', 'авокадо', 11.6, 100],
+  [17, 'a pear', 'круша', 13.0, 140], [18, 'a bell pepper', 'чушка', 14.2, 190], [19, 'a mango', 'манго', 15.3, 240],
+  [20, 'a pomegranate', 'нар', 25.6, 300], [21, 'a zucchini', 'тиквичка', 26.7, 360], [22, 'a grapefruit', 'грейпфрут', 27.8, 430],
+  [23, 'a head of broccoli', 'глава броколи', 28.9, 501], [24, 'a head of cauliflower', 'глава карфиол', 30.0, 600],
+  [25, 'a large zucchini', 'голяма тиквичка', 32.0, 660], [26, 'a large cauliflower', 'голям карфиол', 33.9, 760],
+  [27, 'a small cabbage', 'малка зелка', 35.8, 875], [28, 'a large eggplant', 'голям патладжан', 37.6, 1005],
+  [29, 'a butternut squash', 'мускатна тиква', 38.8, 1153], [30, 'a cabbage', 'зелка', 39.9, 1319],
+  [31, 'a cantaloupe', 'пъпеш канталупа', 41.1, 1502], [32, 'a large butternut squash', 'голяма мускатна тиква', 42.4, 1702],
+  [33, 'a honeydew melon', 'пъпеш „Медена роса“', 43.7, 1918], [34, 'a large melon', 'голям пъпеш', 45.0, 2146],
+  [35, 'a small pumpkin', 'малка тиква', 46.2, 2383], [36, 'a large cabbage', 'голяма зелка', 47.4, 2622],
+  [37, 'a pumpkin', 'тиква', 48.6, 2859], [38, 'a large pumpkin', 'голяма тиква', 49.8, 3083],
+  [39, 'a small watermelon', 'малка диня', 50.7, 3288], [40, 'a watermelon', 'диня', 51.2, 3462],
+];
+
+function sizeLine(row) {
+  const [w, en, bg, len, wt] = row;
+  const fruit = lang === 'bg' ? bg : en;
+  const num = (v, d) => v.toLocaleString(t().locale, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const cm = len < 10 ? num(len, 1) : num(Math.round(len), 0);
+  const weight = wt >= 1000 ? `${num(wt / 1000, 1)} ${lang === 'bg' ? 'кг' : 'kg'}` : `${num(wt, 0)} ${lang === 'bg' ? 'г' : 'g'}`;
+  const compare = w < 20 ? (lang === 'bg' ? `Голямо колкото ${fruit}` : `Size of ${fruit}`) : (lang === 'bg' ? `Тежи колкото ${fruit}` : `Weighs about as much as ${fruit}`);
+  return { compare, numbers: `≈ ${cm} ${lang === 'bg' ? 'см' : 'cm'} · ${weight}` };
+}
+
+const BAG = {
+  you: [
+    ['notes', 'Your pregnancy notes and birth plan', 'Документите от бременността и плана за раждането'],
+    ['id', 'ID and health insurance documents', 'Лична карта и здравноосигурителни документи'],
+    ['clothes', 'Loose, comfortable clothes for labour', 'Удобни широки дрехи за раждането'],
+    ['gown', 'Dressing gown and slippers', 'Халат и чехли'],
+    ['night', 'Nightwear that opens at the front, for breastfeeding', 'Нощници, които се разкопчават отпред, за кърмене'],
+    ['changes', 'Three changes of clothes and socks', 'Три смени дрехи и чорапи'],
+    ['knickers', 'Disposable or old knickers', 'Еднократно или старо бельо'],
+    ['bras', 'Nursing bras', 'Сутиени за кърмене'],
+    ['breastpads', 'Breast pads', 'Подплънки за гърди'],
+    ['pads', 'Maternity pads', 'Следродилни превръзки'],
+    ['washbag', 'Wash bag: toothbrush, hairbrush, lip balm, hair ties', 'Тоалетни принадлежности: четка за зъби, гребен, балсам за устни, ластици'],
+    ['towels', 'Towels', 'Кърпи'],
+    ['pillow', 'Your own pillow and an eye mask', 'Своя възглавница и маска за очи'],
+    ['snacks', 'Snacks, drinks and a water bottle', 'Закуски, напитки и бутилка за вода'],
+    ['cool', 'Something to cool down, like a fan or water spray', 'Нещо за разхлаждане, например ветрилце или спрей с вода'],
+    ['meds', 'Any medicines you take', 'Лекарствата, които приемаш'],
+    ['fun', 'Books, music or podcasts', 'Книги, музика или подкасти'],
+    ['phone', 'Phone and a long charging cable', 'Телефон и дълъг кабел за зареждане'],
+    ['glasses', 'Glasses or contact lenses', 'Очила или контактни лещи'],
+    ['laundry', 'A spare bag for laundry', 'Резервна торба за пране'],
+  ],
+  partner: [
+    ['pclothes', 'A change of clothes', 'Резервни дрехи'],
+    ['ptoilet', 'Toothbrush, toothpaste and deodorant', 'Четка и паста за зъби, дезодорант'],
+    ['pphone', 'Phone and charger', 'Телефон и зарядно'],
+    ['psnacks', 'Snacks and drinks', 'Закуски и напитки'],
+    ['pmeds', 'Any medicines they take', 'Лекарствата, които приема'],
+    ['pchange', 'Change or a card for parking and vending machines', 'Дребни пари или карта за паркинг и автомати'],
+  ],
+  baby: [
+    ['vests', 'Bodysuits, vests and sleepsuits', 'Бодита, потничета и пижамки'],
+    ['outfit', 'An outfit for going home', 'Дрехи за изписването'],
+    ['hat', 'A hat', 'Шапка'],
+    ['mittens', 'Scratch mittens', 'Ръкавички срещу драскане'],
+    ['socks', 'Socks or booties', 'Чорапки или терлички'],
+    ['nappies', 'Nappies', 'Пелени'],
+    ['wipes', 'Cotton wool or wipes', 'Памук или мокри кърпички'],
+    ['muslins', 'Muslin squares', 'Муселинови пелени'],
+    ['blanket', 'A blanket or shawl', 'Одеяло или пелена за завиване'],
+    ['carseat', 'A car seat for the trip home', 'Столче за кола за прибирането'],
+  ],
+};
+
+const SHOPPING = {
+  sleep: [['Sleep', 'Сън'], [
+    ['cot', 'A cot or Moses basket', 'Креватче или кошче за новородено'],
+    ['mattress', 'A firm, flat mattress that fits snugly', 'Твърд, равен матрак, който пасва плътно'],
+    ['sheets', 'Fitted sheets', 'Чаршафи с ластик'],
+    ['sleepbags', 'Baby sleeping bags', 'Бебешки спални чувалчета'],
+  ]],
+  feeding: [['Feeding', 'Хранене'], [
+    ['nbras', 'Nursing bras and breast pads', 'Сутиени за кърмене и подплънки'],
+    ['bottles', 'Bottles and a steriliser, if you’ll bottle feed', 'Шишета и стерилизатор, ако ще храниш с шише'],
+    ['muslin', 'Muslin cloths', 'Муселинови кърпи'],
+    ['bibs', 'Bibs', 'Лигавници'],
+  ]],
+  changing: [['Changing', 'Преповиване'], [
+    ['snappies', 'Newborn nappies', 'Пелени за новородено'],
+    ['swipes', 'Cotton wool or wipes', 'Памук или мокри кърпички'],
+    ['cream', 'Nappy cream', 'Крем против подсичане'],
+    ['mat', 'A changing mat', 'Подложка за преповиване'],
+  ]],
+  clothes: [['Clothes', 'Дрехи'], [
+    ['svests', '6–8 vests or bodysuits', '6–8 бодита'],
+    ['ssleep', '6–8 sleepsuits', '6–8 пижамки'],
+    ['cardigan', 'A cardigan or two', 'Една-две жилетки'],
+    ['shat', 'A hat, socks and scratch mittens', 'Шапка, чорапки и ръкавички'],
+  ]],
+  out: [['Out and about', 'Навън'], [
+    ['scarseat', 'A rear-facing car seat', 'Столче за кола, обърнато назад'],
+    ['pram', 'A pram or pushchair', 'Количка'],
+    ['sling', 'A sling (optional)', 'Кенгуру или слинг (по желание)'],
+  ]],
+  bath: [['Bath', 'Къпане'], [
+    ['tub', 'A baby bath or bath support', 'Бебешка вана или подложка за къпане'],
+    ['btowels', 'Soft towels', 'Меки кърпи'],
+  ]],
+};
+
+const PLAN = [
+  { id: 'where', type: 'one', en: 'Where would you like to give birth?', bg: 'Къде би искала да родиш?', options: [['hospital', 'In hospital', 'В болница'], ['unit', 'In a midwife-led unit', 'В звено, водено от акушерки'], ['home', 'At home', 'Вкъщи'], ['unsure', 'Not sure yet', 'Още не знам']] },
+  { id: 'partner', type: 'text', en: 'Who would you like with you?', bg: 'Кого искаш до себе си?' },
+  { id: 'active', type: 'many', en: 'During labour', bg: 'По време на раждането', options: [['move', 'Keep moving around', 'Да се движа'], ['upright', 'Upright positions', 'Изправени пози'], ['ball', 'A birth ball or beanbag', 'Топка или пуф'], ['pool', 'A birth pool', 'Вана с вода']] },
+  { id: 'pain', type: 'many', en: 'Pain relief I’d like to try', bg: 'Обезболяване, което бих опитала', hint: 'askHospital', options: [['breathing', 'Breathing and relaxation', 'Дишане и отпускане'], ['massage', 'Massage', 'Масаж'], ['water', 'Water', 'Вода'], ['tens', 'A TENS machine', 'TENS апарат'], ['gas', 'Gas and air', 'Райски газ (Entonox)'], ['epidural', 'An epidural', 'Епидурална упойка'], ['decide', 'I’ll decide on the day', 'Ще реша на момента']] },
+  { id: 'after', type: 'many', en: 'After the birth', bg: 'След раждането', options: [['skin', 'Skin-to-skin straight away', 'Кожа до кожа веднага'], ['cord', 'Wait a little before the cord is clamped', 'Пъпната връв да се притисне малко по-късно'], ['cut', 'My partner cuts the cord', 'Партньорът ми да среже пъпната връв']] },
+  { id: 'vitk', type: 'one', en: 'Vitamin K for the baby', bg: 'Витамин K за бебето', options: [['injection', 'As an injection', 'С инжекция'], ['drops', 'As drops', 'С капки'], ['talk', 'I’d like to talk about it', 'Искам да го обсъдим']] },
+  { id: 'feeding', type: 'one', en: 'Feeding', bg: 'Хранене', options: [['breast', 'Breastfeeding', 'Кърмене'], ['formula', 'Formula', 'Адаптирано мляко'], ['mixed', 'Both', 'И двете'], ['unsure', 'Not sure yet', 'Още не знам']] },
+  { id: 'students', type: 'one', en: 'Students may be present', bg: 'Студенти могат да присъстват', options: [['yes', 'Yes', 'Да'], ['no', 'No, please', 'Не, благодаря']] },
+  { id: 'notes', type: 'text', long: true, en: 'Anything else (music, photos, language, fears)', bg: 'Друго (музика, снимки, език, страхове)' },
+];
+
+const QUESTIONS = [
+  [
+    ['Which tests and scans will I have, and when?', 'Какви изследвания и ехографии ми предстоят и кога?'],
+    ['Which vitamins should I take?', 'Какви витамини да приемам?'],
+    ['Are the medicines I take safe in pregnancy?', 'Безопасни ли са лекарствата, които приемам, по време на бременност?'],
+    ['Which symptoms mean I should call you?', 'При какви симптоми трябва да ви се обадя?'],
+    ['Is my due date right?', 'Правилен ли е терминът ми?'],
+  ],
+  [
+    ['When is the anomaly scan?', 'Кога е феталната морфология?'],
+    ['Do I need a glucose tolerance test?', 'Трябва ли ми глюкозотолерантен тест?'],
+    ['Which vaccines do you recommend in pregnancy?', 'Кои ваксини препоръчвате по време на бременност?'],
+    ['What should my baby’s movements be like from now on?', 'Какви трябва да са движенията на бебето отсега нататък?'],
+    ['Is my blood pressure fine?', 'Наред ли е кръвното ми налягане?'],
+  ],
+  [
+    ['When should I go to the hospital?', 'Кога да тръгна за болницата?'],
+    ['What pain relief can I have there?', 'Какво обезболяване мога да получа там?'],
+    ['What happens if I go past my due date?', 'Какво става, ако мина термина?'],
+    ['Is my baby head-down?', 'С главата надолу ли е бебето?'],
+    ['Who do I call at night or at the weekend?', 'На кого да се обадя през нощта или в почивен ден?'],
+  ],
+];
+
+const NAMES = {
+  bg: {
+    F: ['Мария', 'Виктория', 'Александра', 'Никол', 'Габриела', 'Йоана', 'Елена', 'Симона', 'Калина', 'Рая', 'Магдалена', 'Анна', 'Божидара', 'Кристина', 'Теодора', 'Михаела', 'Ема', 'Мила', 'Ния', 'Яна', 'Дария', 'Сияна', 'Радина', 'Слава', 'Лилия', 'Десислава', 'Ивана', 'Боряна', 'Светла', 'Невена', 'Яница', 'Вяра', 'Надежда', 'Любов', 'Румяна', 'Зорница', 'Цветелина', 'Деница', 'Стефани', 'Вероника'],
+    M: ['Георги', 'Александър', 'Димитър', 'Иван', 'Николай', 'Мартин', 'Виктор', 'Даниел', 'Борис', 'Калоян', 'Теодор', 'Кристиян', 'Стефан', 'Петър', 'Михаил', 'Йоан', 'Самуил', 'Божидар', 'Васил', 'Филип', 'Христо', 'Антон', 'Радослав', 'Пламен', 'Ясен', 'Владимир', 'Константин', 'Асен', 'Боян', 'Явор', 'Румен', 'Тодор', 'Огнян', 'Любомир', 'Кирил', 'Методий', 'Светослав', 'Атанас', 'Емил', 'Венцислав'],
+  },
+  en: {
+    F: ['Olivia', 'Amelia', 'Isla', 'Ava', 'Lily', 'Freya', 'Ivy', 'Florence', 'Sophia', 'Mia', 'Grace', 'Isabella', 'Willow', 'Evie', 'Poppy', 'Ella', 'Elsie', 'Rosie', 'Sienna', 'Daisy', 'Charlotte', 'Matilda', 'Emily', 'Harper', 'Aurora', 'Hazel', 'Ruby', 'Phoebe', 'Maeve', 'Alice', 'Luna', 'Iris', 'Eva', 'Chloe', 'Esme', 'Hannah', 'Nora', 'Ada', 'Zara', 'Lucy'],
+    M: ['Noah', 'Oliver', 'George', 'Arthur', 'Leo', 'Muhammad', 'Harry', 'Oscar', 'Archie', 'Henry', 'Theodore', 'Freddie', 'Jack', 'Charlie', 'Theo', 'Alfie', 'Jacob', 'Thomas', 'Finley', 'Arlo', 'William', 'Lucas', 'Roman', 'Tommy', 'Isaac', 'Teddy', 'Alexander', 'Luca', 'Edward', 'James', 'Joshua', 'Albie', 'Elijah', 'Max', 'Mohammed', 'Reggie', 'Hugo', 'Louie', 'Ezra', 'Rory'],
+  },
+};
+
+const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weeks', 'weight', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'shopping', 'duedate'];
+const TOOL_ICON = {
+  kicks: ICON.kick,
+  contractions: ICON.wave,
+  symptoms: ICON.note,
+  mood: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1.9 2 5.1 2 7 0M9.2 9.8h.01M14.8 9.8h.01"/></svg>',
+  weeks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17.5 17.5 4l2.5 2.5L6.5 20z"/><path d="m8 15.5 1.5 1.5M10.5 13l1.5 1.5M13 10.5l1.5 1.5M15.5 8 17 9.5"/></svg>',
+  weight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9.5a4.2 4.2 0 0 1 6 0M12 9.5l1.4-1.6"/></svg>',
+  bump: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
+  appointments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M12 13.5v3M10.5 15h3"/></svg>',
+  questions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.6v.2"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7.5" width="16" height="12.5" rx="3"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5M12 11.5v4.5M9.8 13.7h4.4"/></svg>',
+  plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>',
+  names: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
+  shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>',
+  duedate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M8.5 7.5h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
+  heartLine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>',
+};
+
+function toolMeta(id) {
+  const s = T();
+  if (id === 'kicks') { const n = kicksToday(); return n ? s.today(n) : ''; }
+  if (id === 'appointments') { const a = nextAppointment(); return a ? fmtDate(a.date) : ''; }
+  if (id === 'bag') { const total = Object.values(BAG).flat().length + data.bag.custom.length; const done = Object.values(data.bag.checked).filter(Boolean).length; return done ? s.packed(done, total) : ''; }
+  if (id === 'weight') { const last = [...data.weights].sort((a, b) => (a.date < b.date ? 1 : -1))[0]; return last ? `${String(last.kg).replace('.', lang === 'bg' ? ',' : '.')} ${s.kg}` : ''; }
+  if (id === 'bump') return data.photoIndex.length ? s.photos(data.photoIndex.length) : '';
+  if (id === 'names') return data.names.favs.length ? `${data.names.favs.length} ♥` : '';
+  return '';
+}
+
+function renderTools() {
+  if (!data.profile) return;
+  $('tool-grid').innerHTML = TOOL_IDS.map((id) => {
+    const [name, sub] = T().names[id];
+    const meta = toolMeta(id);
+    return `<button type="button" class="tool-tile" data-action="tool" data-tool="${id}"><span class="icon">${TOOL_ICON[id]}</span><strong>${esc(name)}</strong><span class="sub">${esc(meta || sub)}</span></button>`;
+  }).join('');
+}
+
+function openTool(id) {
+  ui.tool = id;
+  ui.symNotice = '';
+  ui.tab = 'tools';
+  for (const name of ['today', 'tools', 'explore', 'me']) $(`screen-${name}`).hidden = true;
+  $('screen-tool').hidden = false;
+  for (const btn of document.querySelectorAll('.tab[data-tab]')) {
+    if (btn.dataset.tab === 'tools') btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  }
+  renderTool();
+  window.scrollTo(0, 0);
+  $('tool-title').tabIndex = -1;
+  $('tool-title').focus({ preventScroll: true });
+  updateLunaRunning();
+}
+
+function renderTool() {
+  if (!data.profile || !ui.tool) return;
+  $('tool-title').textContent = T().names[ui.tool][0];
+  $('tool-back').setAttribute('aria-label', T().back);
+  ({
+    kicks: renderKicks, contractions: renderContractions, symptoms: renderSymptoms, mood: renderMood,
+    weeks: renderWeeks, weight: renderWeight, bump: renderBump, appointments: renderAppointments,
+    questions: renderQuestions, bag: renderBag, plan: renderPlan, names: renderNames,
+    shopping: renderShopping, duedate: renderDueCalc,
+  })[ui.tool]();
+}
+
+/* ---------- Week by week ---------- */
+function renderWeeks() {
+  const cw = weekNow();
+  const s = T();
+  const html = WEEKS.map((b) => {
+    const rows = SIZES.filter((r) => r[0] >= b.from && r[0] <= b.to).map((r) => {
+      const { compare, numbers } = sizeLine(r);
+      const now = r[0] === cw;
+      return `<li class="week-row${now ? ' is-now' : ''}" id="week-row-${r[0]}"><div><strong>${esc(s.week(r[0]))}</strong>${now ? ` <span class="pill pill-safe">${esc(s.thisWeek)}</span>` : ''}<p>${esc(compare)}</p><span class="fine num">${esc(numbers)}</span></div><button type="button" class="btn btn-quiet" data-action="see-week" data-week="${r[0]}">${esc(s.seeIn3d)}</button></li>`;
+    }).join('');
+    return `<section class="card" aria-label="${esc(s.weeksRange(b.from, b.to))}">
+      <h2>${esc(s.weeksRange(b.from, b.to))}</h2>
+      <div class="facts"><div class="fact"><h3>${esc(t().yourBaby)}</h3><p>${esc(L(b.baby))}</p></div><div class="fact"><h3>${esc(t().yourBody)}</h3><p>${esc(L(b.body))}</p></div></div>
+      ${rows ? `<ul class="week-rows">${rows}</ul>` : `<p class="fine">${esc(s.noSize)}</p>`}
+    </section>`;
+  }).join('');
+  $('tool-body').innerHTML = html;
+  const row = $(`week-row-${cw}`);
+  if (row) requestAnimationFrame(() => row.scrollIntoView({ block: 'center' }));
+}
+
+/* ---------- Weight ---------- */
+function gaOn(iso) { return 280 - daysBetween(iso, data.profile.due); }
+
+function weightRange() {
+  const w = data.weightSetup;
+  if (!w || !(w.height > 100) || !(w.pre > 30)) return null;
+  const bmi = w.pre / Math.pow(w.height / 100, 2);
+  // Institute of Medicine (2009) ranges for a single baby, by BMI before pregnancy
+  const [lo, hi] = bmi < 18.5 ? [12.5, 18] : bmi < 25 ? [11.5, 16] : bmi < 30 ? [7, 11.5] : [5, 9];
+  return { bmi, lo, hi };
+}
+
+function renderWeight() {
+  const s = T();
+  const list = [...data.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const setup = data.weightSetup || {};
+  const range = weightRange();
+  const last = list[list.length - 1];
+  const fmtKg = (v) => v.toLocaleString(t().locale, { maximumFractionDigits: 1 });
+  $('tool-body').innerHTML = `
+    <section class="card" aria-labelledby="w-log">
+      <h2 id="w-log">${esc(s.logWeight)}</h2>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 120px"><span>${esc(s.weightKg)}</span><input class="input num" id="w-kg" type="number" inputmode="decimal" min="30" max="250" step="0.1" value="${last ? last.kg : ''}"></label>
+        <label class="field" style="flex:1 1 140px"><span>${esc(s.date)}</span><input class="input" id="w-date" type="date" value="${todayISO()}" max="${todayISO()}"></label>
+      </div>
+      <p class="ob-error" id="w-error" hidden></p>
+      <button type="button" class="btn btn-block" data-action="w-save">${esc(s.save)}</button>
+    </section>
+    <section class="card" aria-labelledby="w-trend">
+      <h2 id="w-trend">${esc(s.trend)}</h2>
+      ${last && setup.pre ? `<p><strong class="num">${esc(s.gainSoFar(last.kg - setup.pre))}</strong></p>` : ''}
+      ${list.length ? weightChart(list, setup.pre) : `<p class="muted">${esc(s.weightEmpty)}</p>`}
+      ${range ? `<p class="small">${esc(s.rangeText(range.bmi, fmtKg(range.lo), fmtKg(range.hi)))}</p>` : ''}
+      <p class="fine">${esc(s.bodyNote)}</p>
+      ${range ? `<p class="source">${esc(t().source)}: <a href="https://www.ncbi.nlm.nih.gov/books/NBK32813/" target="_blank" rel="noopener">IOM (2009) · Weight Gain During Pregnancy</a></p>` : ''}
+      ${list.length ? `<ul class="entries">${[...list].reverse().slice(0, 8).map((e) => `<li class="entry"><div class="entry-head"><span>${esc(fmtDate(e.date))} · ${esc(t().weekDay(Math.floor(gaOn(e.date) / 7), ((gaOn(e.date) % 7) + 7) % 7).split(' · ')[0])}</span><button type="button" class="link-btn small" data-action="w-del" data-id="${e.id}">${esc(s.remove)}</button></div><div class="entry-main num">${esc(fmtKg(e.kg))} ${esc(s.kg)}</div></li>`).join('')}</ul>` : ''}
+    </section>
+    <section class="card" aria-labelledby="w-setup">
+      <h2 id="w-setup">${esc(s.setupTitle)}</h2>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 120px"><span>${esc(s.heightCm)}</span><input class="input num" id="w-height" type="number" inputmode="numeric" min="120" max="220" value="${setup.height || ''}"></label>
+        <label class="field" style="flex:1 1 160px"><span>${esc(s.preWeight)}</span><input class="input num" id="w-pre" type="number" inputmode="decimal" min="30" max="250" step="0.1" value="${setup.pre || ''}"></label>
+      </div>
+      <button type="button" class="btn btn-quiet" data-action="w-setup">${esc(s.save)}</button>
+    </section>`;
+}
+
+function weightChart(list, pre) {
+  const W = 320, H = 170, L = 34, R = 10, Tp = 12, B = 26;
+  const xs = list.map((e) => gaOn(e.date) / 7);
+  const ys = list.map((e) => e.kg).concat(pre ? [pre] : []);
+  const x0 = Math.max(0, Math.floor(Math.min(...xs) / 4) * 4), x1 = Math.min(42, Math.max(x0 + 8, Math.ceil(Math.max(...xs) / 4) * 4));
+  const y0 = Math.floor(Math.min(...ys) - 1), y1 = Math.ceil(Math.max(...ys) + 1);
+  const X = (v) => L + ((v - x0) / (x1 - x0)) * (W - L - R);
+  const Y = (v) => Tp + (1 - (v - y0) / (y1 - y0)) * (H - Tp - B);
+  const pts = list.map((e, i) => [X(xs[i]), Y(e.kg)]);
+  const ticksX = [];
+  for (let w = x0; w <= x1; w += 4) ticksX.push(`<text x="${X(w).toFixed(1)}" y="${H - 8}" text-anchor="middle">${w}</text>`);
+  const ticksY = [y0, Math.round((y0 + y1) / 2), y1].map((v) => `<text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v}</text><line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="var(--line)"/>`);
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(T().trend)}">
+    ${ticksY.join('')}${ticksX.join('')}
+    ${pre ? `<line x1="${L}" x2="${W - R}" y1="${Y(pre).toFixed(1)}" y2="${Y(pre).toFixed(1)}" stroke="var(--muted)" stroke-dasharray="4 4"/>` : ''}
+    <polyline points="${pts.map((p) => p.map((v) => v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i === pts.length - 1 ? 5 : 3.5}" fill="var(--accent)"/>`).join('')}
+    <text x="${W - R}" y="${H - 8}" text-anchor="end" dy="-12">${esc(T().weekAxis)}</text>
+  </svg></div>`;
+}
+
+/* ---------- Bump photos (IndexedDB, or memory when saving is off) ---------- */
+const photoMem = new Map();
+let photoDbPromise = null;
+function photoDb() {
+  if (!photoDbPromise) {
+    photoDbPromise = new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open('lunabump-photos', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('photos');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      } catch (err) { reject(err); }
+    });
+  }
+  return photoDbPromise;
+}
+const savingOn = () => !!(data.profile && data.profile.consents && data.profile.consents.device);
+async function photoPut(id, blob) {
+  if (!savingOn()) { photoMem.set(id, blob); return; }
+  const db = await photoDb();
+  await new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(blob, id); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+}
+async function photoGet(id) {
+  if (photoMem.has(id)) return photoMem.get(id);
+  try {
+    const db = await photoDb();
+    return await new Promise((res, rej) => { const req = db.transaction('photos').objectStore('photos').get(id); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  } catch (err) { return null; }
+}
+async function photoDelete(id) {
+  photoMem.delete(id);
+  try {
+    const db = await photoDb();
+    await new Promise((res) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete = res; tx.onerror = res; });
+  } catch (err) { /* nothing stored */ }
+}
+async function photoClearAll() {
+  photoMem.clear();
+  try {
+    const db = await photoDb();
+    await new Promise((res) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').clear(); tx.oncomplete = res; tx.onerror = res; });
+  } catch (err) { /* nothing stored */ }
+}
+
+let photoUrls = [];
+function revokePhotoUrls() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); photoUrls = []; }
+
+function renderBump() {
+  const s = T();
+  const photos = [...data.photoIndex].sort((a, b) => (a.date < b.date ? -1 : 1));
+  revokePhotoUrls();
+  $('tool-body').innerHTML = `
+    <section class="card">
+      <label class="btn btn-block" for="bump-file">${TOOL_ICON.bump}<span>${esc(s.addPhoto)}</span></label>
+      <input type="file" id="bump-file" accept="image/*" capture="environment" class="visually-hidden">
+      <p class="fine">${esc(s.bumpTip)}</p>
+      <p class="fine">${esc(savingOn() ? s.photosLocal : s.photosMemory)}</p>
+    </section>
+    <section class="card">
+      ${photos.length ? `<div class="photo-grid">${photos.map((p) => `<button type="button" class="photo" data-action="photo-open" data-id="${p.id}"><img alt="" data-photo="${p.id}"><span>${esc(T().week(p.week))}</span></button>`).join('')}</div>` : `<p class="muted">${esc(s.bumpEmpty)}</p>`}
+      ${photos.length > 1 ? `<button type="button" class="btn btn-quiet" data-action="photo-play">${esc(s.play)}</button>` : ''}
+    </section>`;
+  for (const img of document.querySelectorAll('img[data-photo]')) {
+    photoGet(img.dataset.photo).then((blob) => {
+      if (!blob || !document.contains(img)) return;
+      const url = URL.createObjectURL(blob);
+      photoUrls.push(url);
+      img.src = url;
+    });
+  }
+}
+
+async function addBumpPhoto(file) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1080 / Math.max(bitmap.width, bitmap.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bitmap.width * scale);
+    c.height = Math.round(bitmap.height * scale);
+    c.getContext('2d').drawImage(bitmap, 0, 0, c.width, c.height);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+    if (!blob) throw new Error('no blob');
+    const id = uid();
+    await photoPut(id, blob);
+    data.photoIndex.push({ id, date: todayISO(), week: weekNow() });
+    save();
+    renderBump();
+  } catch (err) {
+    toast(T().photoFailed);
+  }
+}
+
+async function openPhoto(id) {
+  const p = data.photoIndex.find((x) => x.id === id);
+  if (!p) return;
+  const blob = await photoGet(id);
+  const url = blob ? URL.createObjectURL(blob) : '';
+  if (url) photoUrls.push(url);
+  openSheet('photo', T().week(p.week), `<img class="photo-big" src="${url}" alt="${esc(T().week(p.week))}"><p class="fine">${esc(fmtDate(p.date))}</p><div id="photo-del-zone"><button type="button" class="btn btn-line" style="color:var(--alert-fg);border-color:var(--alert)" data-action="photo-del-ask" data-id="${id}">${esc(T().deletePhoto)}</button></div>`);
+}
+
+let playTimer = 0;
+async function playPhotos() {
+  const photos = [...data.photoIndex].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const urls = [];
+  for (const p of photos) {
+    const blob = await photoGet(p.id);
+    if (blob) { const u = URL.createObjectURL(blob); photoUrls.push(u); urls.push([u, p.week]); }
+  }
+  if (!urls.length) return;
+  openSheet('play', T().play, `<img class="photo-big" id="play-img" src="${urls[0][0]}" alt=""><p class="eyebrow" id="play-week">${esc(T().week(urls[0][1]))}</p>`);
+  let i = 0;
+  clearInterval(playTimer);
+  playTimer = setInterval(() => {
+    const img = $('play-img');
+    if (!img || sheetKind !== 'play') { clearInterval(playTimer); return; }
+    i = (i + 1) % urls.length;
+    img.src = urls[i][0];
+    $('play-week').textContent = T().week(urls[i][1]);
+  }, reduceMotion.matches ? 1600 : 800);
+}
+
+/* ---------- Appointments ---------- */
+function nextAppointment() {
+  const today = todayISO();
+  return [...data.appointments].filter((a) => a.date >= today).sort((a, b) => (`${a.date}${a.time}` < `${b.date}${b.time}` ? -1 : 1))[0] || null;
+}
+
+function apptTitle(a) { return a.title || T().kinds[a.kind] || T().kinds.other; }
+
+function apptRow(a) {
+  return `<li class="entry"><div class="entry-head"><span>${esc(fmtDate(a.date))}${a.time ? ` · ${esc(a.time)}` : ''}</span><button type="button" class="link-btn small" data-action="appt-del" data-id="${a.id}">${esc(T().remove)}</button></div><div class="entry-main">${esc(apptTitle(a))}</div>${a.place ? `<div class="small muted">${esc(a.place)}</div>` : ''}${a.note ? `<div class="entry-note">${esc(a.note)}</div>` : ''}</li>`;
+}
+
+function renderAppointments() {
+  const s = T();
+  const today = todayISO();
+  const sorted = [...data.appointments].sort((a, b) => (`${a.date}${a.time}` < `${b.date}${b.time}` ? -1 : 1));
+  const upcoming = sorted.filter((a) => a.date >= today);
+  const past = sorted.filter((a) => a.date < today).reverse().slice(0, 5);
+  $('tool-body').innerHTML = `
+    <section class="card" aria-labelledby="ap-new">
+      <h2 id="ap-new">${esc(s.newAppointment)}</h2>
+      <label class="field"><span>${esc(s.kind)}</span><select class="input" id="ap-kind">${Object.entries(s.kinds).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+      <label class="field"><span>${esc(s.titleOpt)}</span><input class="input" id="ap-title" maxlength="60"></label>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 150px"><span>${esc(s.date)}</span><input class="input" id="ap-date" type="date" min="${addDays(today, -365)}"></label>
+        <label class="field" style="flex:1 1 110px"><span>${esc(s.time)}</span><input class="input" id="ap-time" type="time"></label>
+      </div>
+      <label class="field"><span>${esc(s.place)}</span><input class="input" id="ap-place" maxlength="80"></label>
+      <label class="field"><span>${esc(s.notes)}</span><textarea class="input" id="ap-note" maxlength="300"></textarea></label>
+      <p class="ob-error" id="ap-error" hidden></p>
+      <button type="button" class="btn btn-block" data-action="appt-add">${esc(s.add)}</button>
+    </section>
+    <section class="card" aria-labelledby="ap-up"><h2 id="ap-up">${esc(s.upcoming)}</h2>${upcoming.length ? `<ul class="entries">${upcoming.map(apptRow).join('')}</ul>` : `<p class="muted">${esc(s.noUpcoming)}</p>`}</section>
+    ${past.length ? `<section class="card" aria-labelledby="ap-past"><h2 id="ap-past">${esc(s.past)}</h2><ul class="entries">${past.map(apptRow).join('')}</ul></section>` : ''}`;
+}
+
+/* ---------- Questions for the doctor ---------- */
+function renderQuestions() {
+  const s = T();
+  const mine = data.questions;
+  const suggested = QUESTIONS[triOf(weekNow())].filter((q) => !mine.some((m) => m.text === (lang === 'bg' ? q[1] : q[0])));
+  $('tool-body').innerHTML = `
+    <section class="card" aria-labelledby="q-mine">
+      <h2 id="q-mine">${esc(s.myQuestions)}</h2>
+      ${mine.length ? `<ul class="checklist">${mine.map((q) => `<li class="check-row"><label><input type="checkbox" data-q-done="${q.id}" ${q.done ? 'checked' : ''}><span${q.done ? ' class="done"' : ''}>${esc(q.text)}</span></label><button type="button" class="icon-btn small-icon" data-action="q-del" data-id="${q.id}" aria-label="${esc(s.remove)}">${TOOL_ICON.x}</button></li>`).join('')}</ul>` : `<p class="muted">${esc(s.noQuestions)}</p>`}
+      <form class="ask" id="q-form"><label class="visually-hidden" for="q-input">${esc(s.questionPh)}</label><input class="input" id="q-input" maxlength="200" placeholder="${esc(s.questionPh)}"><button type="submit" class="btn" aria-label="${esc(s.add)}">${TOOL_ICON.plus}</button></form>
+    </section>
+    ${suggested.length ? `<section class="card" aria-labelledby="q-sug"><h2 id="q-sug">${esc(s.suggested)}</h2><div class="chips">${suggested.map((q) => `<button type="button" class="chip" data-action="q-add" data-text="${esc(lang === 'bg' ? q[1] : q[0])}">+ ${esc(lang === 'bg' ? q[1] : q[0])}</button>`).join('')}</div></section>` : ''}`;
+  $('q-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = $('q-input').value.trim();
+    if (!text) return;
+    data.questions.push({ id: uid(), text, done: false });
+    save();
+    renderQuestions();
+    $('q-input').focus();
+  });
+}
+
+/* ---------- Checklists: hospital bag and things for the baby ---------- */
+function checklistSection(listKey, secId, title, items) {
+  const state = data[listKey];
+  const custom = state.custom.filter((c) => c.sec === secId);
+  return `<section class="card" aria-labelledby="cl-${listKey}-${secId}">
+    <h2 id="cl-${listKey}-${secId}">${esc(title)}</h2>
+    <ul class="checklist">
+      ${items.map(([id, en, bg]) => `<li><label><input type="checkbox" data-check="${listKey}" data-item="${id}" ${state.checked[id] ? 'checked' : ''}><span${state.checked[id] ? ' class="done"' : ''}>${esc(lang === 'bg' ? bg : en)}</span></label></li>`).join('')}
+      ${custom.map((c) => `<li class="check-row"><label><input type="checkbox" data-check="${listKey}" data-item="${c.id}" ${state.checked[c.id] ? 'checked' : ''}><span${state.checked[c.id] ? ' class="done"' : ''}>${esc(c.text)}</span></label><button type="button" class="icon-btn small-icon" data-action="cl-del" data-list="${listKey}" data-id="${c.id}" aria-label="${esc(T().remove)}">${TOOL_ICON.x}</button></li>`).join('')}
+    </ul>
+    <form class="ask cl-form" data-list="${listKey}" data-sec="${secId}"><label class="visually-hidden" for="cl-in-${listKey}-${secId}">${esc(T().addItem)}</label><input class="input" id="cl-in-${listKey}-${secId}" maxlength="80" placeholder="${esc(T().addItem)}"><button type="submit" class="btn btn-quiet" aria-label="${esc(T().add)}">${TOOL_ICON.plus}</button></form>
+  </section>`;
+}
+
+function bindChecklistForms(render) {
+  for (const form of document.querySelectorAll('.cl-form')) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = form.querySelector('input');
+      const text = input.value.trim();
+      if (!text) return;
+      data[form.dataset.list].custom.push({ id: uid(), sec: form.dataset.sec, text });
+      save();
+      render();
+      const again = document.querySelector(`.cl-form[data-sec="${form.dataset.sec}"] input`);
+      if (again) again.focus();
+    });
+  }
+}
+
+function renderBag() {
+  const s = T();
+  const total = Object.values(BAG).flat().length + data.bag.custom.length;
+  const done = Object.values(data.bag.checked).filter(Boolean).length;
+  $('tool-body').innerHTML = `
+    <div class="progress"><div class="progress-track"><div class="progress-fill" style="width:${total ? Math.round((done / total) * 100) : 0}%"></div></div><div class="progress-labels"><span>${esc(s.packed(done, total))}</span></div></div>
+    <p class="fine">${esc(s.hospitalList)}</p>
+    ${Object.entries(BAG).map(([sec, items]) => checklistSection('bag', sec, s.bagSections[sec], items)).join('')}
+    <p class="source">${esc(t().source)}: <a href="https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/" target="_blank" rel="noopener">NHS · Hospital bag checklist</a></p>`;
+  bindChecklistForms(renderBag);
+}
+
+function renderShopping() {
+  $('tool-body').innerHTML = Object.entries(SHOPPING).map(([sec, [names, items]]) => checklistSection('shopping', sec, lang === 'bg' ? names[1] : names[0], items)).join('');
+  bindChecklistForms(renderShopping);
+}
+
+/* ---------- Birth plan ---------- */
+function planSummaryLines() {
+  const p = data.plan;
+  const lines = [];
+  for (const q of PLAN) {
+    const v = p[q.id];
+    if (!v || (Array.isArray(v) && !v.length)) continue;
+    let answer;
+    if (q.type === 'text') answer = v;
+    else {
+      const pickName = (id) => { const o = q.options.find((x) => x[0] === id); return o ? (lang === 'bg' ? o[2] : o[1]) : ''; };
+      answer = Array.isArray(v) ? v.map(pickName).filter(Boolean).join(', ') : pickName(v);
+    }
+    if (answer) lines.push([lang === 'bg' ? q.bg : q.en, answer]);
+  }
+  return lines;
+}
+
+function renderPlan() {
+  const s = T();
+  const p = data.plan;
+  const lines = planSummaryLines();
+  $('tool-body').innerHTML = `
+    <p class="muted">${esc(s.planIntro)}</p>
+    ${PLAN.map((q) => {
+      const label = lang === 'bg' ? q.bg : q.en;
+      let control = '';
+      if (q.type === 'text') {
+        control = q.long ? `<textarea class="input" data-plan-text="${q.id}" maxlength="600">${esc(p[q.id] || '')}</textarea>` : `<input class="input" data-plan-text="${q.id}" maxlength="80" value="${esc(p[q.id] || '')}">`;
+      } else {
+        const chosen = q.type === 'many' ? (p[q.id] || []) : [p[q.id]];
+        control = `<div class="chips" role="${q.type === 'one' ? 'radiogroup' : 'group'}" aria-label="${esc(label)}">${q.options.map(([id, en, bg]) => `<button type="button" class="chip" ${q.type === 'one' ? `role="radio" aria-checked="${chosen.includes(id)}"` : `aria-pressed="${chosen.includes(id)}"`} data-action="plan-pick" data-q="${q.id}" data-v="${id}">${esc(lang === 'bg' ? bg : en)}</button>`).join('')}</div>`;
+      }
+      return `<section class="card"><h2>${esc(label)}</h2>${control}${q.hint ? `<p class="fine">${esc(s[q.hint])}</p>` : ''}</section>`;
+    }).join('')}
+    <section class="card" aria-labelledby="plan-sum">
+      <h2 id="plan-sum">${esc(s.planSummary)}</h2>
+      ${lines.length ? `<dl class="plan-list">${lines.map(([q, a]) => `<div><dt>${esc(q)}</dt><dd>${esc(a)}</dd></div>`).join('')}</dl><button type="button" class="btn btn-quiet" data-action="plan-copy">${ICON.copy}<span>${esc(s.copyPlan)}</span></button>` : `<p class="muted">${esc(s.planEmpty)}</p>`}
+    </section>
+    <p class="source">${esc(t().source)}: <a href="https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/what-to-include-in-your-birth-plan/" target="_blank" rel="noopener">NHS · What to include in your birth plan</a></p>`;
+}
+
+/* ---------- Baby names ---------- */
+function renderNames() {
+  const s = T();
+  const n = ui.names;
+  if (!n.lang) n.lang = lang;
+  const favs = data.names.favs;
+  const q = n.query.trim().toLowerCase();
+  const pool = n.list === 'fav' ? favs : NAMES[n.lang][n.list];
+  const shown = pool.filter((x) => !q || x.toLowerCase().includes(q));
+  const tab = (id, label) => `<button type="button" role="radio" aria-checked="${n.list === id}" data-action="names-list" data-list="${id}">${esc(label)}</button>`;
+  $('tool-body').innerHTML = `
+    <div class="seg" role="radiogroup" aria-label="${esc(s.names.names[0])}">${tab('F', s.girls)}${tab('M', s.boys)}${tab('fav', `${s.favourites}${favs.length ? ` · ${favs.length}` : ''}`)}</div>
+    ${n.list === 'fav' ? '' : `<div class="seg" role="radiogroup" aria-label="${esc(t().language)}"><button type="button" role="radio" aria-checked="${n.lang === 'bg'}" data-action="names-lang" data-lang2="bg">${esc(s.namesBg)}</button><button type="button" role="radio" aria-checked="${n.lang === 'en'}" data-action="names-lang" data-lang2="en">${esc(s.namesEn)}</button></div>`}
+    <label class="visually-hidden" for="names-q">${esc(s.searchNames)}</label>
+    <input class="input" type="search" id="names-q" placeholder="${esc(s.searchNames)}" value="${esc(n.query)}" autocomplete="off">
+    <section class="card">
+      ${shown.length ? `<ul class="name-list">${shown.map((x) => `<li><span>${esc(x)}</span><button type="button" class="icon-btn fav${favs.includes(x) ? ' on' : ''}" data-action="names-fav" data-name="${esc(x)}" aria-pressed="${favs.includes(x)}" aria-label="${esc(s.favourites)}: ${esc(x)}">${favs.includes(x) ? TOOL_ICON.heart : TOOL_ICON.heartLine}</button></li>`).join('')}</ul>` : `<p class="muted">${esc(n.list === 'fav' ? s.noFavourites : t().noFood)}</p>`}
+      ${n.list === 'fav' && favs.length ? `<button type="button" class="btn btn-quiet" data-action="names-copy">${ICON.copy}<span>${esc(s.copyFavourites)}</span></button>` : ''}
+    </section>`;
+  $('names-q').addEventListener('input', (e) => {
+    ui.names.query = e.target.value;
+    const pos = e.target.selectionStart;
+    renderNames();
+    const input = $('names-q');
+    input.focus();
+    input.setSelectionRange(pos, pos);
+  });
+}
+
+/* ---------- Due date calculator ---------- */
+function renderDueCalc() {
+  const s = T();
+  const c = ui.calc;
+  const due = calcDue(c);
+  const ga = due ? 280 - daysBetween(todayISO(), due) : null;
+  const ok = ga !== null && ga >= 0 && ga <= 294;
+  $('tool-body').innerHTML = `
+    <section class="card">
+      <p class="muted">${esc(s.calcIntro)}</p>
+      <div class="seg" role="radiogroup" aria-label="${esc(t().ob.dateTitle)}">${['due', 'lmp', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${c.method === m}" data-action="calc-method" data-method="${m}">${esc(t().ob.methods[m])}</button>`).join('')}</div>
+      ${c.method === 'ivf' ? `<div class="seg" role="radiogroup" aria-label="${esc(t().ob.ivfDay)}">${[3, 5].map((d) => `<button type="button" role="radio" aria-checked="${c.ivfDay === d}" data-action="calc-ivf" data-day="${d}">${esc(t().ob.ivfDays[d])}</button>`).join('')}</div>` : ''}
+      <label class="field"><span>${esc(t().ob.dateLabel[c.method])}</span><input class="input" type="date" id="calc-date" value="${esc(c.date)}"></label>
+      ${due ? `<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="stat"><b>${esc(fmtDate(due))}</b><span>${esc(s.resultDue)}</span></div>
+        <div class="stat"><b>${ok ? esc(t().weekDay(Math.floor(ga / 7), ga % 7)) : '–'}</b><span>${esc(s.resultNow)}</span></div>
+      </div>
+      ${ok && due !== data.profile.due ? `<button type="button" class="btn btn-quiet" data-action="calc-use">${esc(s.useDate)}</button>` : ''}` : ''}
+    </section>`;
+}
+
+function calcDue(c) {
+  if (!validISO(c.date)) return null;
+  if (c.method === 'due') return c.date;
+  if (c.method === 'lmp') return addDays(c.date, 280);
+  return addDays(c.date, c.ivfDay === 3 ? 263 : 261);
 }
 
 /* =========================================================================
@@ -2317,6 +3235,8 @@ function renderMe() {
   }
   $('me-sex').innerHTML = ['unknown', 'F', 'M'].map((s) => `<button type="button" role="radio" aria-checked="${p.sex === s}" data-action="sex" data-sex="${s}">${esc(t().sexes[s])}</button>`).join('');
   $('me-modes').innerHTML = modeCards(p.mode, 'mode');
+  const swatches = ['#F3C9B4', '#DDAA8C', '#B07A59', '#7B5240'];
+  $('me-skin').innerHTML = swatches.map((c, i) => `<button type="button" role="radio" aria-checked="${(p.skin || 1) === i + 1}" aria-label="${esc(t().skins[i])}" data-action="skin" data-skin="${i + 1}"><span style="--sw:${c}"></span></button>`).join('');
   $('care-unit').value = data.care.unit || '';
   $('care-doctor').value = data.care.doctor || '';
 
@@ -2327,8 +3247,11 @@ function renderMe() {
     symptoms: data.symptoms.length,
     kicks: data.kickSessions.length + data.kickTaps.length,
     contractions: data.contractions.length,
+    weights: data.weights.length,
+    appointments: data.appointments.length,
+    photos: data.photoIndex.length,
   };
-  const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions].some((e) => e.example);
+  const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions, ...data.weights, ...data.appointments].some((e) => e.example);
   $('me-privacy').innerHTML = `
     <h2 id="me-privacy-title">${esc(t().privacy)}</h2>
     ${['device', 'luna', 'stats'].map((k) => `<div class="switch-row"><label for="consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="consent-${k}" data-consent="${k}" ${c[k] ? 'checked' : ''}><span></span></span></div>`).join('')}
@@ -2682,6 +3605,11 @@ function seedExamples() {
     { id: uid(), at: at(addDays(today, -3), 8, 40), items: ['heartburn', 'sleep'], level: 2, note: '', example: true },
     { id: uid(), at: at(addDays(today, -6), 19, 5), items: ['cramps'], level: 4, note: '', example: true },
   );
+  data.weightSetup = { height: 166, pre: 62, example: true };
+  for (const [w, kg] of [[12, 62.8], [16, 64.1], [20, 65.9], [23, 67.4]]) {
+    data.weights.push({ id: uid(), date: addDays(data.profile.due, w * 7 - 280), kg, example: true });
+  }
+  data.appointments.push({ id: uid(), kind: 'glucose', title: '', date: addDays(today, 5), time: '08:30', place: lang === 'bg' ? 'Женска консултация' : 'Antenatal clinic', note: '', example: true });
   const sessions = [[-1, 21, 5, 18, 10], [-2, 20, 40, 24, 10], [-3, 9, 15, 31, 8], [-4, 22, 0, 16, 10], [-5, 13, 30, 27, 9]];
   for (const [d, h, m, len, n] of sessions) {
     const start = at(addDays(today, d), h, m);
@@ -2695,12 +3623,14 @@ function seedExamples() {
 
 function showTab(tab) {
   ui.tab = tab;
-  for (const name of ['today', 'track', 'explore', 'me']) $(`screen-${name}`).hidden = name !== tab;
+  ui.tool = null;
+  $('screen-tool').hidden = true;
+  for (const name of ['today', 'tools', 'explore', 'me']) $(`screen-${name}`).hidden = name !== tab;
   for (const btn of document.querySelectorAll('.tab[data-tab]')) {
     if (btn.dataset.tab === tab) btn.setAttribute('aria-current', 'page');
     else btn.removeAttribute('aria-current');
   }
-  if (tab === 'track') renderTrack();
+  if (tab === 'tools') renderTools();
   if (tab === 'explore') renderExplore();
   if (tab === 'me') renderMe();
   window.scrollTo(0, 0);
@@ -2710,7 +3640,8 @@ function showTab(tab) {
 function renderAll() {
   renderStatic();
   renderToday();
-  if (ui.tab === 'track') renderTrack();
+  if (ui.tool) renderTool();
+  else if (ui.tab === 'tools') renderTools();
   if (ui.tab === 'explore') renderExplore();
   if (ui.tab === 'me') renderMe();
 }
@@ -2744,20 +3675,18 @@ const ACTIONS = {
     data.moods[todayISO()] = { v };
     save();
     renderToday();
-    if (ui.tab === 'track') renderTrack();
+    if (ui.tool === 'mood') renderTool();
     toast(t().saved);
   },
   quick: (el) => {
     const go = el.dataset.go;
     if (go === 'luna') return openLuna();
-    ui.seg = go === 'symptom' ? 'symptoms' : go;
-    showTab('track');
+    openTool(go === 'symptom' ? 'symptoms' : go);
   },
   article: (el) => openArticle(el.dataset.topic),
   urgent: () => openUrgent(),
   flag: (el) => openFlag(el.dataset.flag),
   'sheet-close': () => closeSheet(),
-  seg: (el) => { ui.seg = el.dataset.seg; ui.symNotice = ''; renderTrack(); },
   'sym-chip': (el) => {
     const id = el.dataset.sym;
     if (ui.symPicked.has(id)) ui.symPicked.delete(id); else ui.symPicked.add(id);
@@ -2779,9 +3708,9 @@ const ACTIONS = {
     renderSymptoms();
     toast(t().saved);
   },
-  'cal-prev': (el) => { shiftMonth(el.dataset.cal, -1); renderTrack(); },
-  'cal-next': (el) => { shiftMonth(el.dataset.cal, 1); renderTrack(); },
-  'cal-day': (el) => { ui.calPick[el.dataset.cal] = ui.calPick[el.dataset.cal] === el.dataset.day ? null : el.dataset.day; renderTrack(); },
+  'cal-prev': (el) => { shiftMonth(el.dataset.cal, -1); renderTool(); },
+  'cal-next': (el) => { shiftMonth(el.dataset.cal, 1); renderTool(); },
+  'cal-day': (el) => { ui.calPick[el.dataset.cal] = ui.calPick[el.dataset.cal] === el.dataset.day ? null : el.dataset.day; renderTool(); },
   'kick-tap': (el) => {
     if (!data.activeKicks) data.activeKicks = { start: Date.now(), count: 0 };
     data.activeKicks.count += 1;
@@ -2823,6 +3752,109 @@ const ACTIONS = {
   'con-clear': () => { data.contractions = []; data.activeContraction = null; save(); renderContractions(); toast(t().conCleared); },
   'luna-ask': (el) => { if (sheetKind === 'luna') askLuna(L(topicById[el.dataset.topic].q), el.dataset.topic); else openLuna(el.dataset.topic); },
   lang: (el) => setLang(el.dataset.lang),
+  tool: (el) => { closeSheet(); openTool(el.dataset.tool); },
+  'tool-back': () => showTab('tools'),
+  skin: (el) => { data.profile.skin = Number(el.dataset.skin); save(); renderMe(); postLuna({ skin: data.profile.skin }); },
+  'see-week': (el) => {
+    ui.returnTool = 'weeks';
+    showTab('today');
+    postLuna({ days: Math.min(280, Math.max(56, Number(el.dataset.week) * 7)) });
+    setLunaView('full');
+  },
+  'w-save': () => {
+    const kg = Number(String($('w-kg').value).replace(',', '.'));
+    const date = $('w-date').value;
+    if (!(kg >= 30 && kg <= 250) || !validISO(date)) {
+      $('w-error').hidden = false;
+      $('w-error').textContent = T().weightBad;
+      return;
+    }
+    data.weights = data.weights.filter((e) => e.date !== date);
+    data.weights.push({ id: uid(), date, kg: Math.round(kg * 10) / 10 });
+    save();
+    renderWeight();
+    toast(t().saved);
+  },
+  'w-del': (el) => { data.weights = data.weights.filter((e) => e.id !== el.dataset.id); save(); renderWeight(); },
+  'w-setup': () => {
+    const height = Number($('w-height').value);
+    const pre = Number(String($('w-pre').value).replace(',', '.'));
+    data.weightSetup = height > 100 && pre > 30 ? { height, pre: Math.round(pre * 10) / 10 } : null;
+    save();
+    renderWeight();
+    toast(t().saved);
+  },
+  'photo-open': (el) => openPhoto(el.dataset.id),
+  'photo-play': () => playPhotos(),
+  'photo-del-ask': (el) => {
+    $('photo-del-zone').innerHTML = `<div class="notice notice-alert"><strong>${esc(T().deletePhotoConfirm)}</strong><div class="row"><button type="button" class="btn btn-alert" data-action="photo-del-yes" data-id="${el.dataset.id}">${esc(T().deletePhoto)}</button><button type="button" class="btn btn-line" data-action="sheet-close">${esc(t().cancel)}</button></div></div>`;
+  },
+  'photo-del-yes': async (el) => {
+    await photoDelete(el.dataset.id);
+    data.photoIndex = data.photoIndex.filter((p) => p.id !== el.dataset.id);
+    save();
+    closeSheet();
+    renderBump();
+  },
+  'appt-add': () => {
+    const date = $('ap-date').value;
+    if (!validISO(date)) {
+      $('ap-error').hidden = false;
+      $('ap-error').textContent = T().needDate;
+      return;
+    }
+    data.appointments.push({ id: uid(), kind: $('ap-kind').value, title: $('ap-title').value.trim(), date, time: $('ap-time').value, place: $('ap-place').value.trim(), note: $('ap-note').value.trim() });
+    save();
+    renderAppointments();
+    renderToday();
+    toast(t().saved);
+  },
+  'appt-del': (el) => { data.appointments = data.appointments.filter((a) => a.id !== el.dataset.id); save(); renderAppointments(); renderToday(); },
+  'q-add': (el) => { data.questions.push({ id: uid(), text: el.dataset.text, done: false }); save(); renderQuestions(); },
+  'q-del': (el) => { data.questions = data.questions.filter((q) => q.id !== el.dataset.id); save(); renderQuestions(); },
+  'cl-del': (el) => {
+    const list = data[el.dataset.list];
+    list.custom = list.custom.filter((c) => c.id !== el.dataset.id);
+    delete list.checked[el.dataset.id];
+    save();
+    renderTool();
+  },
+  'plan-pick': (el) => {
+    const q = PLAN.find((x) => x.id === el.dataset.q);
+    const v = el.dataset.v;
+    if (q.type === 'one') data.plan[q.id] = data.plan[q.id] === v ? null : v;
+    else {
+      const cur = new Set(data.plan[q.id] || []);
+      if (cur.has(v)) cur.delete(v); else cur.add(v);
+      data.plan[q.id] = [...cur];
+    }
+    save();
+    const y = window.scrollY;
+    renderPlan();
+    window.scrollTo(0, y);
+  },
+  'plan-copy': () => copyText(planSummaryLines().map(([q, a]) => `${q}: ${a}`).join('\n')),
+  'names-list': (el) => { ui.names.list = el.dataset.list; renderNames(); },
+  'names-lang': (el) => { ui.names.lang = el.dataset.lang2; renderNames(); },
+  'names-fav': (el) => {
+    const name = el.dataset.name;
+    const favs = data.names.favs;
+    data.names.favs = favs.includes(name) ? favs.filter((x) => x !== name) : [...favs, name];
+    save();
+    const y = window.scrollY;
+    renderNames();
+    window.scrollTo(0, y);
+  },
+  'names-copy': () => copyText(data.names.favs.join(', ')),
+  'calc-method': (el) => { ui.calc.method = el.dataset.method; renderDueCalc(); },
+  'calc-ivf': (el) => { ui.calc.ivfDay = Number(el.dataset.day); renderDueCalc(); },
+  'calc-use': () => {
+    data.profile.due = calcDue(ui.calc);
+    save();
+    renderAll();
+    postLuna({ days: lunaDays() });
+    toast(T().dueUpdated);
+  },
   sex: (el) => { data.profile.sex = el.dataset.sex; save(); renderMe(); postLuna({ sex: data.profile.sex }); },
   mode: (el) => { data.profile.mode = el.dataset.mode; save(); renderMe(); postLuna({ mode: data.profile.mode }); },
   'profile-edit': () => { ui.editingProfile = true; renderMe(); $('edit-name').focus(); },
@@ -2851,6 +3883,9 @@ const ACTIONS = {
     data.symptoms = data.symptoms.filter((e) => !e.example);
     data.kickSessions = data.kickSessions.filter((e) => !e.example);
     data.contractions = data.contractions.filter((e) => !e.example);
+    data.weights = data.weights.filter((e) => !e.example);
+    data.appointments = data.appointments.filter((e) => !e.example);
+    if (data.weightSetup && data.weightSetup.example) data.weightSetup = null;
     save();
     renderMe();
     toast(t().examplesCleared);
@@ -2861,6 +3896,7 @@ const ACTIONS = {
     ui.confirmDelete = false;
     data = blank();
     forgetStored();
+    photoClearAll();
     ui.chat = [];
     toast(t().deleted);
     startOnboarding();
@@ -2910,7 +3946,15 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('input', (e) => {
-  if (e.target.id === 'sym-level') {
+  if (e.target.dataset && e.target.dataset.planText) {
+    data.plan[e.target.dataset.planText] = e.target.value;
+    save();
+  } else if (e.target.id === 'calc-date') {
+    ui.calc.date = e.target.value;
+    const pos = e.target.value;
+    renderDueCalc();
+    $('calc-date').value = pos;
+  } else if (e.target.id === 'sym-level') {
     ui.symLevel = Number(e.target.value);
     const label = t().levels[ui.symLevel - 1];
     $('sym-level-value').textContent = label;
@@ -2933,6 +3977,23 @@ document.addEventListener('change', (e) => {
   if (el.dataset.todo) {
     data.checklist[el.dataset.todo] = el.checked;
     save();
+  } else if (el.dataset.check) {
+    data[el.dataset.check].checked[el.dataset.item] = el.checked;
+    save();
+    const span = el.nextElementSibling;
+    if (span) span.classList.toggle('done', el.checked);
+    if (el.dataset.check === 'bag') {
+      const y = window.scrollY;
+      renderBag();
+      window.scrollTo(0, y);
+    }
+  } else if (el.dataset.qDone) {
+    const q = data.questions.find((x) => x.id === el.dataset.qDone);
+    if (q) q.done = el.checked;
+    save();
+    if (el.nextElementSibling) el.nextElementSibling.classList.toggle('done', el.checked);
+  } else if (el.id === 'bump-file' && el.files && el.files[0]) {
+    addBumpPhoto(el.files[0]);
   } else if (el.dataset.obConsent) {
     ui.ob.consents[el.dataset.obConsent] = el.checked;
   } else if (el.dataset.consent && data.profile) {
@@ -2948,14 +4009,6 @@ document.addEventListener('keydown', (e) => {
     if (sheetKind) closeSheet();
     else if (ui.lunaView === 'full') closeLunaFull();
   }
-  // arrow keys move between the Track tabs
-  if (e.target.getAttribute && e.target.getAttribute('role') === 'tab' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
-    const segs = ['symptoms', 'mood', 'kicks', 'contractions'];
-    const i = segs.indexOf(ui.seg);
-    ui.seg = segs[(i + (e.key === 'ArrowRight' ? 1 : segs.length - 1)) % segs.length];
-    renderTrack();
-    $(`tab-${ui.seg}`).focus();
-  }
 });
 
 /* =========================================================================
@@ -2964,7 +4017,7 @@ document.addEventListener('keydown', (e) => {
 
 renderStatic();
 if (data.profile && validISO(data.profile.due)) {
-  startLuna({ mode: data.profile.mode, sex: data.profile.sex, days: String(lunaDays()), kicks: String(kicksToday()) });
+  startLuna({ mode: data.profile.mode, sex: data.profile.sex, skin: String(data.profile.skin || 1), days: String(lunaDays()), kicks: String(kicksToday()) });
   renderAll();
   showTab('today');
   setLunaView('hero');
