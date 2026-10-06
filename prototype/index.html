@@ -840,6 +840,7 @@ const STR = {
     toastKick: (n) => `Kick logged · ${n} today`,
     toastListen: 'Heartbeat sound is a simulation, not a recording.',
     toastQuality: (name) => `Switched to ${name} quality to keep motion smooth`,
+    toastLost: (name) => `The graphics restarted; switched to ${name} quality`,
     portraitTitle: 'Weekly Moon Portrait',
     portraitHint: 'Long-press or right-click the image to save it.',
     portraitAlt: (w, d) => `Portrait of your baby at week ${w}, day ${d}`,
@@ -936,6 +937,7 @@ const STR = {
     toastKick: (n) => `Ритникът е записан · ${n} днес`,
     toastListen: 'Звукът на сърцето е симулация, а не запис.',
     toastQuality: (name) => `Качеството е сменено на „${name}“ за плавна анимация`,
+    toastLost: (name) => `Графиката се рестартира, качеството е сменено на „${name}“`,
     portraitTitle: 'Седмичен лунен портрет',
     portraitHint: 'Задръж пръст или кликни с десен бутон върху изображението, за да го запазиш.',
     portraitAlt: (w, d) => `Портрет на бебето в седмица ${w}, ден ${d}`,
@@ -1146,7 +1148,17 @@ canvas.addEventListener('webglcontextlost', () => console.warn('WebGL context lo
 canvas.addEventListener('webglcontextrestored', () => {
   console.warn('WebGL context restored.');
   buildEnvironment(); // render target contents don't survive a lost context
-  if (state.tier > 0) applyTier(state.tier - 1);
+  // The device ran out of GPU memory or time: step down a quality level, and say so (a chosen
+  // level is replaced too, otherwise the menu would keep showing a level that isn't used)
+  if (state.tier > 0) {
+    applyTier(state.tier - 1);
+    if (state.quality !== 'auto') {
+      state.quality = String(state.tier);
+      persist();
+      renderQualityOptions();
+    }
+    toast(t().toastLost(tierName(state.tier)));
+  }
 });
 // ACES kept on purpose: side-by-side tests showed AgX washing this scene out and Neutral over-saturating the skin
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2166,18 +2178,20 @@ function updateCord(now, S) {
     cordB.crossVectors(cordT, cordN);
     // the cord flares where it goes into the placenta
     const flare = 1 + 0.45 * THREE.MathUtils.smoothstep(u, 0.9, 1);
+    // smooth ends: where it meets the body and the placenta the gel's lumps would show as a ragged rim
+    const ends = THREE.MathUtils.smoothstep(u, 0, 0.06) * (1 - THREE.MathUtils.smoothstep(u, 0.88, 0.97));
     for (let j = 0; j <= CORD_RAD; j++) {
       const k = i * (CORD_RAD + 1) + j;
       const a = (j / CORD_RAD) * Math.PI * 2;
       const c = Math.cos(a), s = Math.sin(a);
       cordDir.copy(cordN).multiplyScalar(c).addScaledVector(cordB, s);
       cordAround.copy(cordN).multiplyScalar(-s).addScaledVector(cordB, c);
-      const r = radius * flare * (1 + cordSwell[k]);
+      const r = radius * flare * (1 + cordSwell[k] * ends);
       cordPos[k * 3] = cordP.x + cordDir.x * r;
       cordPos[k * 3 + 1] = cordP.y + cordDir.y * r;
       cordPos[k * 3 + 2] = cordP.z + cordDir.z * r;
       // tilt the normal against the swell's slope round the ring, so the vessels catch the light
-      cordDir.addScaledVector(cordAround, -cordSlope[k]).normalize();
+      cordDir.addScaledVector(cordAround, -cordSlope[k] * ends).normalize();
       cordNrm[k * 3] = cordDir.x;
       cordNrm[k * 3 + 1] = cordDir.y;
       cordNrm[k * 3 + 2] = cordDir.z;
@@ -2458,7 +2472,11 @@ function buildComposer(tier) {
     composer.renderTarget2.dispose();
     bloomPass.dispose();
   }
-  const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: TIERS[tier].msaa });
+  // No MSAA at a pixel ratio of 2 or more: the edges are already fine there, and on a phone the
+  // multisampled half-float target costs four times the memory of the frame itself, which is what
+  // made the GPU drop the WebGL context (the picture blinking out) on Ultra with the baby close up
+  const samples = renderer.getPixelRatio() >= 2 ? 0 : TIERS[tier].msaa;
+  const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples });
   composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
   bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.75, 0.6, 0.6);
@@ -2487,10 +2505,16 @@ function detectTier() {
 
 function tierName(i) { return t().tiers[i]; }
 
+// Most pixels a phone or tablet renders per tier, whatever its pixel ratio
+const TOUCH_MAX_PIXELS = [0.6e6, 1.1e6, 1.7e6, 2.2e6];
+
 function applyTier(tier) {
   state.tier = tier;
   const cfg = TIERS[tier];
-  const pr = Math.min(window.devicePixelRatio || 1, cfg.pr);
+  let pr = Math.min(window.devicePixelRatio || 1, cfg.pr);
+  if (matchMedia('(pointer: coarse)').matches) {
+    pr = Math.max(1, Math.min(pr, Math.sqrt(TOUCH_MAX_PIXELS[tier] / (window.innerWidth * window.innerHeight))));
+  }
   renderer.setPixelRatio(pr);
   buildComposer(tier);
   composer.setPixelRatio(pr);

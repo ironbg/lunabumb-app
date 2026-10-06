@@ -308,7 +308,7 @@ FOOT_L = [(8, 0.1), (12, 0.15), (20, 0.19), (40, 0.21)]
 # belly is rounded but only a little deeper than the chest, not a pot belly
 CHEST = [(8, (0.135, 0.14, 0.125)), (20, (0.11, 0.125, 0.095)), (40, (0.128, 0.135, 0.106))]
 BELLY = [(8, (0.125, 0.13, 0.125)), (20, (0.108, 0.125, 0.092)), (40, (0.126, 0.135, 0.106))]
-PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.098, 0.092, 0.068)), (40, (0.112, 0.096, 0.07))]
+PELVIS = [(8, (0.095, 0.09, 0.078)), (20, (0.092, 0.09, 0.068)), (40, (0.104, 0.094, 0.07))]
 GLUT_R = [(8, 0.05), (20, 0.058), (40, 0.066)]
 # The embryonic tail has regressed by the end of week 8 (Carnegie stage 23): no tail at all here
 TAIL_R = [(8, 0.0), (40, 0.0)]
@@ -662,12 +662,14 @@ def build(g, overrides=None, sex=None, grow=1.0):
     # back than the pelvis, so from behind and below they read as two shapes, not one block.
     # The embryo has hardly any: they fill out from about week 10.
     gr = (0.8 * table(GLUT_R, g) + 0.008 * fat) * (0.55 + 0.45 * smoothstep(9, 18, g))
-    glut_shift = vec(0, 0.006, 0.0)
+    # Round, not flattened (flat discs left a boxy bottom with corners), but small and low, and
+    # joined softly to the pelvis and thighs
+    glut_shift = vec(0, -0.004, 0.012)
     for s in "LR":
-        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.86, 0.9, 0.55]) * gr), 0.036 + 0.014 * (1 - feat))
+        add("glut" + s, Ellipsoid(j["glut" + s] + glut_shift, np.array([0.8, 0.82, 0.72]) * gr), 0.05 + 0.014 * (1 - feat))
     tr = table(TAIL_R, g)
     add("tail", RoundCone(j["tailA"], j["tailB"], tr, tr * 0.45), 0.04)
-    cleft = 0.007 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
+    cleft = 0.006 * smoothstep(11, 18, g) * (1 + 0.3 * fat)
     if cleft > 0:
         # follow the valley between the buttocks, from the sacrum round to the perineum
         torso = [op for op in ops if op.group == "torso"]
