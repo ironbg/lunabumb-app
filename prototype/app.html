@@ -728,7 +728,50 @@
   .toast { pointer-events: none; } /* a status line: never in the way of the button under it */
   .toast.fade { opacity: 0; }
 
+  /* ---------- Journey: after the birth, after a loss, partner ---------- */
+  .app.no-luna .tabbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .app.no-luna .tab-luna { display: none; }
+  .calm-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .calm-card { background: linear-gradient(160deg, var(--card), var(--tint)); }
+  .calm-card h2 { font-size: 22px; }
+  .support-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .support { display: grid; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--tint); }
+  .support strong { font-size: 16px; }
+  .support p { font-size: 14px; }
+  .support .row { gap: 8px; }
+  .support .btn { min-height: 40px; padding: 8px 14px; font-variant-numeric: tabular-nums; }
+  .help-group { display: grid; gap: 8px; }
+  .help-group h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .help-group.help-emergency h3 { color: var(--alert-fg); }
+  .help-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
+  .born-hero { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 14px; align-items: center; }
+  .born-hero h2 { font-size: 24px; }
+  .born-photo { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; background: var(--midnight); display: grid; place-items: center; border: 3px solid var(--peach); }
+  .born-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .born-photo svg { width: 52px; height: 52px; }
+  .check-due { display: block; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .checklist strong.done { text-decoration: line-through; color: var(--muted); }
+  .kv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .invite-code { font: 600 32px/1.1 var(--display); letter-spacing: 0.12em; text-align: center; padding: 14px; margin-top: 6px; border-radius: 16px; background: var(--tint); }
+  .choice-list { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+  .choice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); font-size: 15px; }
+  .choice:has(input:checked) { border-color: var(--accent); background: var(--tint); }
+  .choice input { margin: 2px 0 0; accent-color: var(--violet); width: 20px; height: 20px; flex: none; }
+  .choice small { display: block; color: var(--muted); font-size: 13px; font-weight: 500; margin-top: 2px; }
+  .card-stage { position: relative; }
+  .birth-card { display: block; width: 100%; aspect-ratio: 4 / 5; border-radius: 18px; background: var(--midnight); }
+  .confetti { position: absolute; inset: 0; overflow: hidden; border-radius: 18px; pointer-events: none; }
+  .confetti i { position: absolute; top: -12px; width: 9px; height: 9px; border-radius: 50%; background: var(--star); opacity: 0; animation: confetti-fall 2.8s ease-in forwards; }
+  .confetti i:nth-child(3n) { background: var(--peach); }
+  .confetti i:nth-child(4n) { background: var(--lavender); width: 6px; height: 6px; }
+  @keyframes confetti-fall {
+    0% { transform: translateY(0); opacity: 0; }
+    12% { opacity: 1; }
+    100% { transform: translateY(460px); opacity: 0; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .confetti { display: none; }
     .spark { animation: none; display: none; }
     .luna-flash, .toast, .switch span, .switch span::after { transition: none; }
   }
@@ -751,12 +794,14 @@
       </button>
     </header>
 
-    <div class="progress" id="progress">
+    <div class="progress" id="progress" data-modes="pregnant">
       <div class="progress-track"><div class="progress-fill" id="progress-fill"></div><i class="progress-tick" style="left:35%"></i><i class="progress-tick" style="left:70%"></i></div>
       <div class="progress-labels"><span id="progress-tri"></span><span id="progress-of" class="num"></span></div>
     </div>
 
-    <div class="luna-holder">
+    <div id="calm-top" class="calm-stack" data-modes="born loss" hidden></div>
+
+    <div class="luna-holder" data-modes="pregnant">
       <div class="luna-slot" id="luna-slot">
         <iframe id="luna-frame" title="Luna View" tabindex="-1"></iframe>
         <div class="luna-flash" id="luna-flash"></div>
@@ -777,11 +822,15 @@
       <p class="fine" id="mood-saved" hidden></p>
     </section>
 
-    <nav class="quick" id="quick" aria-label="Quick actions"></nav>
+    <div id="calm-rest" class="calm-stack" data-modes="born loss" hidden></div>
 
-    <div id="today-next"></div>
+    <nav class="quick" id="quick" aria-label="Quick actions" data-modes="pregnant"></nav>
 
-    <section class="card" aria-labelledby="week-title">
+    <div id="today-next" data-modes="pregnant"></div>
+
+    <div id="today-extra" class="calm-stack" data-modes="pregnant" hidden></div>
+
+    <section class="card" aria-labelledby="week-title" data-modes="pregnant">
       <div class="row-between"><h2 id="week-title" data-t="thisWeek"></h2><span class="pill pill-example" id="week-pill"></span></div>
       <div class="facts" id="week-facts"></div>
       <div>
@@ -791,7 +840,7 @@
       <div class="partner" id="week-partner"></div>
     </section>
 
-    <section aria-labelledby="foryou-title" style="display:grid;gap:10px">
+    <section aria-labelledby="foryou-title" style="display:grid;gap:10px" data-modes="pregnant">
       <h2 id="foryou-title" class="eyebrow" data-t="forYou"></h2>
       <div class="articles" id="for-you"></div>
     </section>
@@ -817,32 +866,35 @@
   <!-- ===================== Explore ===================== -->
   <section class="screen" id="screen-explore" aria-labelledby="explore-title" hidden>
     <h1 class="page-title" id="explore-title" data-t="tabs.explore"></h1>
-    <section style="display:grid;gap:10px" aria-labelledby="read-title">
+    <div id="explore-calm" style="display:grid;gap:18px" data-modes="born loss" hidden></div>
+    <div id="explore-partner" style="display:grid;gap:10px" hidden></div>
+    <section style="display:grid;gap:10px" aria-labelledby="read-title" data-modes="pregnant">
       <h2 class="eyebrow" id="read-title" data-t="readThisWeek"></h2>
       <div class="articles" id="explore-week"></div>
     </section>
-    <section class="card" aria-labelledby="food-title">
+    <section class="card" aria-labelledby="food-title" data-modes="pregnant">
       <h2 id="food-title" data-t="canIEat"></h2>
       <label class="visually-hidden" for="food-search" data-t="canIEat"></label>
       <input class="input" type="search" id="food-search" autocomplete="off">
       <ul class="food-list" id="food-list"></ul>
       <p class="source" id="food-source"></p>
     </section>
-    <div id="explore-groups" style="display:grid;gap:18px"></div>
-    <section class="card card-soon"><h2 data-t="clubs"></h2><p class="muted" data-t="clubsSoon"></p></section>
-    <section class="card card-soon"><h2 data-t="midwife"></h2><p class="muted" data-t="midwifeSoon"></p></section>
+    <div id="explore-groups" style="display:grid;gap:18px" data-modes="pregnant"></div>
+    <section class="card card-soon" data-modes="pregnant"><h2 data-t="clubs"></h2><p class="muted" data-t="clubsSoon"></p></section>
+    <section class="card card-soon" data-modes="pregnant"><h2 data-t="midwife"></h2><p class="muted" data-t="midwifeSoon"></p></section>
   </section>
 
   <!-- ===================== Me ===================== -->
   <section class="screen" id="screen-me" aria-labelledby="me-title" hidden>
     <h1 class="page-title" id="me-title" data-t="tabs.me"></h1>
     <section class="card" id="me-profile" aria-label="Profile"></section>
-    <section class="card" aria-labelledby="me-baby-title">
+    <section class="card" aria-labelledby="me-baby-title" data-modes="pregnant">
       <h2 id="me-baby-title" data-t="baby"></h2>
       <div class="seg" role="radiogroup" aria-labelledby="me-baby-title" id="me-sex"></div>
       <p class="fine" data-t="sexHint"></p>
     </section>
-    <section class="card" aria-labelledby="me-view-title">
+    <section class="card" aria-labelledby="me-journey-title" id="me-journey"></section>
+    <section class="card" aria-labelledby="me-view-title" data-modes="pregnant born">
       <h2 id="me-view-title" data-t="view3d"></h2>
       <div class="mode-cards" role="radiogroup" aria-labelledby="me-view-title" id="me-modes"></div>
       <h3 id="me-skin-title" data-t="skinTone"></h3>
@@ -863,7 +915,7 @@
       <p class="fine" data-t="careHint"></p>
     </section>
     <section class="card" aria-labelledby="me-privacy-title" id="me-privacy"></section>
-    <section class="card card-soon"><h2 data-t="partner"></h2><p class="muted" data-t="partnerSoon"></p></section>
+    <section class="card" id="me-partner" data-modes="pregnant"></section>
     <section class="card" aria-labelledby="me-about-title">
       <h2 id="me-about-title" data-t="about"></h2>
       <p class="muted" data-t="aboutText"></p>
@@ -968,7 +1020,7 @@ const STR = {
     moods: ['Awful', 'Low', 'Okay', 'Good', 'Great'],
     moodSaved: (label) => `Saved: ${label}. Your month is in Tools → Mood.`,
     quickNav: 'Quick actions',
-    quick: { symptom: 'Log a symptom', kicks: 'Count kicks', contractions: 'Time contractions', luna: 'Ask Luna' },
+    quick: { symptom: 'Log a symptom', kicks: 'Count kicks', contractions: 'Time contractions', luna: 'Ask Luna', partnerlist: 'Your to-do', appointments: 'Appointments' },
     thisWeek: 'This week',
     yourBaby: 'Your baby',
     yourBody: 'Your body',
@@ -1187,7 +1239,7 @@ const STR = {
     moods: ['Ужасно', 'Зле', 'Горе-долу', 'Добре', 'Чудесно'],
     moodSaved: (label) => `Записано: ${label}. Целият месец е в Инструменти → Настроение.`,
     quickNav: 'Бързи действия',
-    quick: { symptom: 'Запиши симптом', kicks: 'Брой ритници', contractions: 'Мери контракции', luna: 'Попитай Luna' },
+    quick: { symptom: 'Запиши симптом', kicks: 'Брой ритници', contractions: 'Мери контракции', luna: 'Попитай Luna', partnerlist: 'Твоите задачи', appointments: 'Прегледи' },
     thisWeek: 'Тази седмица',
     yourBaby: 'Бебето',
     yourBody: 'Твоето тяло',
@@ -1266,9 +1318,9 @@ const STR = {
 
     lunaTitle: 'Luna',
     lunaSub: 'AI асистент, а не лекар',
-    lunaHello: (name, w) => `Здравей${name ? `, ${name}` : ''}. Сега си в ${w}-а седмица. Питай ме за тази седмица или избери въпрос отдолу.`,
+    lunaHello: (name, w) => `Здравей${name ? `, ${name}` : ''}. Сега си в ${w}${ordBg(w)} седмица. Питай ме за тази седмица или избери въпрос отдолу.`,
     lunaProto: 'Прототип: Luna отговаря на подготвени въпроси по насоките на NHS. Все още не е истински AI.',
-    askPh: (w) => `Питай за ${w}-а седмица…`,
+    askPh: (w) => `Питай за ${w}${ordBg(w)} седмица…`,
     askLabel: 'Твоят въпрос',
     send: 'Изпрати',
     source: 'Източник',
@@ -1369,7 +1421,7 @@ const STR = {
       ivfDay: 'Възраст на ембриона при трансфера',
       ivfDays: { 3: 'Ден 3', 5: 'Ден 5' },
       result: (w, d, due) => `Днес: седмица ${w}, ден ${d} · термин ${due}`,
-      outOfRange: (w) => `С тази дата излиза ${w}-а седмица. Lunabump покрива от 4-та до 42-ра седмица, затова провери датата.`,
+      outOfRange: (w) => `С тази дата излиза ${w}${ordBg(w)} седмица. Lunabump покрива от 4-та до 42-ра седмица, затова провери датата.`,
       dateHint: 'Лекарят може да коригира датата по-късно; всичко се преизчислява.',
       nameTitle: 'Как да се обръщаме към теб?',
       namePh: 'Малкото ти име (по желание)',
@@ -1501,7 +1553,7 @@ const TODO = {
   carSeat: { en: 'Fit the car seat', bg: 'Монтирай столчето за кола' },
   signs: { en: 'Read the signs that labour has started', bg: 'Прочети признаците, че раждането е започнало' },
   unitNumber: { en: 'Save your maternity unit’s phone number in Me', bg: 'Запиши телефона на родилното отделение в „Аз“' },
-  timer: { en: 'Try the contraction timer in Track', bg: 'Пробвай таймера за контракции в „Записи“' },
+  timer: { en: 'Try the contraction timer in Tools', bg: 'Пробвай таймера за контракции в „Инструменти“' },
 };
 
 const TOPICS = [
@@ -1811,6 +1863,11 @@ const blank = () => ({
   shopping: { checked: {}, custom: [] },
   plan: {},
   names: { favs: [] },
+  status: 'pregnant', // pregnant | born | loss
+  birth: null,
+  loss: null,
+  newborn: { checked: {} },
+  memories: [],
 });
 
 function loadData() {
@@ -1819,7 +1876,7 @@ function loadData() {
     if (parsed && parsed.v === 1) {
       const base = blank();
       const merged = { ...base, ...parsed };
-      for (const key of ['care', 'bag', 'shopping', 'names']) merged[key] = { ...base[key], ...(parsed[key] || {}) };
+      for (const key of ['care', 'bag', 'shopping', 'names', 'newborn']) merged[key] = { ...base[key], ...(parsed[key] || {}) };
       return merged;
     }
   } catch (err) { /* storage unavailable or unreadable */ }
@@ -1864,6 +1921,12 @@ const ui = {
   lunaReady: false,
   lunaPaused: null,
   lastFocus: null,
+  lossForm: null,
+  confirmUndo: false,
+  replay: false,
+  birthPhoto: null,
+  birthSex: 'unknown',
+  cardBlob: null,
 };
 
 /* ---------- Derived pregnancy numbers ---------- */
@@ -1968,7 +2031,7 @@ function setLunaView(view) {
 }
 
 function updateLunaRunning() {
-  const running = !document.hidden && (ui.lunaView === 'stage' || ui.lunaView === 'full' || (ui.tab === 'today' && ui.heroVisible));
+  const running = !document.hidden && (ui.lunaView === 'stage' || ui.lunaView === 'full' || (ui.tab === 'today' && ui.heroVisible && journey() === 'pregnant'));
   if (ui.lunaPaused === !running) return;
   ui.lunaPaused = !running;
   postLuna({ paused: !running });
@@ -1982,7 +2045,11 @@ function openLunaFull() {
 function closeLunaFull() {
   if (ui.lunaView !== 'full') return;
   setLunaView('hero');
-  postLuna({ days: lunaDays() }); // the viewer may have scrubbed the timeline
+  postLuna({ days: lunaDays() }); // the viewer may have scrubbed the timeline (this also stops a replay)
+  if (ui.replay) {
+    ui.replay = false;
+    applyJourney();
+  }
   if (ui.returnTool) {
     // opened from a tool ("See in 3D"): go back to it
     const tool = ui.returnTool;
@@ -2071,18 +2138,9 @@ function greeting() {
 function renderToday() {
   const p = data.profile;
   if (!p) return;
-  const ga = gaDays();
-  const w = Math.floor(ga / 7);
-  const d = ((ga % 7) + 7) % 7;
-  $('today-week').textContent = t().weekDay(w, d);
   $('greeting').textContent = greeting();
-  $('today-togo').textContent = t().toGo(daysBetween(todayISO(), p.due));
-  $('progress-fill').style.width = `${Math.min(100, Math.max(0, (ga / 280) * 100))}%`;
-  $('progress-tri').textContent = t().tri[triOf(w)];
-  $('progress-of').textContent = t().ofForty(Math.min(w, 42));
-  renderHeroCaption();
 
-  // mood check-in
+  // mood check-in (at every stage)
   const today = data.moods[todayISO()];
   $('moods-today').innerHTML = moodButtons(today ? today.v : 0);
   if (today) {
@@ -2092,21 +2150,42 @@ function renderToday() {
     $('mood-saved').hidden = true;
   }
 
+  // after the birth or a loss, Today becomes a different, calmer page
+  if (journey() !== 'pregnant') { renderCalmToday(); return; }
+
+  const ga = gaDays();
+  const w = Math.floor(ga / 7);
+  const d = ((ga % 7) + 7) % 7;
+  $('urgent-top').querySelector('span').textContent = t().urgent;
+  $('today-week').textContent = t().weekDay(w, d);
+  $('today-togo').textContent = t().toGo(daysBetween(todayISO(), p.due));
+  $('progress-fill').style.width = `${Math.min(100, Math.max(0, (ga / 280) * 100))}%`;
+  $('progress-tri').textContent = t().tri[triOf(w)];
+  $('progress-of').textContent = t().ofForty(Math.min(w, 42));
+  renderHeroCaption();
+  renderTodayExtra();
+
   // quick actions change with the trimester: kicks lead from 28 weeks, contractions appear from 37
-  const order = w >= 37 ? ['kicks', 'contractions', 'luna'] : w >= 28 ? ['kicks', 'symptom', 'luna'] : ['symptom', 'kicks', 'luna'];
-  const icons = { symptom: ICON.note, kicks: ICON.kick, contractions: ICON.wave, luna: ICON.chat };
+  const partner = p.stage === 'partner';
+  const order = partner
+    ? (w >= 37 ? ['contractions', 'partnerlist', 'luna'] : ['partnerlist', 'appointments', 'luna'])
+    : w >= 37 ? ['kicks', 'contractions', 'luna'] : w >= 28 ? ['kicks', 'symptom', 'luna'] : ['symptom', 'kicks', 'luna'];
+  const icons = { symptom: ICON.note, kicks: ICON.kick, contractions: ICON.wave, luna: ICON.chat, partnerlist: TOOL_ICON.partnerlist, appointments: TOOL_ICON.appointments };
   const next = nextAppointment();
   $('today-next').innerHTML = next ? `<button type="button" class="next-appt" data-action="tool" data-tool="appointments"><span class="icon">${TOOL_ICON.appointments}</span><span><span class="eyebrow">${esc(T().nextAppointment)}</span><strong style="display:block">${esc(apptTitle(next))}</strong><span class="small muted">${esc(fmtDate(next.date))}${next.time ? ` · ${esc(next.time)}` : ''}${next.place ? ` · ${esc(next.place)}` : ''}</span></span><span class="chev">${ICON.chev}</span></button>` : '';
   $('quick').innerHTML = order.map((k) => `<button type="button" data-action="quick" data-go="${k}"><span class="icon">${icons[k]}</span><span>${esc(t().quick[k])}</span></button>`).join('');
 
   // this week
   const b = blockFor(w);
-  const partner = p.stage === 'partner';
   $('week-pill').textContent = t().weekDay(w, d).split(' · ')[0];
   $('week-facts').innerHTML = `
     <div class="fact"><h3>${esc(t().yourBaby)}</h3><p>${esc(L(b.baby))}</p></div>
-    <div class="fact"><h3>${esc(partner ? t().herBody : t().yourBody)}</h3><p>${esc(L(b.body))}</p></div>`;
-  $('week-todo').innerHTML = b.todo.map((id) => `<li><label><input type="checkbox" data-todo="${id}" ${data.checklist[id] ? 'checked' : ''}><span>${esc(L(TODO[id]))}</span></label></li>`).join('');
+    <div class="fact"><h3>${esc(partner ? J().theirBody(herName()) : t().yourBody)}</h3><p>${esc(L(b.body))}</p></div>`;
+  const todo = partner
+    ? PARTNER_TODO.filter((i) => i.tri === triOf(w)).slice(0, 4).map((i) => [i.id, L(i)])
+    : b.todo.map((id) => [id, L(TODO[id])]);
+  $('week-todo').previousElementSibling.textContent = partner ? J().partnerTodo : t().todo;
+  $('week-todo').innerHTML = todo.map(([id, text]) => `<li><label><input type="checkbox" data-todo="${id}" ${data.checklist[id] ? 'checked' : ''}><span>${esc(text)}</span></label></li>`).join('');
   $('week-partner').innerHTML = `<h3>${esc(partner ? t().forPartner : t().partnerTip)}</h3><p>${esc(L(b.partner))}</p>`;
 
   $('for-you').innerHTML = forYou(w).map(articleRow).join('');
@@ -2126,6 +2205,7 @@ function renderHeroCaption() {
 
 function forYou(w) {
   const ids = w < 14 ? ['nausea', 'vitamins', 'food'] : w < 22 ? ['exercise', 'movements', 'food'] : w < 28 ? ['glucose', 'movements', 'sleep'] : w < 36 ? ['sleep', 'movements', 'heartburn'] : ['labour', 'movements', 'sleep'];
+  if (isPartner()) return [w < 28 ? 'support' : 'birthpartner', ids[0], ids[1]].map((id) => topicById[id]);
   return ids.map((id) => topicById[id]);
 }
 
@@ -2226,7 +2306,7 @@ function renderMood() {
       <h2 id="mood-today-title">${esc(t().feeling)}</h2>
       <div class="moods" role="radiogroup" aria-labelledby="mood-today-title">${moodButtons(today ? today.v : 0)}</div>
     </section>
-    ${hard ? `<div class="notice notice-calm" role="status">${esc(t().lowMood)}</div>` : ''}
+    ${hard ? `<div class="notice notice-calm" role="status">${esc(journey() === 'born' ? J().lowMoodBorn : journey() === 'loss' ? J().lowMoodLoss : t().lowMood)}</div>` : ''}
     <section class="card" aria-labelledby="mood-cal-title">
       <h2 id="mood-cal-title">${esc(t().moodTitle)}</h2>
       ${calendar('mood', (iso) => (data.moods[iso] ? `background:var(--mood-${data.moods[iso].v});color:#2A2740` : ''))}
@@ -2369,6 +2449,8 @@ const TOOL_STR = {
       names: ['Baby names', 'Save your favourites'],
       shopping: ['For the baby', 'What you’ll need'],
       duedate: ['Due date calculator', 'Check the dates'],
+      partnerlist: ['Partner checklist', 'Before the birth'],
+      checks: ['First weeks', 'Checks for your baby'],
     },
     back: 'All tools',
     today: (n) => `${n} today`,
@@ -2469,6 +2551,8 @@ const TOOL_STR = {
       names: ['Имена', 'Запази любимите'],
       shopping: ['За бебето', 'Какво ще ти трябва'],
       duedate: ['Калкулатор за термина', 'Провери датите'],
+      partnerlist: ['Задачи за партньора', 'Преди раждането'],
+      checks: ['Първите седмици', 'Прегледи на бебето'],
     },
     back: 'Всички инструменти',
     today: (n) => `${n} днес`,
@@ -2719,6 +2803,8 @@ const TOOL_ICON = {
   names: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>',
   duedate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M8.5 7.5h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/></svg>',
+  partnerlist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17" rx="3"/><path d="m8 9 1.5 1.5L12 8M8 15l1.5 1.5L12 14M14.5 9.5H17M14.5 15.5H17"/></svg>',
+  checks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5v5a4 4 0 0 0 8 0v-5"/><path d="M10 12.5v2a5 5 0 0 0 10 0V12"/><circle cx="20" cy="10" r="2"/></svg>',
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   heartLine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>',
@@ -2733,12 +2819,14 @@ function toolMeta(id) {
   if (id === 'weight') { const last = [...data.weights].sort((a, b) => (a.date < b.date ? 1 : -1))[0]; return last ? `${String(last.kg).replace('.', lang === 'bg' ? ',' : '.')} ${s.kg}` : ''; }
   if (id === 'bump') return data.photoIndex.length ? s.photos(data.photoIndex.length) : '';
   if (id === 'names') return data.names.favs.length ? `${data.names.favs.length} ♥` : '';
+  if (id === 'partnerlist') { const done = PARTNER_TODO.filter((i) => data.checklist[i.id]).length; return done ? J().partnerListDone(done, PARTNER_TODO.length) : ''; }
+  if (id === 'checks' && data.birth) { const next = NEWBORN_CHECKS.find((c) => !data.newborn.checked[c.id]); return next ? L(next)[0] : ''; }
   return '';
 }
 
 function renderTools() {
   if (!data.profile) return;
-  $('tool-grid').innerHTML = TOOL_IDS.map((id) => {
+  $('tool-grid').innerHTML = toolIds().map((id) => {
     const [name, sub] = T().names[id];
     const meta = toolMeta(id);
     return `<button type="button" class="tool-tile" data-action="tool" data-tool="${id}"><span class="icon">${TOOL_ICON[id]}</span><strong>${esc(name)}</strong><span class="sub">${esc(meta || sub)}</span></button>`;
@@ -2770,7 +2858,7 @@ function renderTool() {
     kicks: renderKicks, contractions: renderContractions, symptoms: renderSymptoms, mood: renderMood,
     weeks: renderWeeks, weight: renderWeight, bump: renderBump, appointments: renderAppointments,
     questions: renderQuestions, bag: renderBag, plan: renderPlan, names: renderNames,
-    shopping: renderShopping, duedate: renderDueCalc,
+    shopping: renderShopping, duedate: renderDueCalc, partnerlist: renderPartnerList, checks: renderChecks,
   })[ui.tool]();
 }
 
@@ -2786,7 +2874,7 @@ function renderWeeks() {
     }).join('');
     return `<section class="card" aria-label="${esc(s.weeksRange(b.from, b.to))}">
       <h2>${esc(s.weeksRange(b.from, b.to))}</h2>
-      <div class="facts"><div class="fact"><h3>${esc(t().yourBaby)}</h3><p>${esc(L(b.baby))}</p></div><div class="fact"><h3>${esc(t().yourBody)}</h3><p>${esc(L(b.body))}</p></div></div>
+      <div class="facts"><div class="fact"><h3>${esc(t().yourBaby)}</h3><p>${esc(L(b.baby))}</p></div><div class="fact"><h3>${esc(isPartner() ? J().theirBody(herName()) : t().yourBody)}</h3><p>${esc(L(b.body))}</p></div></div>
       ${rows ? `<ul class="week-rows">${rows}</ul>` : `<p class="fine">${esc(s.noSize)}</p>`}
     </section>`;
   }).join('');
@@ -3026,7 +3114,7 @@ function renderAppointments() {
 function renderQuestions() {
   const s = T();
   const mine = data.questions;
-  const suggested = QUESTIONS[triOf(weekNow())].filter((q) => !mine.some((m) => m.text === (lang === 'bg' ? q[1] : q[0])));
+  const suggested = questionPool().filter((q) => !mine.some((m) => m.text === (lang === 'bg' ? q[1] : q[0])));
   $('tool-body').innerHTML = `
     <section class="card" aria-labelledby="q-mine">
       <h2 id="q-mine">${esc(s.myQuestions)}</h2>
@@ -3075,6 +3163,12 @@ function bindChecklistForms(render) {
   }
 }
 
+// for a partner the sections swap: "for you" is their own bag
+function bagTitle(sec) {
+  if (!isPartner()) return T().bagSections[sec];
+  return sec === 'you' ? J().forHer(herName()) : sec === 'partner' ? J().forYou : T().bagSections[sec];
+}
+
 function renderBag() {
   const s = T();
   const total = Object.values(BAG).flat().length + data.bag.custom.length;
@@ -3082,7 +3176,7 @@ function renderBag() {
   $('tool-body').innerHTML = `
     <div class="progress"><div class="progress-track"><div class="progress-fill" style="width:${total ? Math.round((done / total) * 100) : 0}%"></div></div><div class="progress-labels"><span>${esc(s.packed(done, total))}</span></div></div>
     <p class="fine">${esc(s.hospitalList)}</p>
-    ${Object.entries(BAG).map(([sec, items]) => checklistSection('bag', sec, s.bagSections[sec], items)).join('')}
+    ${Object.entries(BAG).map(([sec, items]) => checklistSection('bag', sec, bagTitle(sec), items)).join('')}
     <p class="source">${esc(t().source)}: <a href="https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/" target="_blank" rel="noopener">NHS · Hospital bag checklist</a></p>`;
   bindChecklistForms(renderBag);
 }
@@ -3192,12 +3286,1339 @@ function calcDue(c) {
 }
 
 /* =========================================================================
+   Journey: partner mode, the birth and pregnancy loss
+   (support lines and NHS facts checked in October 2026; to be reviewed by the medical board)
+   ========================================================================= */
+
+// Bulgarian feminine ordinal ending (as in „24-та седмица“): 1-ва, 2-ра, 3-та, 4-та, the rest -а
+function ordBg(n) {
+  const a = n % 10;
+  const b = n % 100;
+  if (b >= 11 && b <= 19) return '-а';
+  return a === 1 ? '-ва' : a === 2 ? '-ра' : a === 3 || a === 4 ? '-та' : '-а';
+}
+
+const JOURNEY_STR = {
+  en: {
+    help: 'Get help',
+    changedTitle: 'Has something changed?',
+    changedText: 'Tell us, and Lunabump changes with you.',
+    bornBtn: 'Our baby has been born',
+    lossBtn: 'Pregnancy loss',
+
+    // loss
+    lossTitle: 'We’re so sorry',
+    lossIntro: 'Whatever happened, and whenever it happened, your loss matters. You don’t need to do anything right now.',
+    lossWhatChanges: 'If you’d like, Lunabump can stop showing weeks, baby sizes, the 3D baby and reminders straight away.',
+    lossChange: 'Change Lunabump for me',
+    lossNotNow: 'Not now',
+    lossKindTitle: 'What happened? (optional)',
+    lossKindHint: 'This only helps us show the right support. You can skip it.',
+    lossKinds: { miscarriage: 'Miscarriage', ectopic: 'Ectopic pregnancy', stillbirth: 'Stillbirth', tfmr: 'Ending the pregnancy for medical reasons', neonatal: 'Our baby died after birth', skip: 'I’d rather not say' },
+    lossDate: 'Date (optional)',
+    lossNameLabel: 'Your baby’s name (optional)',
+    lossNameHint: 'Only if you’d like it kept with your memories.',
+    keepTitle: 'Your photos and logs',
+    keep: {
+      keep: ['Keep them, out of sight', 'You can open them in Me → Memories whenever you want.'],
+      delete: ['Delete them now', 'Bump photos, logs and notes are deleted from this device. This can’t be undone.'],
+    },
+    partnerNote: 'If you invited someone with a code, their app doesn’t change on its own. Tell them when you’re ready.',
+    lossDone: 'Done',
+    back: 'Back',
+    lossSaved: 'Lunabump has changed. Take all the time you need.',
+    lossSub: 'We’re here whenever you need us.',
+    lossCardTitle: (name) => (name ? `We’re so sorry about ${name}.` : 'We’re so sorry.'),
+    lossCardText: 'There’s no right way to feel after a loss, and no timetable. Lunabump no longer shows weeks, sizes or reminders.',
+    supportTitle: 'People who can help',
+    supportIntro: 'Free, confidential support from people who understand.',
+    supportEnglish: 'In English (UK)',
+    website: 'Website',
+    bodyTitle: 'Looking after your body',
+    bodyMiscarriage: [
+      'Tummy pain may last a few days, and bleeding or spotting for up to 2 weeks.',
+      'It can take up to 8 weeks before you have a period again.',
+      'Don’t have sex until your symptoms have gone, because of the risk of infection.',
+    ],
+    bodyStillbirth: [
+      'Your breasts may start to make milk. Your midwife or doctor can talk with you about medicine to stop it, or it can stop naturally.',
+      'You’ll be offered a follow-up appointment a few weeks later.',
+    ],
+    whenHelp: 'When to get help',
+    memoriesTitle: 'Memories',
+    memoriesText: 'Your photos and notes are kept, out of sight. Open them only when you want to.',
+    memoriesOpen: 'Open memories',
+    readyTitle: 'When you’re ready',
+    readyText: 'You can try for another baby when you feel ready and your symptoms have gone. Your doctor can talk with you about any extra care.',
+    newPregnancy: 'Start a new pregnancy',
+    lowMoodLoss: 'You’ve had some very hard days. That’s understandable. Talking can help: your doctor, or one of the support lines on your Today screen. If you ever think about harming yourself, call 112.',
+
+    // help sheets
+    helpTitleLoss: 'When to get help',
+    helpTitleBorn: 'After the birth: when to get help',
+    forYou: 'For you',
+    forBaby: 'For the baby',
+    forHer: (name) => (name ? `For ${name}` : 'For your partner'),
+    feelingsTitle: 'Your feelings',
+    feelingsText: 'If you ever think about harming yourself, call 112 now, or Samaritans on 116 123, any time, day or night.',
+
+    // birth
+    bornTitle: 'Your baby is here',
+    bornIntro: 'Congratulations. Tell us a little about your baby, only what you want to.',
+    birthDate: 'Date of birth',
+    birthTime: 'Time',
+    babyName: 'Name (optional)',
+    babySex: 'Sex',
+    sexes: { F: 'Girl', M: 'Boy', unknown: 'Rather not say' },
+    weight: 'Weight (g)',
+    length: 'Length (cm)',
+    addPhoto: 'Add a photo (optional)',
+    changePhoto: 'Change the photo',
+    photoAdded: 'Photo added',
+    bornSave: 'Save',
+    errDate: 'Choose the date of birth.',
+    errRange: 'That date doesn’t fit this pregnancy. Please check it.',
+    errWeight: 'Enter the weight in grams, for example 3450.',
+    errLength: 'Enter the length in centimetres, for example 51.',
+    welcome: (name) => (name ? `Welcome, ${name}` : 'Hello, little moon'),
+    age: (days) => (days <= 0 ? 'First day' : days === 1 ? '1 day old' : days < 14 ? `${days} days old` : `${Math.floor(days / 7)} weeks old`),
+    bornOn: (date, time) => `Born ${date}${time ? ` at ${time}` : ''}`,
+    statWeight: 'weight',
+    statLength: 'length',
+    statWeeks: 'born at',
+    grams: (g) => `${g} g`,
+    cm: (c) => `${c} cm`,
+    yourBaby: 'Your baby',
+    birthCard: 'Birth card',
+    replay: 'Replay the pregnancy in 3D',
+    cardAlt: 'Birth card',
+    cardHint: 'Press and hold the card (or right-click it) to save it.',
+    share: 'Share',
+    shareFailed: 'Sharing isn’t available here. Save the card instead.',
+    checksTitle: 'First weeks',
+    checksIntro: 'Checks and tests in the first 8 weeks, as the NHS offers them in England. Your midwife or doctor will tell you how it works where you live.',
+    checksAll: 'All checks',
+    checksDone: 'All done. Well done, both of you.',
+    byDate: (d) => `By ${d}`,
+    aroundDate: (d) => `Around ${d}`,
+    recoveryTitle: 'Recovery and feelings',
+    recoveryText: [
+      'There’s a postnatal check 6 to 8 weeks after the birth.',
+      'The baby blues usually go away within 2 weeks of the birth. If low mood lasts longer, talk to your midwife, GP or health visitor.',
+      'Fathers and partners can also have depression after having a baby.',
+    ],
+    journeyTitle: 'Your pregnancy journey',
+    journeyText: 'Nine months, all in one place.',
+    journeyStats: { kicks: 'kicks logged', moods: 'mood check-ins', photos: 'bump photos' },
+    journeyOpen: 'Open',
+    arrivedTitle: 'Has your baby arrived?',
+    arrivedText: 'When your baby is here, Lunabump becomes a gentle guide to the first weeks.',
+    arrivedYes: 'Yes, our baby is here',
+    babyTitle: 'Your baby',
+    editBirth: 'Edit the details',
+    rows: { name: 'Name', date: 'Born', weight: 'Weight', length: 'Length' },
+    undoBtn: 'Go back to tracking the pregnancy',
+    undoText: 'Lunabump shows the pregnancy again. Nothing is deleted.',
+    undoYes: 'Go back',
+    newPregTitle: 'A new pregnancy',
+    newPregText: 'Enter the new due date. Your memories stay where they are.',
+    newPregSave: 'Start',
+    memNote: 'A few words, only for you',
+    memNoPhotos: 'No photos were kept.',
+    memDelete: 'Delete these memories',
+    memDeleteConfirm: 'Delete the photos and notes? This can’t be undone.',
+    memDeleted: 'Memories deleted',
+    memLabel: (date) => `Memory · ${date}`,
+    lowMoodBorn: 'You’ve had a few hard days. The baby blues usually pass within 2 weeks of the birth. If you still feel low, talk to your midwife, GP or health visitor. If you ever think about harming yourself, call 112.',
+
+    // partner
+    inviteTitle: 'Partner Mode',
+    inviteText: 'Invite your partner. They follow the pregnancy week by week, with tips on how to help.',
+    inviteCodeLabel: 'Invitation code',
+    inviteHow: 'They open Lunabump, choose “I’m a partner” and enter this code.',
+    inviteShares: (withSex) => `The code only holds the due date${withSex ? ' and the baby’s sex' : ''}. Your symptoms, moods and notes stay on your phone.`,
+    inviteCopy: 'Copy the invitation',
+    inviteShare: 'Share',
+    inviteMessage: (code) => `Join me on Lunabump and follow our baby week by week. Choose “I’m a partner” and enter the code ${code}.`,
+    inviteLater: 'In the full app you’ll choose what to share live, such as appointments and kicks.',
+    linkedText: (name) => (name ? `You’re following ${name}’s pregnancy.` : 'You’re following the pregnancy as a partner.'),
+    newCodeLabel: 'Got a new code? Enter it here',
+    useCode: 'Use code',
+    codeOk: (date) => `Code accepted. Due date: ${date}`,
+    codeBad: 'That code doesn’t look right. Check it and try again.',
+    obCodeTitle: 'Have a code from your partner?',
+    obCodePh: 'For example 4K7Q-2M',
+    obOr: 'Or enter the date yourself.',
+    partnerNameLabel: 'Your partner’s name (optional)',
+    partnerNamePh: 'First name',
+    obModeTitlePartner: 'How would you like to see the pregnancy?',
+    lmpPartner: 'First day of the last period',
+    theirBody: (name) => (name ? `How ${name} may feel` : 'How your partner may feel'),
+    partnerTodo: 'Your to-do',
+    now: 'Now',
+    signsTitle: 'Know when to call for help',
+    signsText: 'Bleeding, leaking fluid, a bad headache with blurred vision, or fewer baby movements: call the maternity unit, or 112 in an emergency.',
+    partnerEmergency: (w) => `These can be signs of an emergency. Call 112 now and say the pregnancy is at week ${w}.`,
+    partnerUrgentIntro: 'Choose what’s happening. If you’re unsure, call the maternity unit: they would rather hear from you.',
+    lunaHelloPartner: (name, w) => `Hi${name ? ` ${name}` : ''}. The pregnancy is in week ${w}. Ask me about this week, or pick a question below.`,
+    forPartners: 'For partners',
+    toRead: 'To read',
+    bornSub: 'Welcome to the first weeks.',
+    partnerDemo: 'Partner demo',
+    demoPartner: 'Alex',
+    demoHer: 'Elena',
+    partnerListDone: (a, b) => `${a} of ${b} done`,
+  },
+
+  bg: {
+    help: 'Помощ',
+    changedTitle: 'Нещо се промени?',
+    changedText: 'Кажи ни и Lunabump ще се промени заедно с теб.',
+    bornBtn: 'Бебето се роди',
+    lossBtn: 'Загуба на бременност',
+
+    lossTitle: 'Толкова съжаляваме',
+    lossIntro: 'Каквото и да се е случило и когато и да се е случило, загубата ти има значение. Не е нужно да правиш нищо точно сега.',
+    lossWhatChanges: 'Ако искаш, Lunabump може веднага да спре да показва седмици, размери на бебето, 3D бебето и напомняния.',
+    lossChange: 'Промени Lunabump за мен',
+    lossNotNow: 'Не сега',
+    lossKindTitle: 'Какво се случи? (по желание)',
+    lossKindHint: 'Това ни помага само да покажем подходящата подкрепа. Можеш да го пропуснеш.',
+    lossKinds: { miscarriage: 'Спонтанен аборт', ectopic: 'Извънматочна бременност', stillbirth: 'Мъртво раждане', tfmr: 'Прекъсване на бременността по медицински причини', neonatal: 'Бебето почина след раждането', skip: 'Предпочитам да не казвам' },
+    lossDate: 'Дата (по желание)',
+    lossNameLabel: 'Името на бебето (по желание)',
+    lossNameHint: 'Само ако искаш да го пазим заедно със спомените.',
+    keepTitle: 'Снимките и записите',
+    keep: {
+      keep: ['Запази ги, скрити', 'Можеш да ги отвориш в Аз → Спомени, когато поискаш.'],
+      delete: ['Изтрий ги сега', 'Снимките на коремчето, записите и бележките се изтриват от това устройство. Не може да се върне.'],
+    },
+    partnerNote: 'Ако си поканила някого с код, приложението му не се променя само. Сподели, когато си готова.',
+    lossDone: 'Готово',
+    back: 'Назад',
+    lossSaved: 'Lunabump се промени. Не бързай за нищо.',
+    lossSub: 'Тук сме, когато имаш нужда.',
+    lossCardTitle: (name) => (name ? `Толкова съжаляваме за ${name}.` : 'Толкова съжаляваме.'),
+    lossCardText: 'Няма правилен начин да се чувстваш след загуба и няма срок. Lunabump вече не показва седмици, размери и напомняния.',
+    supportTitle: 'Хора, които могат да помогнат',
+    supportIntro: 'Безплатна и поверителна подкрепа от хора, които разбират.',
+    supportEnglish: 'На английски (Великобритания)',
+    website: 'Уебсайт',
+    bodyTitle: 'Грижа за тялото',
+    bodyMiscarriage: [
+      'Болката в корема може да продължи няколко дни, а кървенето или зацапването – до 2 седмици.',
+      'Може да минат до 8 седмици, докато дойде следващият цикъл.',
+      'Избягвай секс, докато симптомите отминат, заради риска от инфекция.',
+    ],
+    bodyStillbirth: [
+      'Гърдите може да започнат да произвеждат мляко. Лекарят или акушерката могат да обсъдят с теб лекарство, което го спира, или то може да спре от само себе си.',
+      'След няколко седмици ще ти предложат контролен преглед.',
+    ],
+    whenHelp: 'Кога да потърсиш помощ',
+    memoriesTitle: 'Спомени',
+    memoriesText: 'Снимките и бележките ти са запазени, скрити. Отвори ги само когато поискаш.',
+    memoriesOpen: 'Отвори спомените',
+    readyTitle: 'Когато сте готови',
+    readyText: 'Може да опитате за ново бебе, когато се почувствате готови и симптомите са отминали. Лекарят може да обсъди с вас дали е нужна допълнителна грижа.',
+    newPregnancy: 'Започни нова бременност',
+    lowMoodLoss: 'Имаше много трудни дни. Това е разбираемо. Разговорът помага: с лекаря или с някого от хората за подкрепа на екрана „Днес“. Ако някога мислиш да си навредиш, обади се на 112.',
+
+    helpTitleLoss: 'Кога да потърсиш помощ',
+    helpTitleBorn: 'След раждането: кога да потърсиш помощ',
+    forYou: 'За теб',
+    forBaby: 'За бебето',
+    forHer: (name) => (name ? `За ${name}` : 'За партньорката ти'),
+    feelingsTitle: 'Чувствата',
+    feelingsText: 'Ако някога мислиш да си навредиш, обади се веднага на 112.',
+
+    bornTitle: 'Бебето е тук',
+    bornIntro: 'Честито! Разкажи ни малко за бебето, само каквото искаш.',
+    birthDate: 'Дата на раждане',
+    birthTime: 'Час',
+    babyName: 'Име (по желание)',
+    babySex: 'Пол',
+    sexes: { F: 'Момиче', M: 'Момче', unknown: 'Не искам да казвам' },
+    weight: 'Тегло (г)',
+    length: 'Ръст (см)',
+    addPhoto: 'Добави снимка (по желание)',
+    changePhoto: 'Смени снимката',
+    photoAdded: 'Снимката е добавена',
+    bornSave: 'Запази',
+    errDate: 'Избери датата на раждане.',
+    errRange: 'Тази дата не пасва на бременността. Провери я.',
+    errWeight: 'Въведи теглото в грамове, например 3450.',
+    errLength: 'Въведи ръста в сантиметри, например 51.',
+    welcome: (name, sex) => (name ? (sex === 'F' ? `Добре дошла, ${name}` : sex === 'M' ? `Добре дошъл, ${name}` : `Здравей, ${name}`) : 'Здравей, малка луна'),
+    age: (days) => (days <= 0 ? 'Първи ден' : days < 14 ? `На ${days} ${days === 1 ? 'ден' : 'дни'}` : `На ${Math.floor(days / 7)} седмици`),
+    bornOn: (date, time) => `Появи се на ${date}${time ? ` в ${time}` : ''}`,
+    statWeight: 'тегло',
+    statLength: 'ръст',
+    statWeeks: 'седмица',
+    grams: (g) => `${g} г`,
+    cm: (c) => `${c} см`,
+    yourBaby: 'Бебето',
+    birthCard: 'Картичка за раждането',
+    replay: 'Преживей бременността отново в 3D',
+    cardAlt: 'Картичка за раждането',
+    cardHint: 'Задръж пръст върху картичката (или кликни с десен бутон), за да я запазиш.',
+    share: 'Сподели',
+    shareFailed: 'Споделянето не е налично тук. Запази картичката.',
+    checksTitle: 'Първите седмици',
+    checksIntro: 'Прегледи и изследвания през първите 8 седмици, както ги предлага NHS в Англия. В България част от тях се правят още в родилния дом. Акушерката или личният лекар ще ти кажат какво предстои.',
+    checksAll: 'Всички прегледи',
+    checksDone: 'Всичко е отметнато. Браво и на двама ви.',
+    byDate: (d) => `До ${d}`,
+    aroundDate: (d) => `Около ${d}`,
+    recoveryTitle: 'Възстановяване и чувства',
+    recoveryText: [
+      'Следродилният преглед е 6–8 седмици след раждането.',
+      '„Бейби блус“ обикновено отминава до 2 седмици след раждането. Ако тъгата продължи, говори с акушерката или личния лекар.',
+      'И бащите, и партньорите може да имат депресия след раждането на бебе.',
+    ],
+    journeyTitle: 'Пътят дотук',
+    journeyText: 'Девет месеца, събрани на едно място.',
+    journeyStats: { kicks: 'ритника', moods: 'записа за настроение', photos: 'снимки' },
+    journeyOpen: 'Разгледай',
+    arrivedTitle: 'Бебето пристигна ли?',
+    arrivedText: 'Когато бебето е тук, Lunabump става внимателен водач за първите седмици.',
+    arrivedYes: 'Да, бебето е тук',
+    babyTitle: 'Бебето',
+    editBirth: 'Промени данните',
+    rows: { name: 'Име', date: 'Роди се', weight: 'Тегло', length: 'Ръст' },
+    undoBtn: 'Върни се към проследяването на бременността',
+    undoText: 'Lunabump отново ще показва бременността. Нищо не се изтрива.',
+    undoYes: 'Върни се',
+    newPregTitle: 'Нова бременност',
+    newPregText: 'Въведи новия термин. Спомените остават, където са.',
+    newPregSave: 'Започни',
+    memNote: 'Няколко думи, само за теб',
+    memNoPhotos: 'Няма запазени снимки.',
+    memDelete: 'Изтрий тези спомени',
+    memDeleteConfirm: 'Да изтрием ли снимките и бележките? Не може да се върне.',
+    memDeleted: 'Спомените са изтрити',
+    memLabel: (date) => `Спомен · ${date}`,
+    lowMoodBorn: 'Имаше няколко трудни дни. „Бейби блус“ обикновено отминава до 2 седмици след раждането. Ако тъгата продължи, говори с акушерката или личния лекар. Ако някога мислиш да си навредиш, обади се на 112.',
+
+    inviteTitle: 'Режим за партньора',
+    inviteText: 'Покани партньора си. Ще следи бременността седмица по седмица, със съвети как да помага.',
+    inviteCodeLabel: 'Код за покана',
+    inviteHow: 'Нека отвори Lunabump, избере „Партньор съм“ и въведе кода.',
+    inviteShares: (withSex) => `Кодът съдържа само термина${withSex ? ' и пола на бебето' : ''}. Симптомите, настроението и бележките ти остават в телефона ти.`,
+    inviteCopy: 'Копирай поканата',
+    inviteShare: 'Сподели',
+    inviteMessage: (code) => `Присъедини се към мен в Lunabump и следи бебето седмица по седмица. Избери „Партньор съм“ и въведи кода ${code}.`,
+    inviteLater: 'В пълното приложение ще избираш какво да споделяш на живо, например прегледи и ритници.',
+    linkedText: (name) => (name ? `Следиш бременността на ${name}.` : 'Следиш бременността като партньор.'),
+    newCodeLabel: 'Нов код? Въведи го тук',
+    useCode: 'Използвай',
+    codeOk: (date) => `Кодът е приет. Термин: ${date}`,
+    codeBad: 'Кодът не изглежда правилен. Провери го и опитай пак.',
+    obCodeTitle: 'Имаш ли код от партньора си?',
+    obCodePh: 'Например 4K7Q-2M',
+    obOr: 'Или въведи датата ръчно.',
+    partnerNameLabel: 'Името на партньорката ти (по желание)',
+    partnerNamePh: 'Малко име',
+    obModeTitlePartner: 'Как искаш да виждаш бременността?',
+    lmpPartner: 'Първи ден на последния цикъл',
+    theirBody: (name) => (name ? `Как може да се чувства ${name}` : 'Как може да се чувства тя'),
+    partnerTodo: 'Твоите задачи',
+    now: 'Сега',
+    signsTitle: 'Кога да се обадиш за помощ',
+    signsText: 'Кървене, изтичане на течност, силно главоболие със замъглено зрение или по-малко движения на бебето: обади се в родилното отделение или на 112 при спешност.',
+    partnerEmergency: (w) => `Това може да са признаци на спешно състояние. Обади се на 112 сега и кажи, че бременността е в ${w}${ordBg(w)} седмица.`,
+    partnerUrgentIntro: 'Избери какво се случва. Ако се колебаеш, обади се в родилното отделение: там предпочитат да ги потърсите.',
+    lunaHelloPartner: (name, w) => `Здравей${name ? `, ${name}` : ''}. Бременността е в ${w}${ordBg(w)} седмица. Питай ме за тази седмица или избери въпрос отдолу.`,
+    forPartners: 'За партньора',
+    toRead: 'За четене',
+    bornSub: 'Добре дошли в първите седмици.',
+    partnerDemo: 'Демо за партньора',
+    demoPartner: 'Иван',
+    demoHer: 'Елена',
+    partnerListDone: (a, b) => `${a} от ${b} готови`,
+  },
+};
+const J = () => JOURNEY_STR[lang];
+
+const journey = () => data.status || 'pregnant';
+const isPartner = () => !!(data.profile && data.profile.stage === 'partner');
+const herName = () => (data.profile && data.profile.partnerName) || '';
+
+/* ---------- Content ---------- */
+
+const NHS_MORE = {
+  miscarriage: ['NHS · Miscarriage', 'https://www.nhs.uk/conditions/miscarriage/'],
+  stillbirth: ['NHS · What happens after a stillbirth', 'https://www.nhs.uk/conditions/stillbirth/what-happens/'],
+  postnatal: ['NHS · Cambridge University Hospitals: after the birth, signs and who to call', 'https://www.cuh.nhs.uk/rosie-hospital/maternity/after-birth/signs-and-symptoms-and-who-to-call/'],
+  depression: ['NHS · Postnatal depression', 'https://www.nhs.uk/mental-health/conditions/postnatal-depression/'],
+  screening: ['NHS · Newborn screening', 'https://www.nhs.uk/baby/newborn-screening/'],
+  partners: ['NHS · Advice for partners', 'https://www.nhs.uk/best-start-in-life/pregnancy/advice-for-partners/'],
+  birthPartner: ['NHS · Tips for birth partners', 'https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/tips-for-your-birthing-partner-or-partners/'],
+};
+
+// Support after a loss. Bulgarian users see the Bulgarian service first and the UK charities as links.
+const SUPPORT = [
+  { id: 'nndd', home: 'bg', kinds: 'all', name: { en: '“Our Premature Children” Foundation', bg: 'Фондация „Нашите недоносени деца“' }, desc: { en: 'Free psychological support in Bulgaria for parents who have lost a baby, in pregnancy or after birth.', bg: 'Безплатна психологическа подкрепа за родители, загубили бебе по време на бременността или след раждането.' }, phone: '0882 952 316', url: 'https://premature-bg.com/podkrepa-za-roditeli-prezhiveli-zaguba/' },
+  { id: 'muk', home: 'en', kinds: ['miscarriage', 'ectopic', 'skip'], name: { en: 'Miscarriage UK', bg: 'Miscarriage UK' }, desc: { en: 'Support and information after miscarriage, ectopic and molar pregnancy.', bg: 'Подкрепа след спонтанен аборт, извънматочна и мехурна бременност.' }, phone: '0303 003 6464', url: 'https://www.miscarriageuk.org/' },
+  { id: 'tommys', home: 'en', kinds: 'all', name: { en: 'Tommy’s', bg: 'Tommy’s' }, desc: { en: 'Midwives you can talk to about any pregnancy loss.', bg: 'Акушерки, с които можеш да поговориш за всяка загуба на бременност.' }, phone: '0800 0147 800', url: 'https://www.tommys.org/' },
+  { id: 'sands', home: 'en', kinds: ['stillbirth', 'neonatal', 'tfmr', 'skip'], name: { en: 'Sands', bg: 'Sands' }, desc: { en: 'Support for anyone affected by the death of a baby, before, during or after birth.', bg: 'Подкрепа за всеки, засегнат от смъртта на бебе преди, по време или след раждането.' }, phone: '0808 164 3332', url: 'https://www.sands.org.uk/' },
+  { id: 'ept', home: 'en', kinds: ['ectopic'], name: { en: 'The Ectopic Pregnancy Trust', bg: 'The Ectopic Pregnancy Trust' }, desc: { en: 'Information and support after an ectopic pregnancy.', bg: 'Информация и подкрепа след извънматочна бременност.' }, url: 'https://ectopic.org.uk/' },
+  { id: 'arc', home: 'en', kinds: ['tfmr'], name: { en: 'ARC (Antenatal Results and Choices)', bg: 'ARC (Antenatal Results and Choices)' }, desc: { en: 'Support when a scan or test finds a problem, and after ending a pregnancy for medical reasons.', bg: 'Подкрепа, когато изследване открие проблем, и след прекъсване на бременността по медицински причини.' }, url: 'https://www.arc-uk.org/' },
+];
+
+const HELP = {
+  loss: {
+    src: NHS_MORE.miscarriage,
+    groups: [
+      { level: 'emergency', items: [
+        ['Heavy bleeding that quickly soaks a pad', 'Силно кървене, което бързо напоява превръзката'],
+        ['Severe tummy pain, or pain in the tip of your shoulder', 'Силна болка в корема или болка във върха на рамото'],
+        ['Feeling faint, dizzy or very unwell', 'Прималяване, световъртеж или силно неразположение'],
+      ] },
+      { level: 'today', items: [
+        ['A high temperature, or feeling hot and shivery', 'Висока температура или втрисане'],
+        ['Unusual or bad-smelling discharge', 'Необичайно течение или течение с неприятна миризма'],
+        ['Bleeding that gets heavier, or lasts longer than 2 weeks', 'Кървене, което се усилва или продължава повече от 2 седмици'],
+      ] },
+    ],
+  },
+  born: {
+    src: NHS_MORE.postnatal,
+    groups: [
+      { level: 'emergency', who: 'mum', items: [
+        ['Sudden or heavy bleeding, especially with dizziness', 'Внезапно или силно кървене, особено със световъртеж'],
+        ['Fever, shivering or tummy pain, especially with bad-smelling discharge', 'Температура, втрисане или болка в корема, особено с течение с неприятна миризма'],
+        ['A severe or ongoing headache', 'Силно или непрекъснато главоболие'],
+        ['Shortness of breath or chest pain', 'Задух или болка в гърдите'],
+        ['Pain, redness or swelling in one calf', 'Болка, зачервяване или подуване на единия прасец'],
+        ['Feeling very low, anxious or confused, seeing or hearing things, or thoughts of self-harm', 'Силна тъга, тревожност или объркване, виждане или чуване на несъществуващи неща, мисли за самонараняване'],
+      ] },
+      { level: 'today', who: 'mum', items: [
+        ['Sadness that hasn’t lifted 2 weeks after the birth', 'Тъга, която не е отминала 2 седмици след раждането'],
+        ['Stitches or a caesarean wound that are very painful, red or leaking', 'Шевове или рана от цезарово сечение, които силно болят, зачервени са или изтичат'],
+        ['Problems passing urine or poo', 'Затруднено уриниране или изхождане'],
+        ['A painful, red or hot area on a breast, or trouble breastfeeding', 'Болезнено, зачервено или горещо място на гърдата или трудности с кърменето'],
+      ] },
+      { level: 'emergency', who: 'baby', items: [
+        ['Very sleepy, limp or floppy', 'Много сънливо, отпуснато или вяло'],
+        ['Fast or noisy breathing, or blue lips', 'Учестено или шумно дишане или посинели устни'],
+        ['A fit (seizure)', 'Гърч'],
+        ['Yellow skin or eyes in the first 24 hours', 'Жълта кожа или очи през първите 24 часа'],
+        ['No wet nappy or first poo in the first 24 hours', 'Нито мокър памперс, нито първо изхождане през първите 24 часа'],
+        ['A rash that doesn’t fade when you press a glass on it', 'Обрив, който не избледнява, когато го притиснеш с чаша'],
+        ['Green vomit, or blood in the poo', 'Зелено повръщане или кръв в изпражненията'],
+        ['A temperature of 38°C or more', 'Температура 38 °C или повече'],
+        ['Feeding much less, or far fewer wet nappies than usual', 'Храни се много по-малко или има много по-малко мокри памперси от обикновено'],
+      ] },
+      { level: 'today', who: 'baby', items: [
+        ['Too sleepy to feed', 'Твърде сънливо, за да се храни'],
+        ['Yellow skin that starts after day 7, or lasts longer than 2 weeks', 'Жълта кожа, която се появява след 7-ия ден или продължава повече от 2 седмици'],
+        ['A red, smelly or oozing umbilical cord stump', 'Зачервено, миришещо или овлажнено пъпче'],
+        ['Crying a lot and hard to soothe', 'Плаче много и трудно се успокоява'],
+      ] },
+    ],
+  },
+};
+
+// days after the birth: `at` is when it usually happens, `by` the latest
+const NEWBORN_CHECKS = [
+  { id: 'nb_exam', at: 0, by: 3, en: ['Newborn physical examination', 'Within 72 hours of birth: eyes, heart, hips and, in boys, the testicles.'], bg: ['Физически преглед на новороденото', 'До 72 часа след раждането: очи, сърце, тазобедрени стави, а при момчетата и тестиси.'] },
+  { id: 'nb_blood', at: 5, en: ['Blood spot (heel prick) test', 'Usually at 5 days old. It screens for 10 rare but serious conditions.'], bg: ['Кръвна капка от петата', 'Обикновено на 5-ия ден. Проверява за 10 редки, но сериозни заболявания.'] },
+  { id: 'nb_hearing', at: 0, by: 28, en: ['Hearing test', 'Usually before 4 weeks, sometimes before you leave hospital.'], bg: ['Тест на слуха', 'Обикновено до 4 седмици, понякога още преди изписването.'] },
+  { id: 'nb_register', at: 0, by: 42, en: ['Register the birth', 'In England and Wales, within 42 days. Elsewhere the rules differ: ask the hospital or your local council.'], bg: ['Регистрирай раждането', 'Редът и сроковете са различни в различните държави. Попитай в болницата или в общината.'] },
+  { id: 'nb_68', at: 42, by: 56, en: ['Baby’s 6 to 8 week check', 'The physical examination is repeated, usually by a GP.'], bg: ['Преглед на бебето на 6–8 седмици', 'Физическият преглед се повтаря, обикновено при личния лекар.'] },
+  { id: 'mum_68', at: 42, by: 56, en: ['Postnatal check', '6 to 8 weeks after the birth, usually with a GP: wellbeing, recovery and contraception.'], bg: ['Следродилен преглед', '6–8 седмици след раждането, обикновено при личния лекар: самочувствие, възстановяване и контрацепция.'] },
+  { id: 'nb_vacc', at: 56, en: ['First routine vaccines', 'In the UK at 8 weeks. Schedules differ between countries, so ask your GP.'], bg: ['Ваксини', 'Графикът е различен в различните държави. В България първите ваксини (срещу хепатит B и туберкулоза) се правят още в родилния дом. Попитай личния лекар за следващите.'] },
+];
+
+// trimester index 0, 1, 2 (NHS advice for partners and tips for birth partners)
+const PARTNER_TODO = [
+  { id: 'p_appt', tri: 0, en: 'Come to the first appointments if you can', bg: 'Ела на първите прегледи, ако можеш' },
+  { id: 'p_smoke', tri: 0, en: 'If you smoke, get support to stop: second-hand smoke harms the baby', bg: 'Ако пушиш, потърси помощ да спреш: пасивното пушене вреди на бебето' },
+  { id: 'p_alcohol', tri: 0, en: 'Cut down on alcohol together', bg: 'Намалете заедно алкохола' },
+  { id: 'p_food', tri: 0, en: 'Learn which foods to avoid in pregnancy, so you can help with meals', bg: 'Научи кои храни се избягват по време на бременност, за да помагаш с храненето' },
+  { id: 'p_scan', tri: 1, en: 'Take time off for the anomaly scan', bg: 'Вземи си почивен ден за феталната морфология' },
+  { id: 'p_leave', tri: 1, en: 'Find out about your parental leave and tell your employer', bg: 'Разбери какъв отпуск ти се полага и уведоми работодателя си' },
+  { id: 'p_classes', tri: 1, en: 'Sign up for an antenatal class together', bg: 'Запишете се заедно на курс за раждане' },
+  { id: 'p_walk', tri: 1, en: 'Stay active together: walks or swimming', bg: 'Движете се заедно: разходки или плуване' },
+  { id: 'p_route', tri: 2, en: 'Plan the route to the hospital, the transport and the parking', bg: 'Планирай пътя до болницата, транспорта и паркирането' },
+  { id: 'p_unit', tri: 2, en: 'Save the maternity unit’s number in your phone', bg: 'Запиши номера на родилното отделение в телефона си' },
+  { id: 'p_plan', tri: 2, en: 'Read the birth plan together', bg: 'Прочетете заедно плана за раждане' },
+  { id: 'p_bag', tri: 2, en: 'Pack your own bag: snacks, a phone charger and a change of clothes', bg: 'Приготви своя чанта: храна, зарядно за телефона и дрехи за смяна' },
+  { id: 'p_seat', tri: 2, en: 'Fit the car seat', bg: 'Монтирай столчето за кола' },
+  { id: 'p_signs', tri: 2, en: 'Learn the signs of labour and when to call', bg: 'Научи признаците на раждането и кога да се обадите' },
+  { id: 'p_timer', tri: 2, en: 'Try the contraction timer', bg: 'Пробвай таймера за контракции' },
+];
+
+const MORE_QUESTIONS = {
+  partner: [
+    ['How can I help during labour?', 'Как мога да помагам по време на раждането?'],
+    ['Can I stay with her after the birth?', 'Мога ли да остана с нея след раждането?'],
+    ['Who do we call if something worries us at night?', 'На кого да се обадим, ако нещо ни притесни през нощта?'],
+    ['What should I bring to the hospital?', 'Какво да взема в болницата?'],
+  ],
+  born: [
+    ['When is my baby’s next check?', 'Кога е следващият преглед на бебето?'],
+    ['Is my baby feeding well enough?', 'Храни ли се бебето достатъчно?'],
+    ['Which vaccines does my baby need, and when?', 'Какви ваксини му трябват и кога?'],
+    ['Is my bleeding normal?', 'Нормално ли е кървенето ми?'],
+    ['When can I start exercising again?', 'Кога мога да започна да спортувам отново?'],
+  ],
+  loss: [
+    ['Do we know why it happened?', 'Знаем ли защо се случи?'],
+    ['What follow-up will I have?', 'Какви контролни прегледи ми предстоят?'],
+    ['Do I need any tests before we try again?', 'Нужни ли са изследвания, преди да опитаме отново?'],
+    ['When can I go back to work?', 'Кога мога да се върна на работа?'],
+    ['Is there someone I can talk to?', 'Има ли с кого да поговоря?'],
+  ],
+};
+
+// extra articles, opened like the others (no keywords for the loss and birth ones: Luna never offers them unasked)
+TOPICS.push(
+  {
+    id: 'support', group: 'partner', min: 3, src: NHS_MORE.partners,
+    title: { en: 'How to help during the pregnancy', bg: 'Как да помагаш по време на бременността' },
+    q: { en: 'How can I support my partner?', bg: 'Как да подкрепям партньорката си?' },
+    kw: ['support my', 'help my partner', 'as a partner', 'партньор', 'да помагам', 'подкрепям'],
+    a: {
+      en: [
+        'You can make a real difference, starting now. If you smoke, get support to stop: second-hand smoke harms the baby. Cutting down on alcohol together helps too.',
+        'Go to antenatal classes together, and to the appointments you can. Gentle exercise together, such as walks or swimming, and healthy meals are good for you both.',
+        'Take on the practical side: plan the route to the hospital and how you’ll get there, keep the important phone numbers to hand, and find out about your parental leave.',
+        'After the birth you can help with feeding: bring water and snacks during breastfeeding, or make up the bottles if your baby has formula.',
+      ],
+      bg: [
+        'Можеш да помогнеш много още отсега. Ако пушиш, потърси помощ да спреш: пасивното пушене вреди на бебето. Помага и ако заедно намалите алкохола.',
+        'Ходете заедно на курс за раждане и на прегледите, на които можеш. Разходките или плуването заедно и здравословното хранене са добри и за двама ви.',
+        'Поеми практическата част: планирай пътя до болницата и с какво ще стигнете, дръж важните телефони подръка и разбери какъв отпуск ти се полага.',
+        'След раждането можеш да помагаш с храненето: носи вода и нещо за хапване по време на кърмене или приготвяй шишетата, ако бебето е на адаптирано мляко.',
+      ],
+    },
+  },
+  {
+    id: 'birthpartner', group: 'partner', min: 3, src: NHS_MORE.birthPartner,
+    title: { en: 'Being a birth partner', bg: 'Партньор при раждането' },
+    q: { en: 'What does a birth partner do?', bg: 'Какво прави партньорът при раждането?' },
+    kw: ['birth partner', 'during labour', 'при раждането'],
+    a: {
+      en: [
+        'Before labour, read the birth plan so you know what your partner wants. Antenatal classes help you understand contractions and pain relief.',
+        'Plan the journey and the parking, and pack your own bag: toiletries, snacks, a phone charger and a change of clothes.',
+        'During labour, reassure and encourage. Help with breathing through each contraction, with moving and changing position, and offer drinks and snacks.',
+        'Help the team hear what your partner wants, and look after yourself as well: eat, drink and take short breaks when you can.',
+      ],
+      bg: [
+        'Преди раждането прочети плана за раждане, за да знаеш какво иска партньорката ти. Курсът за раждане помага да разбереш контракциите и обезболяването.',
+        'Планирай пътя и паркирането и приготви своя чанта: тоалетни принадлежности, нещо за хапване, зарядно за телефона и дрехи за смяна.',
+        'По време на раждането успокоявай и окуражавай. Помагай с дишането при всяка контракция, с движението и смяната на позата и предлагай вода и храна.',
+        'Помагай желанията ѝ да бъдат чути от екипа и се грижи и за себе си: яж, пий и си почивай за кратко, когато можеш.',
+      ],
+    },
+  },
+  {
+    id: 'lossbody', group: 'loss', min: 2, src: NHS_MORE.miscarriage,
+    title: { en: 'Your body after a miscarriage', bg: 'Тялото след спонтанен аборт' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'After a miscarriage you may have tummy pain for a few days, and bleeding or spotting for up to 2 weeks.',
+        'It can take up to 8 weeks before you have a period again.',
+        'Don’t have sex until your symptoms have gone, because there’s a risk of infection.',
+        'Get help straight away if you have heavy bleeding, severe pain, a high temperature or bad-smelling discharge.',
+      ],
+      bg: [
+        'След спонтанен аборт може да имаш болки в корема няколко дни и кървене или зацапване до 2 седмици.',
+        'Може да минат до 8 седмици, докато дойде следващият цикъл.',
+        'Избягвай секс, докато симптомите отминат, защото има риск от инфекция.',
+        'Потърси помощ веднага при силно кървене, силна болка, висока температура или течение с неприятна миризма.',
+      ],
+    },
+  },
+  {
+    id: 'grief', group: 'loss', min: 2, src: NHS_MORE.miscarriage,
+    title: { en: 'Grief, for both of you', bg: 'Скръбта, и при двамата' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'Losing a pregnancy or a baby can be devastating. There’s no right way to feel, and grief doesn’t follow a timetable.',
+        'Partners grieve too, sometimes in different ways or at different times. Talking to each other, and to people who understand, can help.',
+        'You may be offered counselling, or you can ask your GP or pregnancy unit. Support is also available for partners.',
+      ],
+      bg: [
+        'Загубата на бременност или на бебе може да е съкрушителна. Няма правилен начин да се чувстваш, а скръбта няма срок.',
+        'И партньорите скърбят, понякога по различен начин или в различно време. Помага да говорите един с друг и с хора, които разбират.',
+        'Може да ти предложат разговор с психолог или да го поискаш от личния лекар или от болницата. Подкрепа има и за партньорите.',
+      ],
+    },
+  },
+  {
+    id: 'afterstill', group: 'loss', min: 3, src: NHS_MORE.stillbirth,
+    title: { en: 'After a stillbirth', bg: 'След мъртво раждане' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'Your breasts may start to make milk. Medicine can stop it, though it isn’t suitable for everyone (for example with pre-eclampsia or high blood pressure), or the milk can be left to dry up naturally.',
+        'You’ll be offered a follow-up appointment a few weeks later, to see how you are and to talk about any test results.',
+        'In England and Wales a stillbirth is registered within 42 days. Other countries have their own rules, and the hospital will tell you what to do.',
+        'Many parents feel guilt, anxiety or depression afterwards. Your GP or midwife can help, and so can other bereaved parents.',
+      ],
+      bg: [
+        'Гърдите може да започнат да произвеждат мляко. Има лекарство, което го спира, но не е подходящо за всички (например при прееклампсия или високо кръвно налягане). Млякото може и да спре от само себе си.',
+        'След няколко седмици ще ти предложат контролен преглед, за да видите как се чувстваш и да обсъдите резултатите от изследванията.',
+        'В Англия и Уелс мъртвото раждане се регистрира до 42 дни. В другите държави правилата са различни и от болницата ще ти кажат какво да направиш.',
+        'Много родители изпитват вина, тревожност или депресия след това. Личният лекар или акушерката могат да помогнат, както и други родители, преживели загуба.',
+      ],
+    },
+  },
+  {
+    id: 'tryagain', group: 'loss', min: 2, src: NHS_MORE.miscarriage,
+    title: { en: 'Thinking about trying again', bg: 'Ако мислите за ново бебе' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'You can try to get pregnant again when you feel ready, after your symptoms have gone.',
+        'Most women who have a miscarriage go on to have a successful pregnancy.',
+        'If you’ve had more than one loss, or a later loss, ask your doctor whether tests or extra care are right for you.',
+        'Feeling anxious in a new pregnancy is common. Tell your midwife or doctor, so they can support you.',
+      ],
+      bg: [
+        'Може да опитате отново, когато се почувствате готови и симптомите са отминали.',
+        'Повечето жени, преживели спонтанен аборт, имат успешна бременност след това.',
+        'Ако загубите са повече от една или загубата е била по-късно, попитай лекаря дали са нужни изследвания или допълнителна грижа.',
+        'Тревожността при нова бременност е честа. Кажи на лекаря или акушерката, за да те подкрепят.',
+      ],
+    },
+  },
+  {
+    id: 'nbchecks', group: 'born', min: 2, src: NHS_MORE.screening,
+    title: { en: 'Your baby’s first checks', bg: 'Първите прегледи на бебето' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'Within 72 hours of birth your baby is offered a physical examination of the eyes, heart, hips and, in boys, the testicles. It’s repeated at 6 to 8 weeks.',
+        'At about 5 days old, a midwife does the blood spot (heel prick) test. It screens for 10 rare but serious conditions.',
+        'A hearing test is usually offered before 4 weeks, sometimes before you leave hospital.',
+        'This is the schedule in England. Other countries have their own, and your midwife or doctor will tell you about yours.',
+      ],
+      bg: [
+        'До 72 часа след раждането на бебето се прави физически преглед на очите, сърцето, тазобедрените стави, а при момчетата и на тестисите. Прегледът се повтаря на 6–8 седмици.',
+        'Около 5-ия ден се взема кръвна капка от петата. Тя проверява за 10 редки, но сериозни заболявания.',
+        'Тестът на слуха обикновено е до 4 седмици, понякога още преди изписването.',
+        'Това е графикът в Англия. В България част от изследванията се правят още в родилния дом; акушерката или личният лекар ще ти кажат какво предстои.',
+      ],
+    },
+  },
+  {
+    id: 'blues', group: 'born', min: 2, src: NHS_MORE.depression,
+    title: { en: 'Baby blues or postnatal depression?', bg: '„Бейби блус“ или следродилна депресия?' },
+    q: { en: '', bg: '' }, kw: [],
+    a: {
+      en: [
+        'Feeling tearful, anxious or low in the first days after the birth is very common. These baby blues usually go away within 2 weeks of the birth.',
+        'If low mood lasts longer, or starts later, it could be postnatal depression. It can start any time in the first year, and it can be treated.',
+        'Fathers and partners can also have depression after having a baby.',
+        'Talk to your GP, midwife or health visitor. If you ever think about harming yourself, call 112.',
+      ],
+      bg: [
+        'Сълзите, тревожността и тъгата в първите дни след раждането са много чести. Този „бейби блус“ обикновено отминава до 2 седмици след раждането.',
+        'Ако тъгата продължи по-дълго или започне по-късно, може да е следродилна депресия. Тя може да започне по всяко време през първата година и се лекува.',
+        'И бащите, и партньорите може да имат депресия след раждането на бебе.',
+        'Говори с личния лекар или акушерката. Ако някога мислиш да си навредиш, обади се на 112.',
+      ],
+    },
+  },
+);
+for (const tp of TOPICS) topicById[tp.id] = tp;
+
+/* ---------- Visibility: which parts of the app fit this moment ---------- */
+function applyJourney() {
+  const st = journey();
+  const app = $('app');
+  app.dataset.journey = st;
+  app.dataset.role = isPartner() ? 'partner' : 'self';
+  app.classList.toggle('no-luna', st !== 'pregnant');
+  for (const el of document.querySelectorAll('[data-modes]')) el.hidden = !el.dataset.modes.split(' ').includes(st);
+  if (ui.replay) $('luna-slot').parentElement.hidden = false;
+}
+
+/* ---------- Invite codes (due date and sex, with a check) ---------- */
+const CODE_ABC = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const CODE_EPOCH = '2020-01-01';
+const CODE_SEX = ['unknown', 'F', 'M'];
+function codeCheck(body) {
+  let h = 7;
+  for (const ch of body) h = (h * 31 + CODE_ABC.indexOf(ch) + 1) % 1021;
+  return CODE_ABC[h % 32] + CODE_ABC[Math.floor(h / 32) % 32];
+}
+function makeCode(due, sex) {
+  let n = daysBetween(CODE_EPOCH, due) * 3 + Math.max(0, CODE_SEX.indexOf(sex));
+  let body = '';
+  for (let i = 0; i < 4; i++) { body = CODE_ABC[n % 32] + body; n = Math.floor(n / 32); }
+  return `${body}-${codeCheck(body)}`;
+}
+function readCode(raw) {
+  const s = String(raw || '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^0-9A-Z]/g, '');
+  if (s.length !== 6 || [...s].some((ch) => !CODE_ABC.includes(ch))) return null;
+  const body = s.slice(0, 4);
+  if (codeCheck(body) !== s.slice(4)) return null;
+  const n = [...body].reduce((acc, ch) => acc * 32 + CODE_ABC.indexOf(ch), 0);
+  const due = addDays(CODE_EPOCH, Math.floor(n / 3));
+  const ga = 280 - daysBetween(todayISO(), due);
+  if (ga < 28 || ga > 294) return null;
+  return { due, sex: CODE_SEX[n % 3], code: `${body}-${s.slice(4)}` };
+}
+
+/* ---------- Shared pieces ---------- */
+function supportRow(org, withPhone) {
+  const phone = withPhone && org.phone ? org.phone : '';
+  const tel = phone.replace(/[^\d+]/g, '');
+  return `<li class="support">
+    <strong>${esc(L(org.name))}</strong>
+    <p>${esc(L(org.desc))}</p>
+    <div class="row">
+      ${phone ? `<a class="btn btn-quiet" href="tel:${esc(tel)}">${ICON.phone}<span>${esc(phone)}</span></a><button type="button" class="icon-btn" data-action="copy" data-copy="${esc(phone)}" aria-label="${esc(t().copy)} ${esc(phone)}">${ICON.copy}</button>` : ''}
+      <a class="link-btn small" href="${org.url}" target="_blank" rel="noopener">${esc(J().website)}</a>
+    </div>
+  </li>`;
+}
+
+function supportHTML(kind) {
+  const fits = (o) => o.kinds === 'all' || !kind || kind === 'skip' || o.kinds.includes(kind);
+  const local = SUPPORT.filter((o) => o.home === lang && fits(o));
+  const uk = lang === 'bg' ? SUPPORT.filter((o) => o.home === 'en' && fits(o)) : [];
+  return `<p class="fine">${esc(J().supportIntro)}</p>
+    <ul class="support-list">${local.map((o) => supportRow(o, true)).join('')}</ul>
+    ${uk.length ? `<h3>${esc(J().supportEnglish)}</h3><ul class="support-list">${uk.map((o) => supportRow(o, false)).join('')}</ul>` : ''}`;
+}
+
+function helpGroupHTML(g) {
+  const s = J();
+  const who = g.who === 'baby' ? s.forBaby : g.who === 'mum' ? (isPartner() ? s.forHer(herName()) : s.forYou) : '';
+  return `<div class="help-group help-${g.level}">
+    <h3>${who ? `${esc(who)} · ` : ''}${esc(t().levelTitle[g.level])}</h3>
+    <ul class="help-list">${g.items.map((it) => `<li>${esc(lang === 'bg' ? it[1] : it[0])}</li>`).join('')}</ul>
+  </div>`;
+}
+
+function openHelp() {
+  const st = journey();
+  const h = HELP[st];
+  const s = J();
+  const order = st === 'born' ? ['mum', 'baby'] : [null];
+  const groups = order.map((who) => h.groups.filter((g) => (g.who || null) === who).map(helpGroupHTML).join('')).join('');
+  openSheet('help', st === 'born' ? s.helpTitleBorn : s.helpTitleLoss, `
+    ${groups}
+    <div class="help-group"><h3>${esc(s.feelingsTitle)}</h3><p>${esc(s.feelingsText)}</p></div>
+    ${callBlock('now')}
+    ${sourceLine(h.src)}
+    ${st === 'born' ? sourceLine(NHS_MORE.depression) : ''}`);
+}
+
+function ageDays() {
+  return data.birth ? daysBetween(data.birth.date, todayISO()) : 0;
+}
+
+/* ---------- Today when the baby is born or after a loss ---------- */
+let bornPhotoUrl = '';
+function setBornPhoto(img) {
+  if (!data.birth || !data.birth.photo || !img) return;
+  photoGet('birth').then((blob) => {
+    if (!blob || !document.contains(img)) return;
+    if (bornPhotoUrl) URL.revokeObjectURL(bornPhotoUrl);
+    bornPhotoUrl = URL.createObjectURL(blob);
+    img.src = bornPhotoUrl;
+    img.hidden = false;
+    if (img.nextElementSibling) img.nextElementSibling.hidden = true;
+  });
+}
+
+function bornHeroHTML() {
+  const b = data.birth;
+  const s = J();
+  const ga = b.ga;
+  const stats = [
+    b.weight ? [s.grams(b.weight), s.statWeight] : null,
+    b.length ? [s.cm(b.length), s.statLength] : null,
+    Number.isFinite(ga) ? [`${Math.floor(ga / 7)}+${ga % 7}`, s.statWeeks] : null,
+  ].filter(Boolean);
+  return `<section class="card born-card" aria-labelledby="born-title">
+    <div class="born-hero">
+      <span class="born-photo"><img alt="" hidden data-born-photo>${ICON.moon}</span>
+      <div><h2 id="born-title">${esc(s.welcome(b.name, b.sex))}</h2><p class="muted small">${esc(s.bornOn(fmtDate(b.date), b.time))}</p></div>
+    </div>
+    ${stats.length ? `<div class="stats">${stats.map(([v, k]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('')}</div>` : ''}
+    <div class="row"><button type="button" class="btn" data-action="birth-card">${esc(s.birthCard)}</button><button type="button" class="btn btn-quiet" data-action="replay">${esc(s.replay)}</button></div>
+  </section>`;
+}
+
+function checkDue(c) {
+  const s = J();
+  return c.by !== undefined ? s.byDate(fmtDate(addDays(data.birth.date, c.by))) : s.aroundDate(fmtDate(addDays(data.birth.date, c.at)));
+}
+
+function checkRow(c) {
+  const [title, text] = L(c);
+  const done = !!data.newborn.checked[c.id];
+  return `<li><label><input type="checkbox" data-nb-check="${c.id}" ${done ? 'checked' : ''}><span><strong${done ? ' class="done"' : ''}>${esc(title)}</strong><span class="check-due">${esc(checkDue(c))}</span><span class="fine" style="display:block">${esc(text)}</span></span></label></li>`;
+}
+
+function journeyStats() {
+  const kicks = data.kickSessions.reduce((n, k) => n + k.count, 0) + data.kickTaps.length;
+  return [[kicks, J().journeyStats.kicks], [Object.keys(data.moods).length, J().journeyStats.moods], [data.photoIndex.length, J().journeyStats.photos]];
+}
+
+function renderCalmToday() {
+  const st = journey();
+  const s = J();
+  $('urgent-top').querySelector('span').textContent = s.help;
+  if (st === 'born') {
+    const b = data.birth;
+    $('today-week').textContent = `${b.name || s.yourBaby} · ${s.age(ageDays())}`;
+    $('today-togo').textContent = s.bornSub;
+    $('calm-top').innerHTML = bornHeroHTML();
+    setBornPhoto($('calm-top').querySelector('[data-born-photo]'));
+    const open = NEWBORN_CHECKS.filter((c) => !data.newborn.checked[c.id]).slice(0, 3);
+    $('calm-rest').innerHTML = `
+      <section class="card" aria-labelledby="checks-title">
+        <div class="row-between"><h2 id="checks-title">${esc(s.checksTitle)}</h2><button type="button" class="link-btn small" data-action="tool" data-tool="checks">${esc(s.checksAll)}</button></div>
+        ${open.length ? `<ul class="checklist">${open.map(checkRow).join('')}</ul>` : `<p class="muted">${esc(s.checksDone)}</p>`}
+      </section>
+      <section class="card" aria-labelledby="recovery-title">
+        <h2 id="recovery-title">${esc(s.recoveryTitle)}</h2>
+        ${s.recoveryText.map((p) => `<p>${esc(p)}</p>`).join('')}
+        <div class="row"><button type="button" class="btn btn-line" data-action="urgent">${ICON.alert}<span>${esc(s.whenHelp)}</span></button><button type="button" class="link-btn small" data-action="article" data-topic="blues">${esc(L(topicById.blues.title))}</button></div>
+      </section>
+      <section class="card" aria-labelledby="journey-title">
+        <h2 id="journey-title">${esc(s.journeyTitle)}</h2>
+        <p class="muted small">${esc(s.journeyText)}</p>
+        <div class="stats">${journeyStats().map(([v, k]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join('')}</div>
+        <button type="button" class="btn btn-quiet" data-action="journey-open">${esc(s.journeyOpen)}</button>
+      </section>`;
+    return;
+  }
+  // loss
+  const loss = data.loss || {};
+  $('today-week').textContent = new Date().toLocaleDateString(t().locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  $('today-togo').textContent = s.lossSub;
+  $('calm-top').innerHTML = `<section class="card calm-card" aria-labelledby="loss-title">
+    <h2 id="loss-title">${esc(s.lossCardTitle(loss.name))}</h2>
+    <p>${esc(s.lossCardText)}</p>
+  </section>`;
+  const late = ['stillbirth', 'neonatal'].includes(loss.kind);
+  const body = late ? s.bodyStillbirth : loss.kind === 'tfmr' || loss.kind === 'skip' || !loss.kind ? [...s.bodyMiscarriage.slice(0, 1), ...s.bodyStillbirth.slice(1)] : s.bodyMiscarriage;
+  const memories = memoryList().length > 0;
+  $('calm-rest').innerHTML = `
+    <section class="card" aria-labelledby="support-title">
+      <h2 id="support-title">${esc(s.supportTitle)}</h2>
+      ${supportHTML(loss.kind)}
+    </section>
+    <section class="card" aria-labelledby="body-title">
+      <h2 id="body-title">${esc(s.bodyTitle)}</h2>
+      ${body.map((p) => `<p>${esc(p)}</p>`).join('')}
+      <button type="button" class="btn btn-line" data-action="urgent">${ICON.alert}<span>${esc(s.whenHelp)}</span></button>
+      ${sourceLine(late ? NHS_MORE.stillbirth : NHS_MORE.miscarriage)}
+    </section>
+    ${memories ? `<section class="card" aria-labelledby="mem-title"><h2 id="mem-title">${esc(s.memoriesTitle)}</h2><p class="muted small">${esc(s.memoriesText)}</p><button type="button" class="btn btn-quiet" data-action="memories">${esc(s.memoriesOpen)}</button></section>` : ''}
+    <section class="card" aria-labelledby="ready-title">
+      <h2 id="ready-title">${esc(s.readyTitle)}</h2>
+      <p class="muted small">${esc(s.readyText)}</p>
+      <button type="button" class="btn btn-line" data-action="new-preg">${esc(s.newPregnancy)}</button>
+    </section>`;
+}
+
+/* ---------- Today extras while pregnant ---------- */
+function renderTodayExtra() {
+  const s = J();
+  const parts = [];
+  if (gaDays() >= 280) {
+    parts.push(`<section class="card calm-card" aria-labelledby="arrived-title"><h2 id="arrived-title">${esc(s.arrivedTitle)}</h2><p class="muted small">${esc(s.arrivedText)}</p><button type="button" class="btn" data-action="birth-open">${esc(s.arrivedYes)}</button></section>`);
+  }
+  if (isPartner()) {
+    parts.push(`<section class="card" aria-labelledby="signs-title"><h2 id="signs-title">${esc(s.signsTitle)}</h2><p class="small">${esc(s.signsText)}</p><button type="button" class="btn btn-line" data-action="urgent">${ICON.alert}<span>${esc(t().seeUrgent)}</span></button></section>`);
+  }
+  $('today-extra').innerHTML = parts.join('');
+  $('today-extra').hidden = !parts.length;
+}
+
+/* ---------- The loss flow ---------- */
+function openLossFlow() {
+  ui.lossForm = { kind: 'skip', date: todayISO(), name: '', keep: 'keep' };
+  renderLossStep(1);
+}
+
+function renderLossStep(step) {
+  const s = J();
+  const f = ui.lossForm;
+  if (step === 1) {
+    openSheet('loss', s.lossTitle, `
+      <p>${esc(s.lossIntro)}</p>
+      <p class="muted">${esc(s.lossWhatChanges)}</p>
+      <div class="help-group"><h3>${esc(s.supportTitle)}</h3>${supportHTML('skip')}</div>`,
+    `<div style="display:grid;gap:8px"><button type="button" class="btn btn-block" data-action="loss-next">${esc(s.lossChange)}</button><button type="button" class="btn btn-line btn-block" data-action="sheet-close">${esc(s.lossNotNow)}</button></div>`);
+    return;
+  }
+  openSheet('loss', s.lossTitle, `
+    <div class="field"><span class="small" style="font-weight:600" id="loss-kind-title">${esc(s.lossKindTitle)}</span>
+      <div class="chips" role="radiogroup" aria-labelledby="loss-kind-title">${Object.entries(s.lossKinds).map(([k, v]) => `<button type="button" class="chip" role="radio" aria-checked="${f.kind === k}" aria-pressed="${f.kind === k}" data-action="loss-kind" data-kind="${k}">${esc(v)}</button>`).join('')}</div>
+      <p class="fine">${esc(s.lossKindHint)}</p></div>
+    <label class="field"><span>${esc(s.lossDate)}</span><input class="input" type="date" id="loss-date" value="${esc(f.date)}" max="${todayISO()}" min="${addDays(todayISO(), -730)}"></label>
+    <label class="field"><span>${esc(s.lossNameLabel)}</span><input class="input" id="loss-name" maxlength="40" value="${esc(f.name)}" autocomplete="off"><small class="fine">${esc(s.lossNameHint)}</small></label>
+    <fieldset class="choice-list"><legend class="small" style="font-weight:600;margin-bottom:6px">${esc(s.keepTitle)}</legend>
+      ${['keep', 'delete'].map((k) => `<label class="choice"><input type="radio" name="loss-keep" value="${k}" ${f.keep === k ? 'checked' : ''}><span><strong>${esc(s.keep[k][0])}</strong><small>${esc(s.keep[k][1])}</small></span></label>`).join('')}
+    </fieldset>
+    ${isPartner() ? '' : `<p class="fine">${esc(s.partnerNote)}</p>`}`,
+  `<div class="row"><button type="button" class="btn btn-line" data-action="loss-back">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="loss-save">${esc(s.lossDone)}</button></div>`);
+}
+
+function readLossForm() {
+  const f = ui.lossForm;
+  if ($('loss-date')) f.date = $('loss-date').value;
+  if ($('loss-name')) f.name = $('loss-name').value.trim().slice(0, 40);
+  const keep = document.querySelector('input[name="loss-keep"]:checked');
+  if (keep) f.keep = keep.value;
+}
+
+async function applyLoss() {
+  readLossForm();
+  const f = ui.lossForm;
+  const loss = { kind: f.kind, date: validISO(f.date) ? f.date : todayISO(), name: f.name, note: '', kept: f.keep === 'keep', week: weekNow() };
+  if (!loss.kept) {
+    const { profile, care, memories } = data;
+    await photoClearAll();
+    data = blank();
+    Object.assign(data, { profile, care, memories });
+  }
+  data.loss = loss;
+  data.birth = null;
+  data.status = 'loss';
+  data.activeKicks = null;
+  data.activeContraction = null;
+  ui.chat = [];
+  save();
+  closeSheet();
+  if (ui.lunaView === 'full') closeLunaFull();
+  renderAll();
+  showTab('today');
+  toast(J().lossSaved);
+}
+
+/* ---------- Memories ---------- */
+function memoryList() {
+  const list = (data.memories || []).map((m, i) => ({ key: String(i), ...m }));
+  if (journey() === 'loss' && data.loss && data.loss.kept) list.unshift({ key: 'current', ...data.loss, photos: data.photoIndex });
+  return list;
+}
+
+function openMemories() {
+  const s = J();
+  revokePhotoUrls();
+  const list = memoryList();
+  const html = list.map((m) => `<section class="card" aria-label="${esc(s.memLabel(fmtDate(m.date)))}">
+      <p class="eyebrow">${esc(s.memLabel(fmtDate(m.date)))}</p>
+      ${m.name ? `<h2>${esc(m.name)}</h2>` : ''}
+      ${(m.photos || []).length ? `<div class="photo-grid">${m.photos.map((p) => `<span class="photo"><img alt="" data-photo="${p.id}"><span>${esc(T().week(p.week))}</span></span>`).join('')}</div>` : `<p class="muted small">${esc(s.memNoPhotos)}</p>`}
+      <label class="field"><span>${esc(s.memNote)}</span><textarea class="input" data-mem-note="${m.key}" maxlength="1000">${esc(m.note || '')}</textarea></label>
+      <div id="mem-del-${m.key}"><button type="button" class="link-btn small" style="color:var(--alert-fg)" data-action="mem-del-ask" data-key="${m.key}">${esc(s.memDelete)}</button></div>
+    </section>`).join('');
+  openSheet('memories', s.memoriesTitle, html || `<p class="muted">${esc(s.memNoPhotos)}</p>`);
+  for (const img of $('sheet-body').querySelectorAll('img[data-photo]')) {
+    photoGet(img.dataset.photo).then((blob) => {
+      if (!blob || !document.contains(img)) return;
+      const url = URL.createObjectURL(blob);
+      photoUrls.push(url);
+      img.src = url;
+    });
+  }
+}
+
+async function deleteMemory(key) {
+  const m = memoryList().find((x) => x.key === key);
+  if (!m) return;
+  for (const p of m.photos || []) await photoDelete(p.id);
+  if (key === 'current') {
+    data.photoIndex = [];
+    data.loss.note = '';
+    data.loss.kept = false;
+  } else {
+    data.memories.splice(Number(key), 1);
+  }
+  save();
+  closeSheet();
+  renderAll();
+  toast(J().memDeleted);
+}
+
+function openNewPregnancy() {
+  const s = J();
+  openSheet('newpreg', s.newPregTitle, `<p>${esc(s.newPregText)}</p>
+    <label class="field"><span>${esc(t().due)}</span><input class="input" type="date" id="np-due" min="${addDays(todayISO(), -14)}" max="${addDays(todayISO(), 252)}"></label>
+    <p class="ob-error" id="np-error" hidden></p>`,
+  `<button type="button" class="btn btn-block" data-action="new-preg-save">${esc(s.newPregSave)}</button>`);
+}
+
+function startNewPregnancy() {
+  const due = $('np-due').value;
+  const ga = validISO(due) ? 280 - daysBetween(todayISO(), due) : null;
+  if (ga === null || ga < 28 || ga > 294) {
+    $('np-error').hidden = false;
+    $('np-error').textContent = t().ob.outOfRange(ga === null ? 0 : Math.floor(ga / 7));
+    return;
+  }
+  const loss = data.loss;
+  if (loss && (loss.kept || loss.name)) {
+    data.memories = [...(data.memories || []), { kind: loss.kind, date: loss.date, name: loss.name, note: loss.note || '', photos: loss.kept ? data.photoIndex : [] }];
+  }
+  // a fresh start: logs from the last pregnancy don't belong to this one
+  Object.assign(data, { photoIndex: [], symptoms: [], kickSessions: [], kickTaps: [], contractions: [], weights: [], checklist: {}, plan: {}, activeKicks: null, activeContraction: null, loss: null, birth: null, status: 'pregnant' });
+  data.profile.due = due;
+  save();
+  closeSheet();
+  renderAll();
+  showTab('today');
+  postLuna({ ...lunaSettings() });
+}
+
+/* ---------- The birth ---------- */
+function openBirthFlow() {
+  const s = J();
+  const b = data.birth || {};
+  const sex = b.sex || (data.profile.sex === 'F' || data.profile.sex === 'M' ? data.profile.sex : 'unknown');
+  ui.birthPhoto = null;
+  ui.birthSex = sex;
+  const min = addDays(data.profile.due, -126); // 22 weeks
+  openSheet('birth', s.bornTitle, `
+    <p>${esc(s.bornIntro)}</p>
+    <div class="row" style="align-items:flex-end">
+      <label class="field" style="flex:1 1 150px"><span>${esc(s.birthDate)}</span><input class="input" type="date" id="b-date" value="${esc(b.date || todayISO())}" min="${min}" max="${todayISO()}"></label>
+      <label class="field" style="flex:1 1 110px"><span>${esc(s.birthTime)}</span><input class="input" type="time" id="b-time" value="${esc(b.time || '')}"></label>
+    </div>
+    <label class="field"><span>${esc(s.babyName)}</span><input class="input" id="b-name" maxlength="40" value="${esc(b.name || '')}" autocomplete="off"></label>
+    <div class="field"><span class="small" style="font-weight:600" id="b-sex-title">${esc(s.babySex)}</span><div class="seg" role="radiogroup" aria-labelledby="b-sex-title" id="b-sex">${['F', 'M', 'unknown'].map((k) => `<button type="button" role="radio" aria-checked="${sex === k}" data-action="b-sex" data-sex="${k}">${esc(s.sexes[k])}</button>`).join('')}</div></div>
+    <div class="row" style="align-items:flex-end">
+      <label class="field" style="flex:1 1 120px"><span>${esc(s.weight)}</span><input class="input" id="b-weight" inputmode="decimal" value="${esc(b.weight || '')}" autocomplete="off"></label>
+      <label class="field" style="flex:1 1 120px"><span>${esc(s.length)}</span><input class="input" id="b-length" inputmode="decimal" value="${esc(b.length || '')}" autocomplete="off"></label>
+    </div>
+    <div class="field"><label class="btn btn-quiet" for="b-photo">${TOOL_ICON.bump}<span>${esc(b.photo ? s.changePhoto : s.addPhoto)}</span></label><input type="file" id="b-photo" accept="image/*" class="visually-hidden"><p class="fine" id="b-photo-state">${esc(savingOn() ? T().photosLocal : T().photosMemory)}</p></div>
+    <p class="ob-error" id="b-error" role="alert" hidden></p>`,
+  `<button type="button" class="btn btn-block" data-action="birth-save">${esc(s.bornSave)}</button>`);
+}
+
+async function downscale(file, max) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bitmap.width * scale);
+  c.height = Math.round(bitmap.height * scale);
+  c.getContext('2d').drawImage(bitmap, 0, 0, c.width, c.height);
+  const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+  if (!blob) throw new Error('no blob');
+  return blob;
+}
+
+async function saveBirth() {
+  const s = J();
+  const err = (msg) => { $('b-error').hidden = false; $('b-error').textContent = msg; };
+  const date = $('b-date').value;
+  if (!validISO(date)) return err(s.errDate);
+  const ga = 280 - daysBetween(date, data.profile.due);
+  if (ga < 154 || date > todayISO()) return err(s.errRange);
+  const num = (v) => Number(String(v).trim().replace(',', '.'));
+  let weight = $('b-weight').value.trim() ? num($('b-weight').value) : null;
+  if (weight !== null && weight > 0 && weight < 10) weight *= 1000; // typed in kg
+  if (weight !== null && !(weight >= 300 && weight <= 6500)) return err(s.errWeight);
+  const length = $('b-length').value.trim() ? num($('b-length').value) : null;
+  if (length !== null && !(length >= 20 && length <= 65)) return err(s.errLength);
+  const prev = data.birth || {};
+  const birth = { date, time: $('b-time').value, name: $('b-name').value.trim().slice(0, 40), sex: ui.birthSex, weight: weight === null ? null : Math.round(weight), length: length === null ? null : Math.round(length * 10) / 10, ga, photo: !!prev.photo };
+  if (ui.birthPhoto) {
+    await photoPut('birth', ui.birthPhoto);
+    birth.photo = true;
+  }
+  const first = journey() !== 'born';
+  data.birth = birth;
+  data.status = 'born';
+  data.loss = null;
+  if (birth.sex !== 'unknown') data.profile.sex = birth.sex;
+  data.activeKicks = null;
+  data.activeContraction = null;
+  ui.chat = [];
+  save();
+  closeSheet();
+  if (ui.lunaView === 'full') closeLunaFull();
+  postLuna({ sex: data.profile.sex });
+  renderAll();
+  showTab('today');
+  if (first) openBirthCard(true);
+}
+
+/* ---------- The birth card (a canvas image to keep or share) ---------- */
+function fitText(g, text, font, size, maxWidth) {
+  let px = size;
+  g.font = `${font.replace('{px}', px)}`;
+  while (g.measureText(text).width > maxWidth && px > 24) {
+    px -= 2;
+    g.font = `${font.replace('{px}', px)}`;
+  }
+}
+
+async function drawBirthCard() {
+  const b = data.birth;
+  const s = J();
+  const W = 1080;
+  const H = 1350;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d');
+  try { await document.fonts.load('600 64px Lora'); await document.fonts.load('600 32px "Sofia Sans"'); } catch (err) { /* fallback fonts */ }
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#16152B');
+  bg.addColorStop(1, '#2C2956');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, W, H);
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  g.fillStyle = '#FFE6A3';
+  for (let i = 0; i < 110; i++) {
+    g.globalAlpha = 0.2 + rnd() * 0.6;
+    g.beginPath();
+    g.arc(rnd() * W, rnd() * H * 0.62, 1 + rnd() * 2.4, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+  const cx = W / 2;
+  const cy = 400;
+  const r = 230;
+  const blob = b.photo ? await photoGet('birth') : null;
+  if (blob) {
+    const bmp = await createImageBitmap(blob);
+    g.save();
+    g.beginPath();
+    g.arc(cx, cy, r, 0, Math.PI * 2);
+    g.clip();
+    const sc = Math.max((2 * r) / bmp.width, (2 * r) / bmp.height);
+    g.drawImage(bmp, cx - (bmp.width * sc) / 2, cy - (bmp.height * sc) / 2, bmp.width * sc, bmp.height * sc);
+    g.restore();
+    g.lineWidth = 8;
+    g.strokeStyle = '#F6C8B5';
+    g.beginPath();
+    g.arc(cx, cy, r + 8, 0, Math.PI * 2);
+    g.stroke();
+  } else {
+    // the Lunabump crescent with its little star
+    const m = document.createElement('canvas');
+    m.width = m.height = 2 * r;
+    const mg = m.getContext('2d');
+    mg.fillStyle = '#F6C8B5';
+    mg.beginPath();
+    mg.arc(r, r, r, 0, Math.PI * 2);
+    mg.fill();
+    mg.globalCompositeOperation = 'destination-out';
+    mg.beginPath();
+    mg.arc(r * 1.55, r * 0.62, r * 0.82, 0, Math.PI * 2);
+    mg.fill();
+    g.drawImage(m, cx - r, cy - r);
+    g.fillStyle = '#FFE6A3';
+    g.beginPath();
+    g.arc(cx + r * 0.32, cy + r * 0.3, r * 0.15, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.textAlign = 'center';
+  g.fillStyle = '#F3F0FF';
+  const title = s.welcome(b.name, b.sex);
+  fitText(g, title, '600 {px}px Lora, Georgia, serif', 76, W - 140);
+  g.fillText(title, cx, 760);
+  g.fillStyle = '#B5AFD3';
+  g.font = '500 34px "Sofia Sans", system-ui, sans-serif';
+  g.fillText(s.bornOn(fmtDate(b.date), b.time), cx, 826);
+  const stats = [
+    b.weight ? [s.grams(b.weight), s.statWeight] : null,
+    b.length ? [s.cm(b.length), s.statLength] : null,
+    Number.isFinite(b.ga) ? [`${Math.floor(b.ga / 7)}+${b.ga % 7}`, s.statWeeks] : null,
+  ].filter(Boolean);
+  const boxW = 280;
+  const gap = 24;
+  const x0 = cx - (stats.length * boxW + (stats.length - 1) * gap) / 2;
+  stats.forEach(([v, k], i) => {
+    const x = x0 + i * (boxW + gap);
+    g.fillStyle = 'rgba(243, 240, 255, 0.08)';
+    g.beginPath();
+    if (g.roundRect) g.roundRect(x, 900, boxW, 170, 28); else g.rect(x, 900, boxW, 170);
+    g.fill();
+    g.fillStyle = '#F3F0FF';
+    g.font = '600 52px Lora, Georgia, serif';
+    g.fillText(v, x + boxW / 2, 985);
+    g.fillStyle = '#B5AFD3';
+    g.font = '700 26px "Sofia Sans", system-ui, sans-serif';
+    g.fillText(k.toUpperCase(), x + boxW / 2, 1035);
+  });
+  g.fillStyle = '#F6C8B5';
+  g.font = '600 34px Lora, Georgia, serif';
+  g.fillText('Lunabump', cx, 1260);
+  return new Promise((res) => c.toBlob(res, 'image/png'));
+}
+
+let cardUrl = '';
+async function openBirthCard(celebrate) {
+  const s = J();
+  const b = data.birth;
+  const stars = celebrate && !reduceMotion.matches ? [...Array(18)].map((_, i) => `<i style="left:${(i * 53) % 100}%;animation-delay:${(i % 6) * 0.18}s"></i>`).join('') : '';
+  const canShare = typeof navigator.share === 'function';
+  openSheet('card', s.welcome(b.name, b.sex), `<div class="card-stage">${stars ? `<div class="confetti" aria-hidden="true">${stars}</div>` : ''}<img id="card-img" class="birth-card" alt="${esc(s.cardAlt)}"></div><p class="fine">${esc(s.cardHint)}</p>`,
+    canShare ? `<button type="button" class="btn btn-block" data-action="card-share">${esc(s.share)}</button>` : '');
+  const blob = await drawBirthCard();
+  if (!blob || sheetKind !== 'card') return;
+  ui.cardBlob = blob;
+  if (cardUrl) URL.revokeObjectURL(cardUrl);
+  cardUrl = URL.createObjectURL(blob);
+  $('card-img').src = cardUrl;
+}
+
+async function shareCard() {
+  const s = J();
+  try {
+    const file = new File([ui.cardBlob], 'lunabump-birth-card.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: s.birthCard });
+    else toast(s.shareFailed);
+  } catch (err) {
+    if (err && err.name !== 'AbortError') toast(s.shareFailed);
+  }
+}
+
+function openJourney() {
+  const s = J();
+  revokePhotoUrls();
+  const photos = [...data.photoIndex].sort((a, b) => (a.date < b.date ? -1 : 1));
+  openSheet('journey', s.journeyTitle, `
+    <div class="stats">${journeyStats().map(([v, k]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join('')}</div>
+    ${photos.length ? `<div class="photo-grid">${photos.map((p) => `<button type="button" class="photo" data-action="photo-open" data-id="${p.id}"><img alt="" data-photo="${p.id}"><span>${esc(T().week(p.week))}</span></button>`).join('')}</div>` : ''}
+    <div class="row">${photos.length > 1 ? `<button type="button" class="btn btn-quiet" data-action="photo-play">${esc(T().play)}</button>` : ''}<button type="button" class="btn btn-quiet" data-action="replay">${esc(s.replay)}</button></div>`);
+  for (const img of $('sheet-body').querySelectorAll('img[data-photo]')) {
+    photoGet(img.dataset.photo).then((blob) => {
+      if (!blob || !document.contains(img)) return;
+      const url = URL.createObjectURL(blob);
+      photoUrls.push(url);
+      img.src = url;
+    });
+  }
+}
+
+// the 3D baby grows again from week 8 to 40, in the full-screen viewer
+function replayPregnancy() {
+  closeSheet();
+  ui.replay = true;
+  showTab('today');
+  $('luna-slot').parentElement.hidden = false;
+  postLuna({ days: 56, playing: true });
+  setLunaView('full');
+}
+
+/* ---------- Me: the journey card and Partner Mode ---------- */
+function renderMeJourney() {
+  const s = J();
+  const st = journey();
+  const undo = ui.confirmUndo
+    ? `<div class="notice notice-calm"><span>${esc(s.undoText)}</span><div class="row"><button type="button" class="btn" data-action="journey-undo">${esc(s.undoYes)}</button><button type="button" class="btn btn-line" data-action="journey-undo-cancel">${esc(t().cancel)}</button></div></div>`
+    : `<button type="button" class="link-btn small" data-action="journey-undo-ask">${esc(s.undoBtn)}</button>`;
+  let html = '';
+  if (st === 'pregnant') {
+    html = `<h2 id="me-journey-title">${esc(s.changedTitle)}</h2>
+      <p class="muted small">${esc(s.changedText)}</p>
+      <div style="display:grid;gap:8px">
+        <button type="button" class="btn btn-quiet btn-block" data-action="birth-open">${esc(s.bornBtn)}</button>
+        <button type="button" class="btn btn-line btn-block" data-action="loss-open">${esc(s.lossBtn)}</button>
+        ${memoryList().length ? `<button type="button" class="btn btn-line btn-block" data-action="memories">${esc(s.memoriesTitle)}</button>` : ''}
+      </div>`;
+  } else if (st === 'born') {
+    const b = data.birth;
+    const rows = [[s.rows.name, b.name || '–'], [s.rows.date, `${fmtDate(b.date)}${b.time ? `, ${b.time}` : ''}`], [s.rows.weight, b.weight ? s.grams(b.weight) : '–'], [s.rows.length, b.length ? s.cm(b.length) : '–']];
+    html = `<h2 id="me-journey-title">${esc(s.babyTitle)}</h2>
+      <div class="kv-grid">${rows.map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('')}</div>
+      <div class="row"><button type="button" class="btn btn-quiet" data-action="birth-open">${esc(s.editBirth)}</button><button type="button" class="btn btn-quiet" data-action="birth-card">${esc(s.birthCard)}</button></div>
+      ${undo}`;
+  } else {
+    html = `<h2 id="me-journey-title">${esc(s.memoriesTitle)}</h2>
+      <div style="display:grid;gap:8px">
+        ${memoryList().length ? `<button type="button" class="btn btn-quiet btn-block" data-action="memories">${esc(s.memoriesOpen)}</button>` : ''}
+        <button type="button" class="btn btn-line btn-block" data-action="new-preg">${esc(s.newPregnancy)}</button>
+      </div>
+      ${undo}`;
+  }
+  $('me-journey').innerHTML = html;
+}
+
+function renderMePartner() {
+  const s = J();
+  const p = data.profile;
+  if (isPartner()) {
+    $('me-partner').innerHTML = `<h2>${esc(s.inviteTitle)}</h2>
+      <p>${esc(s.linkedText(herName()))}</p>
+      <div class="field"><label class="small" style="font-weight:600" for="me-code">${esc(s.newCodeLabel)}</label>
+        <div class="ask"><input class="input" id="me-code" autocomplete="off" autocapitalize="characters" placeholder="${esc(s.obCodePh)}"><button type="button" class="btn" data-action="me-code">${esc(s.useCode)}</button></div>
+        <p class="fine" id="me-code-msg" role="status"></p></div>`;
+    return;
+  }
+  const code = makeCode(p.due, p.sex);
+  $('me-partner').innerHTML = `<h2>${esc(s.inviteTitle)}</h2>
+    <p class="muted small">${esc(s.inviteText)}</p>
+    <div><p class="eyebrow">${esc(s.inviteCodeLabel)}</p><p class="invite-code num" aria-label="${esc(code.split('').join(' '))}">${esc(code)}</p></div>
+    <p class="small">${esc(s.inviteHow)}</p>
+    <div class="row"><button type="button" class="btn btn-quiet" data-action="invite-copy">${ICON.copy}<span>${esc(s.inviteCopy)}</span></button>${typeof navigator.share === 'function' ? `<button type="button" class="btn btn-line" data-action="invite-share">${esc(s.inviteShare)}</button>` : ''}</div>
+    <p class="fine">${esc(s.inviteShares(p.sex === 'F' || p.sex === 'M'))} ${esc(s.inviteLater)}</p>`;
+}
+
+/* ---------- Tools for the partner and for the first weeks ---------- */
+function toolIds() {
+  const st = journey();
+  if (st === 'loss') return ['mood', 'appointments', 'questions'];
+  if (st === 'born') return ['checks', 'mood', 'appointments', 'questions', 'bump'];
+  if (isPartner()) return ['partnerlist', 'contractions', 'weeks', 'appointments', 'questions', 'bag', 'plan', 'names', 'shopping', 'mood', 'duedate'];
+  return TOOL_IDS;
+}
+
+function questionPool() {
+  const st = journey();
+  if (st !== 'pregnant') return MORE_QUESTIONS[st];
+  if (isPartner()) return MORE_QUESTIONS.partner;
+  return QUESTIONS[triOf(weekNow())];
+}
+
+function renderPartnerList() {
+  const tri = triOf(weekNow());
+  $('tool-body').innerHTML = [0, 1, 2].map((k) => `<section class="card" aria-labelledby="pl-${k}">
+      <div class="row-between"><h2 id="pl-${k}">${esc(t().tri[k])}</h2>${k === tri ? `<span class="pill pill-safe">${esc(J().now)}</span>` : ''}</div>
+      <ul class="checklist">${PARTNER_TODO.filter((i) => i.tri === k).map((i) => `<li><label><input type="checkbox" data-todo="${i.id}" ${data.checklist[i.id] ? 'checked' : ''}><span>${esc(L(i))}</span></label></li>`).join('')}</ul>
+    </section>`).join('') + sourceLine(NHS_MORE.partners);
+}
+
+function renderChecks() {
+  $('tool-body').innerHTML = `<p class="muted small">${esc(J().checksIntro)}</p>
+    <section class="card"><ul class="checklist">${NEWBORN_CHECKS.map(checkRow).join('')}</ul></section>
+    ${sourceLine(NHS_MORE.screening)}`;
+}
+
+/* =========================================================================
    Explore
    ========================================================================= */
 
 function renderExplore() {
   if (!data.profile) return;
-  $('explore-week').innerHTML = forYou(weekNow()).map(articleRow).join('');
+  const st = journey();
+  if (st !== 'pregnant') {
+    const loss = data.loss || {};
+    const late = ['stillbirth', 'neonatal', 'tfmr'].includes(loss.kind);
+    const ids = st === 'born' ? ['nbchecks', 'blues'] : late ? ['grief', 'afterstill', 'tryagain'] : loss.kind === 'skip' || !loss.kind ? ['grief', 'lossbody', 'afterstill', 'tryagain'] : ['grief', 'lossbody', 'tryagain'];
+    $('explore-calm').innerHTML = `
+      <section style="display:grid;gap:10px" aria-labelledby="calm-read"><h2 class="eyebrow" id="calm-read">${esc(J().toRead)}</h2>
+        <div class="articles">${ids.map((id) => articleRow(topicById[id])).join('')}
+          <button type="button" class="article-row" data-action="urgent"><span class="icon">${ICON.alert}</span><span><strong>${esc(J().whenHelp)}</strong><span class="meta">NHS</span></span><span class="chev">${ICON.chev}</span></button></div>
+      </section>
+      ${st === 'loss' ? `<section class="card" aria-labelledby="calm-support"><h2 id="calm-support">${esc(J().supportTitle)}</h2>${supportHTML(loss.kind)}</section>` : ''}`;
+    $('explore-partner').hidden = true;
+    return;
+  }
+  $('explore-partner').hidden = !isPartner();
+  $('explore-partner').innerHTML = isPartner() ? `<h2 class="eyebrow" id="group-partner">${esc(J().forPartners)}</h2><div class="articles">${['support', 'birthpartner'].map((id) => articleRow(topicById[id])).join('')}</div>` : '';
+  $('explore-week').innerHTML = forYou(weekNow()).filter((tp) => tp.group !== 'partner').map(articleRow).join('');
   renderFoods();
   const groups = ['food', 'body', 'baby', 'vitamins'];
   $('explore-groups').innerHTML = groups.map((g) => `<section style="display:grid;gap:10px" aria-labelledby="group-${g}"><h2 class="eyebrow" id="group-${g}">${esc(t().groups[g])}</h2><div class="articles">${TOPICS.filter((tp) => tp.group === g).map(articleRow).join('')}</div></section>`).join('');
@@ -3221,17 +4642,22 @@ function renderMe() {
   const p = data.profile;
   if (!p) return;
   const ga = gaDays();
+  const st = journey();
+  renderMeJourney();
+  if (st === 'pregnant') renderMePartner();
   if (ui.editingProfile) {
     $('me-profile').innerHTML = `
       <label class="field"><span>${esc(t().name)}</span><input class="input" id="edit-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
-      <label class="field"><span>${esc(t().due)}</span><input class="input" type="date" id="edit-due" value="${esc(p.due)}" min="${addDays(todayISO(), -14)}" max="${addDays(todayISO(), 252)}"></label>
+      ${isPartner() ? `<label class="field"><span>${esc(J().partnerNameLabel)}</span><input class="input" id="edit-pname" value="${esc(p.partnerName || '')}" autocomplete="off"></label>` : ''}
+      ${st === 'pregnant' ? `<label class="field"><span>${esc(t().due)}</span><input class="input" type="date" id="edit-due" value="${esc(p.due)}" min="${addDays(todayISO(), -14)}" max="${addDays(todayISO(), 252)}"></label>` : ''}
       <p class="ob-error" id="edit-error" hidden></p>
       <div class="row"><button type="button" class="btn" data-action="profile-save">${esc(t().save)}</button><button type="button" class="btn btn-line" data-action="profile-cancel">${esc(t().cancel)}</button></div>`;
   } else {
     $('me-profile').innerHTML = `
       <div class="row-between"><div class="kv"><span>${esc(t().name)}</span><strong>${esc(p.name || '–')}</strong></div><button type="button" class="btn btn-quiet" data-action="profile-edit">${esc(t().edit)}</button></div>
-      <div class="kv"><span>${esc(t().due)}</span><strong>${esc(fmtDate(p.due))}</strong></div>
-      <p class="muted small">${esc(t().weekNow(Math.floor(ga / 7), ((ga % 7) + 7) % 7))}</p>`;
+      ${isPartner() ? `<div class="kv"><span>${esc(J().partnerNameLabel.replace(/ \(.*\)$/, ''))}</span><strong>${esc(p.partnerName || '–')}</strong></div>` : ''}
+      ${st === 'pregnant' ? `<div class="kv"><span>${esc(t().due)}</span><strong>${esc(fmtDate(p.due))}</strong></div>
+      <p class="muted small">${esc(t().weekNow(Math.floor(ga / 7), ((ga % 7) + 7) % 7))}</p>` : ''}`;
   }
   $('me-sex').innerHTML = ['unknown', 'F', 'M'].map((s) => `<button type="button" role="radio" aria-checked="${p.sex === s}" data-action="sex" data-sex="${s}">${esc(t().sexes[s])}</button>`).join('');
   $('me-modes').innerHTML = modeCards(p.mode, 'mode');
@@ -3312,13 +4738,14 @@ function sourceLine(src, lng = lang) {
 function openArticle(id) {
   const tp = topicById[id];
   openSheet('article', L(tp.title), `<div class="article-body">${L(tp.a).map((p) => `<p>${esc(p)}</p>`).join('')}</div>${sourceLine(tp.src)}<p class="fine">${esc(t().aboutText)}</p>`,
-    `<button type="button" class="btn btn-quiet btn-block" data-action="luna-ask" data-topic="${tp.id}">${ICON.chat}<span>${esc(t().quick.luna)}</span></button>`);
+    journey() === 'pregnant' && tp.kw.length ? `<button type="button" class="btn btn-quiet btn-block" data-action="luna-ask" data-topic="${tp.id}">${ICON.chat}<span>${esc(t().quick.luna)}</span></button>` : '');
 }
 
 function openUrgent() {
+  if (journey() !== 'pregnant') return openHelp();
   const w = weekNow();
   const flags = RED.filter((f) => !f.before37 || w < 37);
-  openSheet('urgent', t().urgentTitle, `<p>${esc(t().urgentIntro)}</p><div class="flag-list">${flags.map((f) => `<button type="button" class="flag-btn" data-action="flag" data-flag="${f.id}">${esc(L(f.label))}</button>`).join('')}</div>${callBlock('emergency')}`);
+  openSheet('urgent', t().urgentTitle, `<p>${esc(isPartner() ? J().partnerUrgentIntro : t().urgentIntro)}</p><div class="flag-list">${flags.map((f) => `<button type="button" class="flag-btn" data-action="flag" data-flag="${f.id}">${esc(L(f.label))}</button>`).join('')}</div>${callBlock('emergency')}`);
 }
 
 function callRow(label, number, hint) {
@@ -3344,7 +4771,7 @@ function openFlag(id) {
   const level = f.level;
   openSheet('flag', t().levelTitle[level], `<div class="result">
       <p><span class="muted small">${esc(t().youChose)}:</span><br><span class="result-what">${esc(L(f.label))}</span></p>
-      <p>${esc(t().levelText[level])}</p>
+      <p>${esc(isPartner() && level === 'emergency' ? J().partnerEmergency(weekNow()) : t().levelText[level])}</p>
       ${callBlock(level)}
       ${id === 'preeclampsia' ? sourceLine(NHS.preeclampsia) : id === 'movements' ? sourceLine(NHS.movements) : id === 'preterm' || id === 'labour' || id === 'fluid' ? sourceLine(NHS.labour) : ''}
     </div>`, `<button type="button" class="btn btn-line btn-block" data-action="urgent">${esc(t().otherSymptom)}</button>`);
@@ -3355,6 +4782,7 @@ function openFlag(id) {
 function suggestions() {
   const tri = triOf(weekNow());
   const ids = [['nausea', 'vitamins', 'caffeine', 'food'], ['movements', 'glucose', 'exercise', 'food'], ['sleep', 'labour', 'movements', 'heartburn']][tri];
+  if (isPartner()) return [tri < 2 ? 'support' : 'birthpartner', ...ids.slice(0, 3)].map((id) => topicById[id]);
   return ids.map((id) => topicById[id]);
 }
 
@@ -3393,7 +4821,8 @@ function renderLuna() {
 
 function openLuna(topicId) {
   if (!data.profile) return;
-  if (!ui.chat.length) ui.chat.push({ from: 'luna', lang, text: t().lunaHello(data.profile.name, weekNow()) });
+  if (journey() !== 'pregnant') return;
+  if (!ui.chat.length) ui.chat.push({ from: 'luna', lang, text: isPartner() ? J().lunaHelloPartner(data.profile.name, weekNow()) : t().lunaHello(data.profile.name, weekNow()) });
   openSheet('luna', { html: `<div class="luna-head"><span class="luna-badge">${ICON.moon}</span><div><h2 id="sheet-title">${esc(t().lunaTitle)}</h2><p class="fine">${esc(t().lunaSub)}</p></div></div>` }, '');
   renderLuna();
   if (topicId) askLuna(L(topicById[topicId].q), topicId);
@@ -3444,7 +4873,7 @@ async function copyText(text, selectEl) {
 const OB_STEPS = ['stage', 'date', 'name', 'privacy'];
 
 function startOnboarding() {
-  ui.ob = { step: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
+  ui.ob = { step: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
   $('onboarding').hidden = false;
   tweenFrom = 150;
   showTab('today');
@@ -3484,7 +4913,7 @@ function renderOnboarding() {
     body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span>${langSwitch}</div>
       <h1 id="ob-title">${esc(s.welcomeTitle)}</h1>
       <p class="muted">${esc(s.welcomeText)}</p>
-      <div class="ob-actions"><button type="button" class="btn btn-block" data-action="ob-start">${esc(s.start)}</button><button type="button" class="btn btn-quiet btn-block" data-action="ob-demo">${esc(s.demo)}</button></div>
+      <div class="ob-actions"><button type="button" class="btn btn-block" data-action="ob-start">${esc(s.start)}</button><button type="button" class="btn btn-quiet btn-block" data-action="ob-demo">${esc(s.demo)}</button><button type="button" class="link-btn small" style="justify-self:center" data-action="ob-demo-partner">${esc(J().partnerDemo)}</button></div>
       <p class="fine">${esc(t().disclaimer)}</p>`;
   } else if (o.step === 'stage') {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
@@ -3501,11 +4930,17 @@ function renderOnboarding() {
     const result = ga === null ? '' : ok
       ? `<p class="ob-result" role="status">${esc(s.result(Math.floor(ga / 7), ga % 7, fmtDate(obDue())))}</p>`
       : `<p class="ob-error" role="alert">${esc(s.outOfRange(Math.floor(ga / 7)))}</p>`;
+    const partner = o.stage === 'partner';
+    const codeBlock = partner ? `<div class="field"><label class="small" style="font-weight:600" for="ob-code">${esc(J().obCodeTitle)}</label>
+        <div class="ask"><input class="input" id="ob-code" value="${esc(o.code)}" placeholder="${esc(J().obCodePh)}" autocomplete="off" autocapitalize="characters"><button type="button" class="btn" data-action="ob-code">${esc(J().useCode)}</button></div>
+        <div id="ob-code-msg">${o.codeMsg}</div></div>
+      <p class="fine">${esc(J().obOr)}</p>` : '';
     body = `<div class="ob-top">${dots}${langSwitch}</div>
       <h1 id="ob-title">${esc(s.dateTitle)}</h1>
+      ${codeBlock}
       <div class="seg" role="radiogroup" aria-label="${esc(s.dateTitle)}">${['due', 'lmp', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${o.method === m}" data-action="ob-method" data-method="${m}">${esc(s.methods[m])}</button>`).join('')}</div>
       ${o.method === 'ivf' ? `<div class="field"><span class="small" style="font-weight:600">${esc(s.ivfDay)}</span><div class="seg" role="radiogroup" aria-label="${esc(s.ivfDay)}">${[3, 5].map((d) => `<button type="button" role="radio" aria-checked="${o.ivfDay === d}" data-action="ob-ivfday" data-day="${d}">${esc(s.ivfDays[d])}</button>`).join('')}</div></div>` : ''}
-      <label class="field"><span>${esc(s.dateLabel[o.method])}</span><input class="input" type="date" id="ob-date" value="${esc(o.date)}" min="${b.min}" max="${b.max}"></label>
+      <label class="field"><span>${esc(partner && o.method === 'lmp' ? J().lmpPartner : s.dateLabel[o.method])}</span><input class="input" type="date" id="ob-date" value="${esc(o.date)}" min="${b.min}" max="${b.max}"></label>
       <div id="ob-date-result">${result}</div>
       <p class="fine">${esc(s.dateHint)}</p>
       <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="stage">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-next" data-to="name" id="ob-date-next" ${ok ? '' : 'disabled'}>${esc(s.next)}</button></div>`;
@@ -3513,8 +4948,9 @@ function renderOnboarding() {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
       <h1 id="ob-title">${esc(s.nameTitle)}</h1>
       <input class="input" id="ob-name" value="${esc(o.name)}" placeholder="${esc(s.namePh)}" autocomplete="given-name" aria-labelledby="ob-title">
-      <h2 style="font:600 19px/1.25 var(--display)">${esc(s.modeTitle)}</h2>
-      <div class="mode-cards" role="radiogroup" aria-label="${esc(s.modeTitle)}">${modeCards(o.mode, 'ob-mode')}</div>
+      ${o.stage === 'partner' ? `<label class="field"><span>${esc(J().partnerNameLabel)}</span><input class="input" id="ob-pname" value="${esc(o.partnerName)}" placeholder="${esc(J().partnerNamePh)}" autocomplete="off"></label>` : ''}
+      <h2 style="font:600 19px/1.25 var(--display)">${esc(o.stage === 'partner' ? J().obModeTitlePartner : s.modeTitle)}</h2>
+      <div class="mode-cards" role="radiogroup" aria-label="${esc(o.stage === 'partner' ? J().obModeTitlePartner : s.modeTitle)}">${modeCards(o.mode, 'ob-mode')}</div>
       <p class="fine">${esc(s.modeHint)}</p>
       <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="date">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-next" data-to="privacy">${esc(s.next)}</button></div>`;
   } else if (o.step === 'privacy') {
@@ -3553,7 +4989,7 @@ function tweenDays(target) {
 function finishOnboarding(profile, withExamples) {
   data = blank();
   data.profile = profile;
-  if (withExamples) seedExamples();
+  if (withExamples) seedExamples(profile.stage === 'partner');
   save();
   ui.chat = [];
   ui.ob.step = 'reveal';
@@ -3596,10 +5032,15 @@ function endReveal() {
   $('greeting').focus({ preventScroll: true });
 }
 
-function seedExamples() {
+function seedExamples(partner) {
   const today = todayISO();
   const moods = [4, 3, 4, 5, 3, 2, 4, 4, 5, 3, 4, 4, 3, 5];
   moods.forEach((v, i) => { data.moods[addDays(today, -(i + 1))] = { v, example: true }; });
+  if (partner) {
+    data.appointments.push({ id: uid(), kind: 'glucose', title: '', date: addDays(today, 5), time: '08:30', place: lang === 'bg' ? 'Женска консултация' : 'Antenatal clinic', note: '', example: true });
+    data.checklist.p_scan = true;
+    return;
+  }
   data.symptoms.push(
     { id: uid(), at: at(addDays(today, -1), 21, 10), items: ['backpain'], level: 3, note: lang === 'bg' ? 'По-добре след разходка' : 'Better after a walk', example: true },
     { id: uid(), at: at(addDays(today, -3), 8, 40), items: ['heartburn', 'sleep'], level: 2, note: '', example: true },
@@ -3638,6 +5079,7 @@ function showTab(tab) {
 }
 
 function renderAll() {
+  applyJourney();
   renderStatic();
   renderToday();
   if (ui.tool) renderTool();
@@ -3860,14 +5302,15 @@ const ACTIONS = {
   'profile-edit': () => { ui.editingProfile = true; renderMe(); $('edit-name').focus(); },
   'profile-cancel': () => { ui.editingProfile = false; renderMe(); },
   'profile-save': () => {
-    const due = $('edit-due').value;
+    const due = $('edit-due') ? $('edit-due').value : data.profile.due;
     const ga = validISO(due) ? 280 - daysBetween(todayISO(), due) : null;
-    if (ga === null || ga < 28 || ga > 294) {
+    if ($('edit-due') && (ga === null || ga < 28 || ga > 294)) {
       $('edit-error').hidden = false;
       $('edit-error').textContent = t().ob.outOfRange(ga === null ? 0 : Math.floor(ga / 7));
       return;
     }
     data.profile.name = $('edit-name').value.trim().slice(0, 40);
+    if ($('edit-pname')) data.profile.partnerName = $('edit-pname').value.trim().slice(0, 40);
     data.profile.due = due;
     ui.editingProfile = false;
     save();
@@ -3906,6 +5349,23 @@ const ACTIONS = {
     const due = addDays(todayISO(), 109);
     finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
   },
+  'ob-demo-partner': () => {
+    const due = addDays(todayISO(), 109);
+    finishOnboarding({ stage: 'partner', name: J().demoPartner, partnerName: J().demoHer, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
+  },
+  'ob-code': () => {
+    const res = readCode($('ob-code').value);
+    const o = ui.ob;
+    if (!res) {
+      o.code = $('ob-code').value;
+      o.codeMsg = `<p class="ob-error" role="alert">${esc(J().codeBad)}</p>`;
+      renderOnboarding();
+      return;
+    }
+    Object.assign(o, { code: res.code, method: 'due', date: res.due, sex: res.sex, codeMsg: `<p class="ob-result" role="status">${esc(J().codeOk(fmtDate(res.due)))}</p>` });
+    renderOnboarding();
+    tweenDays(obGa());
+  },
   'ob-stage': (el) => {
     ui.ob.stage = el.dataset.stage;
     ui.ob.step = el.dataset.stage === 'ttc' ? 'ttc' : 'date';
@@ -3913,22 +5373,83 @@ const ACTIONS = {
   },
   'ob-back': (el) => { ui.ob.step = el.dataset.to; renderOnboarding(); },
   'ob-next': (el) => {
-    if (ui.ob.step === 'name') ui.ob.name = $('ob-name').value.trim().slice(0, 40);
+    if (ui.ob.step === 'name') {
+      ui.ob.name = $('ob-name').value.trim().slice(0, 40);
+      if ($('ob-pname')) ui.ob.partnerName = $('ob-pname').value.trim().slice(0, 40);
+    }
     ui.ob.step = el.dataset.to;
     renderOnboarding();
   },
-  'ob-method': (el) => { ui.ob.method = el.dataset.method; ui.ob.date = ''; renderOnboarding(); },
+  'ob-method': (el) => { ui.ob.method = el.dataset.method; ui.ob.date = ''; ui.ob.codeMsg = ''; renderOnboarding(); },
   'ob-ivfday': (el) => { ui.ob.ivfDay = Number(el.dataset.day); renderOnboarding(); const ga = obGa(); if (ga !== null) tweenDays(ga); },
   'ob-mode': (el) => {
     ui.ob.name = $('ob-name') ? $('ob-name').value.trim().slice(0, 40) : ui.ob.name;
+    if ($('ob-pname')) ui.ob.partnerName = $('ob-pname').value.trim().slice(0, 40);
     ui.ob.mode = el.dataset.mode;
     renderOnboarding();
   },
   'ob-finish': () => {
     const o = ui.ob;
-    finishOnboarding({ stage: o.stage, name: o.name, due: obDue(), method: o.method, mode: o.mode, sex: 'unknown', consents: { ...o.consents } }, false);
+    finishOnboarding({ stage: o.stage, name: o.name, partnerName: o.stage === 'partner' ? o.partnerName : '', due: obDue(), method: o.method, mode: o.mode, sex: o.sex || 'unknown', consents: { ...o.consents } }, false);
   },
   'reveal-skip': () => endReveal(),
+
+  // journey: the birth, a loss, partner mode
+  'birth-open': () => openBirthFlow(),
+  'b-sex': (el) => {
+    ui.birthSex = el.dataset.sex;
+    for (const b of $('b-sex').querySelectorAll('button')) b.setAttribute('aria-checked', String(b === el));
+  },
+  'birth-save': () => saveBirth(),
+  'birth-card': () => openBirthCard(false),
+  'card-share': () => shareCard(),
+  replay: () => replayPregnancy(),
+  'journey-open': () => openJourney(),
+  'loss-open': () => openLossFlow(),
+  'loss-next': () => renderLossStep(2),
+  'loss-back': () => { readLossForm(); renderLossStep(1); },
+  'loss-kind': (el) => {
+    ui.lossForm.kind = el.dataset.kind;
+    for (const b of el.parentElement.querySelectorAll('button')) {
+      b.setAttribute('aria-checked', String(b === el));
+      b.setAttribute('aria-pressed', String(b === el));
+    }
+  },
+  'loss-save': () => applyLoss(),
+  memories: () => openMemories(),
+  'mem-del-ask': (el) => {
+    const key = el.dataset.key;
+    $(`mem-del-${key}`).innerHTML = `<div class="notice notice-alert"><strong>${esc(J().memDeleteConfirm)}</strong><div class="row"><button type="button" class="btn btn-alert" data-action="mem-del-yes" data-key="${esc(key)}">${esc(J().memDelete)}</button><button type="button" class="btn btn-line" data-action="memories">${esc(t().cancel)}</button></div></div>`;
+  },
+  'mem-del-yes': (el) => deleteMemory(el.dataset.key),
+  'new-preg': () => openNewPregnancy(),
+  'new-preg-save': () => startNewPregnancy(),
+  'journey-undo-ask': () => { ui.confirmUndo = true; renderMe(); },
+  'journey-undo-cancel': () => { ui.confirmUndo = false; renderMe(); },
+  'journey-undo': () => {
+    ui.confirmUndo = false;
+    data.status = 'pregnant';
+    data.birth = null;
+    data.loss = null;
+    save();
+    renderAll();
+    postLuna({ ...lunaSettings() });
+    toast(t().saved);
+  },
+  'invite-copy': () => copyText(J().inviteMessage(makeCode(data.profile.due, data.profile.sex))),
+  'invite-share': async () => {
+    try { await navigator.share({ text: J().inviteMessage(makeCode(data.profile.due, data.profile.sex)) }); } catch (err) { /* cancelled or blocked */ }
+  },
+  'me-code': () => {
+    const res = readCode($('me-code').value);
+    if (!res) { $('me-code-msg').textContent = J().codeBad; return; }
+    data.profile.due = res.due;
+    if (res.sex !== 'unknown') data.profile.sex = res.sex;
+    save();
+    renderAll();
+    postLuna({ ...lunaSettings() });
+    $('me-code-msg').textContent = J().codeOk(fmtDate(res.due));
+  },
 };
 
 // keep a half-written symptom note when the panel re-renders
@@ -3946,7 +5467,12 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('input', (e) => {
-  if (e.target.dataset && e.target.dataset.planText) {
+  if (e.target.dataset && e.target.dataset.memNote) {
+    const key = e.target.dataset.memNote;
+    const note = e.target.value.slice(0, 1000);
+    if (key === 'current') { if (data.loss) data.loss.note = note; } else if (data.memories[Number(key)]) data.memories[Number(key)].note = note;
+    save();
+  } else if (e.target.dataset && e.target.dataset.planText) {
     data.plan[e.target.dataset.planText] = e.target.value;
     save();
   } else if (e.target.id === 'calc-date') {
@@ -3994,6 +5520,16 @@ document.addEventListener('change', (e) => {
     if (el.nextElementSibling) el.nextElementSibling.classList.toggle('done', el.checked);
   } else if (el.id === 'bump-file' && el.files && el.files[0]) {
     addBumpPhoto(el.files[0]);
+  } else if (el.id === 'b-photo' && el.files && el.files[0]) {
+    downscale(el.files[0], 1080).then((blob) => {
+      ui.birthPhoto = blob;
+      $('b-photo-state').textContent = J().photoAdded;
+    }).catch(() => toast(T().photoFailed));
+  } else if (el.dataset.nbCheck) {
+    data.newborn.checked[el.dataset.nbCheck] = el.checked;
+    save();
+    const title = el.nextElementSibling && el.nextElementSibling.querySelector('strong');
+    if (title) title.classList.toggle('done', el.checked);
   } else if (el.dataset.obConsent) {
     ui.ob.consents[el.dataset.obConsent] = el.checked;
   } else if (el.dataset.consent && data.profile) {

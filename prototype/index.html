@@ -3777,6 +3777,8 @@ if (appMode) {
         if (state.playing) togglePlay(false);
         setDays(m.days);
       }
+      // the app's "replay the pregnancy" starts the time-lapse after setting the first week
+      if (typeof m.playing === 'boolean' && m.playing !== state.playing) togglePlay(m.playing);
       if (Number.isFinite(m.kicks)) {
         state.kicks = m.kicks;
         $('kick-count').textContent = t().kicksToday(state.kicks);
