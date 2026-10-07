@@ -128,7 +128,8 @@
   p { margin: 0; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  .app { max-width: var(--col); margin: 0 auto; min-height: 100%; position: relative; }
+  /* clip, not hidden: a screen sliding in must never widen the page (phones would zoom out), and sticky still works */
+  .app { max-width: var(--col); margin: 0 auto; min-height: 100%; position: relative; overflow-x: clip; }
   .screen {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -775,10 +776,67 @@
     color: var(--bg);
     font-size: 14px;
     font-weight: 600;
-    transition: opacity 200ms ease;
+    transition: opacity 200ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .toast { pointer-events: none; } /* a status line: never in the way of the button under it */
-  .toast.fade { opacity: 0; }
+  .toast.fade { opacity: 0; transform: translate(-50%, 14px); }
+
+
+  /* ---------- Motion ---------- */
+  :root { --ease-out: cubic-bezier(0.22, 1, 0.36, 1); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  /* the tab bar: the active section gets a pill behind a filled icon, a bold label and a small hop */
+  .tab { transition: color 200ms ease; }
+  .tab-ico { position: relative; display: grid; place-items: center; width: 58px; height: 30px; border-radius: 999px; }
+  .tab-ico::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--accent); opacity: 0; transform: scaleX(0.35); transition: transform 360ms var(--ease-out), opacity 220ms ease; }
+  .tab-ico svg { position: relative; }
+  .tab[aria-current="page"] .tab-ico::before { opacity: 0.16; transform: none; }
+  .tab[aria-current="page"] svg { fill: currentColor; fill-opacity: 0.22; animation: tab-hop 460ms var(--ease-spring); }
+  .tab[aria-current="page"] > span:last-child { font-weight: 800; }
+  @keyframes tab-hop { 0% { transform: scale(0.82); } 55% { transform: scale(1.14) translateY(-1px); } 100% { transform: none; } }
+  .tab-luna .moon { position: relative; transition: transform 220ms var(--ease-spring); }
+  .tab-luna .moon::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--lavender); opacity: 0; animation: moon-halo 4.2s ease-out 1.5s 3; /* a few gentle pulses, then still */ pointer-events: none; }
+  .tab-luna:active .moon { transform: scale(0.9) rotate(-10deg); }
+  @keyframes moon-halo { 0%, 70% { opacity: 0; transform: scale(1); } 78% { opacity: 0.55; } 100% { opacity: 0; transform: scale(1.35); } }
+
+  /* screens slide in from the side they come from */
+  .screen.enter { animation: screen-in 340ms var(--ease-out) both; }
+  @keyframes screen-in { from { opacity: 0; transform: translateX(var(--enter-x, 0)); } to { opacity: 1; transform: none; } }
+  .screen.enter .tool-tile { animation: rise-in 420ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 28ms + 60ms); }
+  @keyframes rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+  /* sheets rise from the bottom and sink back */
+  .sheet:not([hidden]) .sheet-backdrop { animation: fade-in 260ms ease both; }
+  .sheet:not([hidden]) .sheet-panel { animation: sheet-up 380ms var(--ease-out) both; }
+  .sheet.closing { pointer-events: none; }
+  .sheet.closing .sheet-backdrop { animation: fade-out 220ms ease both; }
+  .sheet.closing .sheet-panel { animation: sheet-down 220ms cubic-bezier(0.4, 0, 1, 1) both; }
+  @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes sheet-down { from { transform: none; } to { transform: translateY(100%); } }
+  .sheet-body.swap > * { animation: rise-in 320ms var(--ease-out) both; }
+
+  /* onboarding: each step's content arrives in a gentle cascade */
+  .ob-card.ob-enter > * { animation: rise-in 440ms var(--ease-out) both; }
+  .ob-card.ob-enter > *:nth-child(2) { animation-delay: 40ms; }
+  .ob-card.ob-enter > *:nth-child(3) { animation-delay: 80ms; }
+  .ob-card.ob-enter > *:nth-child(4) { animation-delay: 120ms; }
+  .ob-card.ob-enter > *:nth-child(5) { animation-delay: 160ms; }
+  .ob-card.ob-enter > *:nth-child(n+6) { animation-delay: 200ms; }
+
+  /* touch feedback */
+  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .seg button, .lang-chip, .tab) {
+    transition: transform 160ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, color 200ms ease;
+  }
+  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .lang-chip):active:not(:disabled) { transform: scale(0.96); }
+  @media (hover: hover) {
+    :is(.tool-tile, .quick button, .article-row, .next-appt):hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(42, 39, 64, 0.06), 0 12px 28px rgba(42, 39, 64, 0.1); }
+  }
+  .mood[aria-checked="true"] svg { animation: pop 420ms var(--ease-spring); }
+  @keyframes pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+  .progress-fill { transition: width 1100ms var(--ease-out); }
+  .luna-slot { transform-origin: 0 0; }
 
   /* ---------- Journey: after the birth, after a loss, partner ---------- */
   .app.no-luna .tabbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -823,6 +881,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+    .tab-luna .moon::after { display: none; }
     .confetti { display: none; }
     .spark { animation: none; display: none; }
     .luna-flash, .toast, .switch span, .switch span::after { transition: none; }
@@ -978,11 +1038,11 @@
 
   <!-- ===================== Tab bar ===================== -->
   <nav class="tabbar" id="tabbar" aria-label="Main">
-    <button type="button" class="tab" data-action="tab" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg><span data-t="tabs.today"></span></button>
-    <button type="button" class="tab" data-action="tab" data-tab="tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span data-t="tabs.tools"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="today"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span><span data-t="tabs.today"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="tools"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span data-t="tabs.tools"></span></button>
     <button type="button" class="tab tab-luna" data-action="luna"><span class="moon"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#F6C8B5" d="M19.5 4.6A12 12 0 1 0 27.4 22 9.6 9.6 0 0 1 19.5 4.6z"/><circle cx="20.5" cy="19.5" r="2.4" fill="#FFE6A3"/></svg></span><span data-t="tabs.luna"></span></button>
-    <button type="button" class="tab" data-action="tab" data-tab="explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg><span data-t="tabs.explore"></span></button>
-    <button type="button" class="tab" data-action="tab" data-tab="me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4"/></svg><span data-t="tabs.me"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="explore"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1z"/></svg></span><span data-t="tabs.explore"></span></button>
+    <button type="button" class="tab" data-action="tab" data-tab="me"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4s6.1 1.8 7.5 5.4"/></svg></span><span data-t="tabs.me"></span></button>
   </nav>
 </div>
 
@@ -2096,9 +2156,20 @@ function lunaSettings() {
 }
 
 function setLunaView(view) {
+  const prev = ui.lunaView;
+  const from = slot.getBoundingClientRect();
   ui.lunaView = view;
   slot.classList.toggle('is-full', view === 'full');
   slot.classList.toggle('is-stage', view === 'stage');
+  if (!reduceMotion.matches && from.width && ((prev === 'hero' && view === 'full') || (prev === 'full' && view === 'hero'))) {
+    const to = slot.getBoundingClientRect();
+    if (to.width && to.height) {
+      slot.animate([
+        { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})` },
+        { transform: 'none' },
+      ], { duration: 460, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    }
+  }
   $('luna-close').hidden = view !== 'full';
   frame.tabIndex = view === 'full' ? 0 : -1;
   document.documentElement.style.overflow = view === 'hero' ? '' : 'hidden';
@@ -2912,10 +2983,10 @@ function toolMeta(id) {
 
 function renderTools() {
   if (!data.profile) return;
-  $('tool-grid').innerHTML = toolIds().map((id) => {
+  $('tool-grid').innerHTML = toolIds().map((id, i) => {
     const [name, sub] = T().names[id];
     const meta = toolMeta(id);
-    return `<button type="button" class="tool-tile" data-action="tool" data-tool="${id}"><span class="icon">${TOOL_ICON[id]}</span><strong>${esc(name)}</strong><span class="sub">${esc(meta || sub)}</span></button>`;
+    return `<button type="button" class="tool-tile" style="--i:${i}" data-action="tool" data-tool="${id}"><span class="icon">${TOOL_ICON[id]}</span><strong>${esc(name)}</strong><span class="sub">${esc(meta || sub)}</span></button>`;
   }).join('');
 }
 
@@ -2931,6 +3002,7 @@ function openTool(id) {
   }
   renderTool();
   window.scrollTo(0, 0);
+  animateIn($('screen-tool'), 28);
   $('tool-title').tabIndex = -1;
   $('tool-title').focus({ preventScroll: true });
   updateLunaRunning();
@@ -4801,8 +4873,20 @@ for (const id of ['care-unit', 'care-doctor']) {
    ========================================================================= */
 
 let sheetKind = null;
+let sheetCloseTimer = 0;
 function openSheet(kind, title, bodyHTML, footHTML) {
+  const wasOpen = !!sheetKind;
   if (!sheetKind) ui.lastFocus = document.activeElement;
+  // reopened while it was still sinking: start the rise again
+  clearTimeout(sheetCloseTimer);
+  if ($('sheet').classList.contains('closing')) {
+    $('sheet').classList.remove('closing');
+    for (const el of [$('sheet').querySelector('.sheet-panel'), $('sheet').querySelector('.sheet-backdrop')]) {
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    }
+  }
   sheetKind = kind;
   $('sheet-headline').innerHTML = typeof title === 'string' ? `<h2 id="sheet-title">${esc(title)}</h2>` : title.html;
   $('sheet-body').innerHTML = bodyHTML;
@@ -4810,6 +4894,8 @@ function openSheet(kind, title, bodyHTML, footHTML) {
   $('sheet-foot').innerHTML = footHTML || '';
   $('sheet').hidden = false;
   $('sheet').classList.toggle('sheet-luna', kind === 'luna');
+  $('sheet-body').classList.remove('swap');
+  if (wasOpen && !reduceMotion.matches) { void $('sheet-body').offsetWidth; $('sheet-body').classList.add('swap'); }
   $('sheet-body').scrollTop = 0;
   document.documentElement.style.overflow = 'hidden';
   $('sheet-close').focus();
@@ -4818,7 +4904,16 @@ function openSheet(kind, title, bodyHTML, footHTML) {
 function closeSheet() {
   if (!sheetKind) return;
   sheetKind = null;
-  $('sheet').hidden = true;
+  if (reduceMotion.matches) {
+    $('sheet').hidden = true;
+  } else {
+    $('sheet').classList.add('closing');
+    clearTimeout(sheetCloseTimer);
+    sheetCloseTimer = setTimeout(() => {
+      $('sheet').hidden = true;
+      $('sheet').classList.remove('closing');
+    }, 220);
+  }
   if (ui.lunaView === 'hero') document.documentElement.style.overflow = '';
   if (ui.lastFocus && ui.lastFocus.focus && document.contains(ui.lastFocus)) ui.lastFocus.focus();
 }
@@ -5477,6 +5572,15 @@ function renderOnboarding() {
   }
   $('ob-card').innerHTML = body;
   $('ob-card').classList.toggle('ob-lang', o.step === 'lang');
+  const stepKey = `${o.step}:${o.step === 'account' && ui.acct ? `${ui.acct.mode}/${ui.acct.step}` : ''}`;
+  if (stepKey !== o.shownStep && !reduceMotion.matches) {
+    $('ob-card').classList.remove('ob-enter');
+    void $('ob-card').offsetWidth;
+    $('ob-card').classList.add('ob-enter');
+  } else if (stepKey === o.shownStep) {
+    $('ob-card').classList.remove('ob-enter'); // same step re-rendered (a date typed, a method picked): no replay
+  }
+  o.shownStep = stepKey;
   $('ob-card').hidden = o.step === 'reveal';
   if (ui.lunaView === 'stage') postLuna({ inset: { top: 0, bottom: o.step === 'reveal' ? 0 : $('ob-card').offsetHeight } });
   const focusable = $('ob-card').querySelector('h1');
@@ -5594,6 +5698,20 @@ function showTab(tab) {
   updateLunaRunning();
 }
 
+// slide a screen in from the side it comes from (no movement with reduced motion)
+const TAB_ORDER = ['today', 'tools', 'explore', 'me'];
+function animateIn(el, dx) {
+  if (reduceMotion.matches || !el) return;
+  el.style.setProperty('--enter-x', `${dx}px`);
+  el.classList.remove('enter');
+  void el.offsetWidth;
+  el.classList.add('enter');
+}
+document.addEventListener('animationend', (e) => {
+  if (e.animationName === 'screen-in') e.target.classList.remove('enter');
+  if (e.animationName === 'rise-in' && e.target.parentElement && e.target.parentElement.classList.contains('swap')) e.target.parentElement.classList.remove('swap');
+});
+
 function renderAll() {
   applyJourney();
   renderStatic();
@@ -5624,7 +5742,14 @@ function setLang(next) {
 }
 
 const ACTIONS = {
-  tab: (el) => { closeSheet(); showTab(el.dataset.tab); },
+  tab: (el) => {
+    closeSheet();
+    const from = TAB_ORDER.indexOf(ui.tool ? 'tools' : ui.tab);
+    const to = TAB_ORDER.indexOf(el.dataset.tab);
+    const same = from === to && !ui.tool;
+    showTab(el.dataset.tab);
+    if (!same) animateIn($(`screen-${el.dataset.tab}`), to > from ? 28 : -28);
+  },
   luna: () => openLuna(),
   'luna-open': () => openLunaFull(),
   'luna-close': () => closeLunaFull(),
@@ -5711,7 +5836,7 @@ const ACTIONS = {
   'luna-ask': (el) => { if (sheetKind === 'luna') askLuna(L(topicById[el.dataset.topic].q), el.dataset.topic); else openLuna(el.dataset.topic); },
   lang: (el) => setLang(el.dataset.lang),
   tool: (el) => { closeSheet(); openTool(el.dataset.tool); },
-  'tool-back': () => showTab('tools'),
+  'tool-back': () => { showTab('tools'); animateIn($('screen-tools'), -28); },
   skin: (el) => { data.profile.skin = Number(el.dataset.skin); save(); renderMe(); postLuna({ skin: data.profile.skin }); },
   'see-week': (el) => {
     ui.returnTool = 'weeks';
