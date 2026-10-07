@@ -200,6 +200,38 @@
   .seg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 20px; }
   .seg-grid button { border-radius: 16px; }
 
+  /* ---------- Account, ads and Plus ---------- */
+  .acct-buttons { display: grid; gap: 10px; }
+  .acct-btn { display: grid; grid-template-columns: 22px minmax(0, 1fr) 22px; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 10px 16px; border-radius: 999px; border: 1.5px solid var(--line); background: #FFFFFF; color: #1F1F1F; font-weight: 700; font-size: 16px; }
+  .acct-btn::after { content: ''; } /* balances the logo, so the label sits in the middle */
+  .acct-btn svg { width: 22px; height: 22px; }
+  .acct-btn span { text-align: center; }
+  .acct-apple { background: #000000; color: #FFFFFF; border-color: #000000; }
+  .acct-facebook { background: #1877F2; color: #FFFFFF; border-color: #1877F2; }
+  .acct-mail { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .acct-switch, .acct-legal { text-align: center; }
+  .acct-legal .link-btn { font-weight: 600; text-decoration: underline; }
+  .acct-who { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .acct-who svg { width: 24px; height: 24px; color: var(--fg); }
+  .code-input { font: 600 26px/1.2 var(--body); letter-spacing: 0.4em; text-align: center; font-variant-numeric: tabular-nums; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .acct-google { background: #131314; color: #E3E3E3; border-color: #8E918F; }
+    :root:not([data-theme="light"]) .acct-apple { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
+  }
+  :root[data-theme="dark"] .acct-google { background: #131314; color: #E3E3E3; border-color: #8E918F; }
+  :root[data-theme="dark"] .acct-apple { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
+  .ad-card { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--radius); border: 1px dashed var(--line); background: var(--card); min-width: 0; }
+  .ad-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .ad-body { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .ad-body strong { display: block; }
+  .ad-art { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--care-bg); color: var(--care-fg); }
+  .ad-art svg { width: 26px; height: 26px; }
+  .ad-card .btn { min-height: 40px; padding: 8px 16px; }
+  .plus-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; background: linear-gradient(135deg, var(--peach), var(--lavender)); color: #16152B; font: 800 13px/1.5 var(--body); letter-spacing: 0.02em; vertical-align: middle; }
+  .plus-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
+  .plus-list li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; }
+  .plus-list svg { width: 20px; height: 20px; margin-top: 1px; color: var(--accent); }
+
   /* ---------- Languages ---------- */
   .lang-chip { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 38px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--fg); font-weight: 700; font-size: 14px; }
   .lang-chip svg { width: 18px; height: 18px; color: var(--accent); }
@@ -860,6 +892,8 @@
       <div class="partner" id="week-partner"></div>
     </section>
 
+    <div id="today-ad" data-modes="pregnant" hidden></div>
+
     <section aria-labelledby="foryou-title" style="display:grid;gap:10px" data-modes="pregnant">
       <h2 id="foryou-title" class="eyebrow" data-t="forYou"></h2>
       <div class="articles" id="for-you"></div>
@@ -899,6 +933,7 @@
       <ul class="food-list" id="food-list"></ul>
       <p class="source" id="food-source"></p>
     </section>
+    <div id="explore-ad" data-modes="pregnant born" hidden></div>
     <div id="explore-groups" style="display:grid;gap:18px" data-modes="pregnant"></div>
     <section class="card card-soon" data-modes="pregnant"><h2 data-t="clubs"></h2><p class="muted" data-t="clubsSoon"></p></section>
     <section class="card card-soon" data-modes="pregnant"><h2 data-t="midwife"></h2><p class="muted" data-t="midwifeSoon"></p></section>
@@ -908,6 +943,7 @@
   <section class="screen" id="screen-me" aria-labelledby="me-title" hidden>
     <h1 class="page-title" id="me-title" data-t="tabs.me"></h1>
     <section class="card" id="me-profile" aria-label="Profile"></section>
+    <section class="card" id="me-account" aria-labelledby="me-account-title"></section>
     <section class="card" aria-labelledby="me-baby-title" data-modes="pregnant">
       <h2 id="me-baby-title" data-t="baby"></h2>
       <div class="seg" role="radiogroup" aria-labelledby="me-baby-title" id="me-sex"></div>
@@ -932,6 +968,7 @@
     </section>
     <section class="card" aria-labelledby="me-privacy-title" id="me-privacy"></section>
     <section class="card" id="me-partner" data-modes="pregnant"></section>
+    <section class="card" id="me-plus" data-modes="pregnant born"></section>
     <section class="card" aria-labelledby="me-about-title">
       <h2 id="me-about-title" data-t="about"></h2>
       <p class="muted" data-t="aboutText"></p>
@@ -1164,6 +1201,8 @@ const STR = {
       device: ['Save my details and journal on this device', 'Off: everything is forgotten when you close the page.'],
       luna: ['Let Luna use my week and symptoms to tailor answers', 'Luna only uses what you allow.'],
       stats: ['Share anonymous usage statistics', 'In this prototype nothing is ever sent anywhere.'],
+      ads: ['Personalised ads (optional)', 'Off: you still see some ads, but they aren’t based on you. On: ads may use your advertising ID and general interests. Never your pregnancy or health data.'],
+      backup: ['Back up my data to my account', 'So you can restore it on a new phone. In this prototype nothing is uploaded.'],
     },
     notSaved: 'Not saved on this device. Turn on the first switch to keep your details.',
     stored: 'What’s stored',
@@ -1393,6 +1432,8 @@ const STR = {
       device: ['Запазвай данните и дневника ми на това устройство', 'Изключено: всичко се забравя, когато затвориш страницата.'],
       luna: ['Luna може да ползва седмицата и симптомите ми за по-точни отговори', 'Luna ползва само това, което позволиш.'],
       stats: ['Споделяй анонимна статистика за ползването', 'В този прототип нищо не се изпраща никъде.'],
+      ads: ['Персонализирани реклами (по желание)', 'Изключено: пак ще виждаш някои реклами, но не според теб. Включено: рекламите може да ползват рекламния ти идентификатор и общи интереси. Никога данни за бременността или здравето ти.'],
+      backup: ['Пази резервно копие в профила ми', 'За да върнеш данните на нов телефон. В този прототип нищо не се качва.'],
     },
     notSaved: 'Не се пази на това устройство. Включи първия превключвател, за да запазиш данните си.',
     stored: 'Какво се пази',
@@ -1899,6 +1940,7 @@ const blank = () => ({
   shopping: { checked: {}, custom: [] },
   plan: {},
   names: { favs: [] },
+  plus: null, // { plan, since } while Lunabump Plus is on
   status: 'pregnant', // pregnant | born | loss
   birth: null,
   loss: null,
@@ -1963,6 +2005,9 @@ const ui = {
   birthPhoto: null,
   birthSex: 'unknown',
   cardBlob: null,
+  acct: null,
+  confirmAcctDelete: false,
+  plusPlan: 'year',
 };
 
 /* ---------- Derived pregnancy numbers ---------- */
@@ -2186,7 +2231,12 @@ function renderToday() {
   }
 
   // after the birth or a loss, Today becomes a different, calmer page
-  if (journey() !== 'pregnant') { renderCalmToday(); return; }
+  if (journey() !== 'pregnant') {
+    $('today-ad').innerHTML = '';
+    $('today-ad').hidden = true;
+    renderCalmToday();
+    return;
+  }
 
   const ga = gaDays();
   const w = Math.floor(ga / 7);
@@ -2224,6 +2274,7 @@ function renderToday() {
   $('week-partner').innerHTML = `<h3>${esc(partner ? t().forPartner : t().partnerTip)}</h3><p>${esc(L(b.partner))}</p>`;
 
   $('for-you').innerHTML = forYou(w).map(articleRow).join('');
+  placeAd('today-ad', 'today');
 }
 
 function moodButtons(current) {
@@ -4650,8 +4701,10 @@ function renderExplore() {
       </section>
       ${st === 'loss' ? `<section class="card" aria-labelledby="calm-support"><h2 id="calm-support">${esc(J().supportTitle)}</h2>${supportHTML(loss.kind)}</section>` : ''}`;
     $('explore-partner').hidden = true;
+    placeAd('explore-ad', 'explore');
     return;
   }
+  placeAd('explore-ad', 'explore');
   $('explore-partner').hidden = !isPartner();
   $('explore-partner').innerHTML = isPartner() ? `<h2 class="eyebrow" id="group-partner">${esc(J().forPartners)}</h2><div class="articles">${['support', 'birthpartner'].map((id) => articleRow(topicById[id])).join('')}</div>` : '';
   $('explore-week').innerHTML = forYou(weekNow()).filter((tp) => tp.group !== 'partner').map(articleRow).join('');
@@ -4680,7 +4733,9 @@ function renderMe() {
   const ga = gaDays();
   const st = journey();
   renderMeJourney();
+  renderMeAccount();
   if (st === 'pregnant') renderMePartner();
+  if (st !== 'loss') renderMePlus();
   if (ui.editingProfile) {
     $('me-profile').innerHTML = `
       <label class="field"><span>${esc(t().name)}</span><input class="input" id="edit-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
@@ -4717,7 +4772,7 @@ function renderMe() {
   const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions, ...data.weights, ...data.appointments].some((e) => e.example);
   $('me-privacy').innerHTML = `
     <h2 id="me-privacy-title">${esc(t().privacy)}</h2>
-    ${['device', 'luna', 'stats'].map((k) => `<div class="switch-row"><label for="consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="consent-${k}" data-consent="${k}" ${c[k] ? 'checked' : ''}><span></span></span></div>`).join('')}
+    ${['device', 'luna', 'stats', 'ads', ...(p.account ? ['backup'] : [])].map((k) => `<div class="switch-row"><label for="consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="consent-${k}" data-consent="${k}" ${c[k] ? 'checked' : ''}><span></span></span></div>`).join('')}
     ${c.device ? '' : `<div class="notice notice-care">${esc(t().notSaved)}</div>`}
     <div><h3>${esc(t().stored)}</h3><p class="fine" style="margin:4px 0 8px">${esc(t().storedWhere)}</p>
       <ul class="stored">${Object.entries(counts).map(([k, n]) => `<li><span>${esc(t().storedRows[k])}</span><b>${n}</b></li>`).join('')}</ul></div>
@@ -4904,6 +4959,323 @@ async function copyText(text, selectEl) {
 }
 
 /* =========================================================================
+   Account, ads and Lunabump Plus
+   (prototype: no sign-in service, ad network or app store is contacted)
+   ========================================================================= */
+
+const ACCOUNT_STR = {
+  en: {
+    title: 'Create your account',
+    loginTitle: 'Log in',
+    text: 'Keep a backup of your journey and take it to a new phone. Or carry on without an account: everything stays on this device.',
+    loginText: 'Log in with the same option you used before.',
+    continueWith: (name) => `Continue with ${name}`,
+    withEmail: 'Continue with email',
+    noAccount: 'Continue without an account',
+    haveAccount: 'Already have an account?',
+    logIn: 'Log in',
+    noAccountYet: 'No account yet?',
+    signUp: 'Create one',
+    providerProto: 'Prototype: these buttons don’t contact Google, Apple or Facebook. You’re signed in straight away.',
+    legalPre: 'By continuing you agree to the',
+    terms: 'Terms of Use',
+    and: 'and the',
+    privacyPolicy: 'Privacy Policy',
+    legalSoon: 'The Terms of Use and the Privacy Policy will be published before launch.',
+    emailLabel: 'Email',
+    sendCode: 'Send me a code',
+    emailBad: 'Enter a valid email address.',
+    noPassword: 'No password to remember: we email you a one-time code.',
+    codeTitle: 'Check your email',
+    codeSent: (email) => `We sent a 6-digit code to ${email}.`,
+    codeLabel: 'Code',
+    verify: 'Confirm',
+    codeBad: 'Enter the 6 digits from the email.',
+    codeProto: 'Prototype: no email is sent. Any 6 digits work.',
+    otherEmail: 'Use another email',
+    signedIn: (name) => `Signed in with ${name}`,
+    loginRestore: 'In the full app, your data would come back from your account here. In the prototype, carry on with the setup.',
+    emailName: 'email',
+    // Me
+    cardTitle: 'Account',
+    none: 'No account. Everything stays on this device.',
+    create: 'Create an account',
+    signedInWith: (name) => `Signed in with ${name}`,
+    since: (date) => `Since ${date}`,
+    signOut: 'Sign out',
+    signedOut: 'Signed out',
+    deleteAcct: 'Delete account',
+    deleteAcctText: 'This deletes your account and its backup. What’s on this phone stays until you delete it under Privacy.',
+    deleted: 'Account deleted',
+    // ads
+    adLabel: 'Ad',
+    example: 'example',
+    adWhy: 'Why this ad?',
+    adRemove: 'Remove ads',
+    adCta: 'Prototype ad: it doesn’t link anywhere.',
+    adWhyTitle: 'About ads',
+    adWhyText: (personal) => personal
+      ? 'Personalised ads are on, so this ad may use your advertising ID and general interests. It never uses your pregnancy or health data.'
+      : 'Personalised ads are off, so this ad isn’t based on you. It never uses your pregnancy or health data.',
+    adWhere: 'Ads never appear on urgent screens, in the safety tools, in Luna’s answers or after a loss.',
+    adSettings: 'Change it in Privacy',
+    // Plus
+    plusSub: 'Extras for the journey. Safety tools stay free for everyone, always.',
+    plusTitle: 'With Plus',
+    plusFeatures: ['No ads', 'Live sync with your partner', 'Unlimited questions to Luna (AI)', '4K moon portraits and birth card designs', 'Your bump time-lapse as a video'],
+    freeTitle: 'Always free',
+    freeFeatures: ['Kick counter, contraction timer and urgent symptoms', 'Support after a loss', 'Week by week and the 3D baby', 'Every tracker and checklist'],
+    plans: {
+      year: ['Yearly', '29,99 € a year', 'About 2,50 € a month · 7 days free'],
+      month: ['Monthly', '4,99 € a month', 'Cancel any time'],
+    },
+    examplePrices: 'Example prices for the prototype.',
+    tryFree: 'Try 7 days free',
+    subscribe: 'Subscribe',
+    storeNote: 'Paid through Google Play or the App Store. Cancel any time in your store account. Prototype: no payment is taken.',
+    restore: 'Restore purchases',
+    restoreNone: 'No purchases found (prototype).',
+    plusOn: 'Plus is on. Prototype: no payment was taken.',
+    plusActive: (plan, date) => `Plus is active · ${plan} · since ${date}`,
+    plusFree: 'You’re on the free plan.',
+    plusSee: 'See Plus',
+    plusOff: 'Turn off (prototype)',
+    plusOffDone: 'Back on the free plan',
+  },
+  bg: {
+    title: 'Създай профил',
+    loginTitle: 'Влез в профила си',
+    text: 'Пази резервно копие и го пренеси на нов телефон. Или продължи без профил: всичко остава на това устройство.',
+    loginText: 'Влез по същия начин като преди.',
+    continueWith: (name) => `Продължи с ${name}`,
+    withEmail: 'Продължи с имейл',
+    noAccount: 'Продължи без профил',
+    haveAccount: 'Вече имаш профил?',
+    logIn: 'Влез',
+    noAccountYet: 'Нямаш профил?',
+    signUp: 'Създай',
+    providerProto: 'Прототип: бутоните не се свързват с Google, Apple или Facebook. Влизаш веднага.',
+    legalPre: 'Продължавайки, приемаш',
+    terms: 'Условията за ползване',
+    and: 'и',
+    privacyPolicy: 'Политиката за поверителност',
+    legalSoon: 'Условията за ползване и Политиката за поверителност ще бъдат публикувани преди пускането.',
+    emailLabel: 'Имейл',
+    sendCode: 'Изпрати ми код',
+    emailBad: 'Въведи валиден имейл адрес.',
+    noPassword: 'Без парола за помнене: изпращаме ти еднократен код по имейл.',
+    codeTitle: 'Провери имейла си',
+    codeSent: (email) => `Изпратихме 6-цифрен код на ${email}.`,
+    codeLabel: 'Код',
+    verify: 'Потвърди',
+    codeBad: 'Въведи 6-те цифри от имейла.',
+    codeProto: 'Прототип: не се изпраща имейл. Всякакви 6 цифри стават.',
+    otherEmail: 'Друг имейл',
+    signedIn: (name) => `Влезе с ${name}`,
+    loginRestore: 'В пълното приложение тук данните ти ще се върнат от профила. В прототипа продължи с настройката.',
+    emailName: 'имейл',
+    cardTitle: 'Профил',
+    none: 'Без профил. Всичко остава на това устройство.',
+    create: 'Създай профил',
+    signedInWith: (name) => `Вход с ${name}`,
+    since: (date) => `От ${date}`,
+    signOut: 'Изход',
+    signedOut: 'Излезе от профила',
+    deleteAcct: 'Изтрий профила',
+    deleteAcctText: 'Това изтрива профила и резервното му копие. Данните на този телефон остават, докато не ги изтриеш в „Поверителност“.',
+    deleted: 'Профилът е изтрит',
+    adLabel: 'Реклама',
+    example: 'пример',
+    adWhy: 'Защо виждам това?',
+    adRemove: 'Махни рекламите',
+    adCta: 'Примерна реклама: не води никъде.',
+    adWhyTitle: 'За рекламите',
+    adWhyText: (personal) => personal
+      ? 'Персонализираните реклами са включени, затова тази реклама може да ползва рекламния ти идентификатор и общи интереси. Никога не ползва данни за бременността или здравето ти.'
+      : 'Персонализираните реклами са изключени, затова тази реклама не е според теб. Никога не ползва данни за бременността или здравето ти.',
+    adWhere: 'Реклами никога няма на спешните екрани, в инструментите за безопасност, в отговорите на Luna и след загуба.',
+    adSettings: 'Промени в „Поверителност“',
+    plusSub: 'Екстри за пътя. Инструментите за безопасност остават безплатни за всички, завинаги.',
+    plusTitle: 'С Plus',
+    plusFeatures: ['Без реклами', 'Синхронизиране с партньора на живо', 'Неограничени въпроси към Luna (AI)', '4K лунни портрети и дизайни на картичката за раждане', 'Таймлапсът на коремчето като видео'],
+    freeTitle: 'Винаги безплатно',
+    freeFeatures: ['Брояч на ритници, таймер за контракции и спешни симптоми', 'Подкрепа след загуба', 'Седмица по седмица и 3D бебето', 'Всички записи и списъци'],
+    plans: {
+      year: ['Годишен', '29,99 € на година', '≈ 2,50 € на месец · 7 дни безплатно'],
+      month: ['Месечен', '4,99 € на месец', 'Спираш по всяко време'],
+    },
+    examplePrices: 'Примерни цени за прототипа.',
+    tryFree: 'Пробвай 7 дни безплатно',
+    subscribe: 'Абонирай се',
+    storeNote: 'Плащане през Google Play или App Store. Спираш абонамента по всяко време от профила си в магазина. Прототип: не се взема плащане.',
+    restore: 'Възстанови покупките',
+    restoreNone: 'Няма намерени покупки (прототип).',
+    plusOn: 'Plus е включен. Прототип: не е взето плащане.',
+    plusActive: (plan, date) => `Plus е активен · ${plan} · от ${date}`,
+    plusFree: 'Ползваш безплатния план.',
+    plusSee: 'Виж Plus',
+    plusOff: 'Изключи (прототип)',
+    plusOffDone: 'Отново на безплатния план',
+  },
+};
+const A = () => ACCOUNT_STR[lang];
+
+const PROVIDERS = ['google', 'apple', 'facebook'];
+const PROVIDER_NAME = { google: 'Google', apple: 'Apple', facebook: 'Facebook' };
+const BRAND = {
+  google: '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+  // Apple logo path from Font Awesome Free (CC BY 4.0)
+  apple: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>',
+  facebook: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H8v3h2.5V21z"/></svg>',
+  email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>',
+};
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+const providerLabel = (acc) => (acc.provider === 'email' ? acc.email : PROVIDER_NAME[acc.provider]);
+
+/* ---------- Sign up and log in (in onboarding, or in a sheet from Me) ---------- */
+function newAcctState(ctx) {
+  return { ctx, mode: 'signup', step: 'choose', email: '', error: '' };
+}
+
+function accountTitle() {
+  const st = ui.acct;
+  return st.step === 'code' ? A().codeTitle : st.mode === 'login' ? A().loginTitle : A().title;
+}
+
+function accountBody() {
+  const s = A();
+  const st = ui.acct;
+  const error = st.error ? `<p class="ob-error" role="alert">${esc(st.error)}</p>` : '';
+  if (st.step === 'email') {
+    return `<label class="field"><span>${esc(s.emailLabel)}</span><input class="input" type="email" id="acct-email" value="${esc(st.email)}" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"></label>
+      <p class="fine">${esc(s.noPassword)}</p>${error}
+      <div class="acct-buttons"><button type="button" class="btn btn-block" data-action="acct-send">${esc(s.sendCode)}</button>
+      <button type="button" class="btn btn-line btn-block" data-action="acct-back">${esc(J().back)}</button></div>`;
+  }
+  if (st.step === 'code') {
+    return `<p>${esc(s.codeSent(st.email))}</p>
+      <label class="field"><span>${esc(s.codeLabel)}</span><input class="input code-input" id="acct-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></label>
+      <p class="fine">${esc(s.codeProto)}</p>${error}
+      <div class="acct-buttons"><button type="button" class="btn btn-block" data-action="acct-verify">${esc(s.verify)}</button>
+      <button type="button" class="btn btn-line btn-block" data-action="acct-back">${esc(s.otherEmail)}</button></div>`;
+  }
+  const login = st.mode === 'login';
+  return `<p class="muted">${esc(login ? s.loginText : s.text)}</p>
+    <div class="acct-buttons">
+      ${PROVIDERS.map((p) => `<button type="button" class="acct-btn acct-${p}" data-action="acct-provider" data-provider="${p}">${BRAND[p]}<span>${esc(s.continueWith(PROVIDER_NAME[p]))}</span></button>`).join('')}
+      <button type="button" class="acct-btn acct-mail" data-action="acct-email">${BRAND.email}<span>${esc(s.withEmail)}</span></button>
+      ${st.ctx === 'ob' ? `<button type="button" class="btn btn-quiet btn-block" data-action="acct-skip">${esc(s.noAccount)}</button>` : ''}
+    </div>
+    <p class="fine">${esc(s.providerProto)}</p>
+    <p class="small acct-switch">${esc(login ? s.noAccountYet : s.haveAccount)} <button type="button" class="link-btn" data-action="acct-mode">${esc(login ? s.signUp : s.logIn)}</button></p>
+    <p class="fine acct-legal">${esc(s.legalPre)} <button type="button" class="link-btn" data-action="legal">${esc(s.terms)}</button> ${esc(s.and)} <button type="button" class="link-btn" data-action="legal">${esc(s.privacyPolicy)}</button>.</p>`;
+}
+
+function renderAccount() {
+  if (!ui.acct) return;
+  if (ui.acct.ctx === 'ob') renderOnboarding();
+  else openSheet('account', accountTitle(), accountBody());
+  const field = $('acct-code') || $('acct-email');
+  if (field) field.focus();
+}
+
+function completeAccount(acc) {
+  const account = { ...acc, since: todayISO() };
+  const st = ui.acct;
+  ui.acct = null;
+  if (st.ctx === 'ob') {
+    ui.ob.account = account;
+    ui.ob.loginNote = st.mode === 'login';
+    ui.ob.step = 'stage';
+    renderOnboarding();
+  } else {
+    data.profile.account = account;
+    save();
+    closeSheet();
+    renderMe();
+  }
+  toast(A().signedIn(providerLabel(account)));
+}
+
+/* ---------- Ads: example cards, never on safety screens or after a loss ---------- */
+const ADS = {
+  pregnant: [
+    { icon: TOOL_ICON.shopping, title: { en: 'Soft maternity leggings', bg: 'Меки клинове за бременни' }, text: { en: 'Example Shop · Comfortable through every trimester', bg: 'Примерен магазин · Удобни през всеки триместър' }, cta: { en: 'Shop now', bg: 'Към магазина' } },
+    { icon: TOOL_ICON.heartLine, title: { en: 'Organic cotton bodysuits', bg: 'Бодита от органичен памук' }, text: { en: 'Example Shop · Sizes from newborn', bg: 'Примерен магазин · Размери от новородено' }, cta: { en: 'See the range', bg: 'Виж моделите' } },
+  ],
+  born: [
+    { icon: TOOL_ICON.bag, title: { en: 'Newborn nappies, delivered', bg: 'Памперси за новородени с доставка' }, text: { en: 'Example Shop · Subscribe and save', bg: 'Примерен магазин · Абонамент с отстъпка' }, cta: { en: 'Shop now', bg: 'Към магазина' } },
+    { icon: TOOL_ICON.shopping, title: { en: 'A gentle baby carrier', bg: 'Удобна раница за бебе' }, text: { en: 'Example Shop · Free returns', bg: 'Примерен магазин · Безплатно връщане' }, cta: { en: 'See the range', bg: 'Виж моделите' } },
+  ],
+};
+
+function adHTML(slot) {
+  if (!data.profile || data.plus || journey() === 'loss') return '';
+  const list = ADS[journey()] || ADS.pregnant;
+  const ad = list[(Math.abs(daysBetween('2026-01-01', todayISO())) + (slot === 'explore' ? 1 : 0)) % list.length];
+  const s = A();
+  return `<aside class="ad-card" aria-label="${esc(s.adLabel)}">
+    <div class="row-between"><span class="ad-label">${esc(s.adLabel)} · ${esc(s.example)}</span><button type="button" class="link-btn small" data-action="ad-why">${esc(s.adWhy)}</button></div>
+    <div class="ad-body"><span class="ad-art">${ad.icon}</span><span><strong>${esc(L(ad.title))}</strong><span class="small muted">${esc(L(ad.text))}</span></span></div>
+    <div class="row"><button type="button" class="btn btn-quiet" data-action="ad-cta">${esc(L(ad.cta))}</button><button type="button" class="link-btn small" data-action="plus-open">${esc(s.adRemove)}</button></div>
+  </aside>`;
+}
+
+function placeAd(id, slot) {
+  const html = adHTML(slot);
+  $(id).innerHTML = html;
+  $(id).hidden = !html;
+}
+
+function openAdWhy() {
+  const s = A();
+  const personal = !!(data.profile.consents || {}).ads;
+  openSheet('adwhy', s.adWhyTitle, `<p>${esc(s.adWhyText(personal))}</p><p class="muted">${esc(s.adWhere)}</p>
+    <div class="row"><button type="button" class="btn btn-quiet" data-action="ad-settings">${esc(s.adSettings)}</button><button type="button" class="btn btn-line" data-action="plus-open">${esc(s.adRemove)}</button></div>`);
+}
+
+/* ---------- Lunabump Plus (paywall; never shown after a loss) ---------- */
+function openPlus() {
+  if (journey() === 'loss') return;
+  const s = A();
+  ui.plusPlan = ui.plusPlan || 'year';
+  const plans = Object.entries(s.plans).map(([k, [name, price, note]]) => `<label class="choice"><input type="radio" name="plus-plan" value="${k}" ${ui.plusPlan === k ? 'checked' : ''}><span><strong>${esc(name)} · ${esc(price)}</strong><small>${esc(note)}</small></span></label>`).join('');
+  const list = (items) => `<ul class="plus-list">${items.map((f) => `<li>${CHECK}<span>${esc(f)}</span></li>`).join('')}</ul>`;
+  const active = data.plus;
+  openSheet('plus', { html: `<h2 id="sheet-title">Lunabump <span class="plus-badge">Plus</span></h2>` }, `
+    <p class="muted">${esc(s.plusSub)}</p>
+    <div class="help-group"><h3>${esc(s.plusTitle)}</h3>${list(s.plusFeatures)}</div>
+    <div class="help-group"><h3>${esc(s.freeTitle)}</h3>${list(s.freeFeatures)}</div>
+    ${active ? `<div class="notice notice-calm">${esc(s.plusActive(s.plans[active.plan][0], fmtDate(active.since)))}</div>` : `<fieldset class="choice-list"><legend class="visually-hidden">Plan</legend>${plans}</fieldset><p class="fine">${esc(s.examplePrices)} ${esc(s.storeNote)}</p>`}
+    <button type="button" class="link-btn small" data-action="plus-restore">${esc(s.restore)}</button>`,
+  active ? `<button type="button" class="btn btn-line btn-block" data-action="plus-off">${esc(s.plusOff)}</button>` : `<button type="button" class="btn btn-block" data-action="plus-buy" id="plus-buy">${esc(ui.plusPlan === 'year' ? s.tryFree : s.subscribe)}</button>`);
+}
+
+/* ---------- Me: account and Plus cards ---------- */
+function renderMeAccount() {
+  const s = A();
+  const acc = data.profile.account;
+  if (!acc) {
+    $('me-account').innerHTML = `<h2 id="me-account-title">${esc(s.cardTitle)}</h2><p class="muted small">${esc(s.none)}</p><button type="button" class="btn btn-quiet" data-action="acct-open">${esc(s.create)}</button>`;
+    return;
+  }
+  $('me-account').innerHTML = `<h2 id="me-account-title">${esc(s.cardTitle)}</h2>
+    <div class="acct-who">${BRAND[acc.provider] || BRAND.email}<div class="kv"><strong>${esc(s.signedInWith(providerLabel(acc)))}</strong><span>${esc(s.since(fmtDate(acc.since)))}</span></div></div>
+    ${ui.confirmAcctDelete
+      ? `<div class="notice notice-alert" role="alert"><strong>${esc(s.deleteAcctText)}</strong><div class="row"><button type="button" class="btn btn-alert" data-action="acct-delete">${esc(s.deleteAcct)}</button><button type="button" class="btn btn-line" data-action="acct-delete-cancel">${esc(t().cancel)}</button></div></div>`
+      : `<div class="row"><button type="button" class="btn btn-quiet" data-action="acct-signout">${esc(s.signOut)}</button><button type="button" class="link-btn small" style="color:var(--alert-fg)" data-action="acct-delete-ask">${esc(s.deleteAcct)}</button></div>`}`;
+}
+
+function renderMePlus() {
+  const s = A();
+  const p = data.plus;
+  $('me-plus').innerHTML = `<h2>Lunabump <span class="plus-badge">Plus</span></h2>
+    <p class="muted small">${esc(p ? s.plusActive(s.plans[p.plan][0], fmtDate(p.since)) : s.plusFree)}</p>
+    <button type="button" class="btn btn-quiet" data-action="plus-open">${esc(s.plusSee)}</button>`;
+}
+
+/* =========================================================================
    Languages: English is the source and each new language is one more
    dictionary in STR (and in Luna View). The others are listed as coming soon.
    ========================================================================= */
@@ -5000,10 +5372,10 @@ function openLangSheet() {
    Onboarding
    ========================================================================= */
 
-const OB_STEPS = ['stage', 'date', 'name', 'privacy'];
+const OB_STEPS = ['account', 'stage', 'date', 'name', 'privacy'];
 
 function startOnboarding() {
-  ui.ob = { step: 'lang', langReturn: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
+  ui.ob = { step: 'lang', langReturn: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false, ads: false, backup: false }, account: null, loginNote: false };
   $('onboarding').hidden = false;
   tweenFrom = 150;
   showTab('today');
@@ -5051,11 +5423,18 @@ function renderOnboarding() {
       <p class="muted">${esc(s.welcomeText)}</p>
       <div class="ob-actions"><button type="button" class="btn btn-block" data-action="ob-start">${esc(s.start)}</button><button type="button" class="btn btn-quiet btn-block" data-action="ob-demo">${esc(s.demo)}</button><button type="button" class="link-btn small" style="justify-self:center" data-action="ob-demo-partner">${esc(J().partnerDemo)}</button></div>
       <p class="fine">${esc(t().disclaimer)}</p>`;
+  } else if (o.step === 'account') {
+    if (!ui.acct) ui.acct = newAcctState('ob');
+    body = `<div class="ob-top">${dots}${langSwitch}</div>
+      <h1 id="ob-title">${esc(accountTitle())}</h1>
+      ${accountBody()}
+      ${ui.acct.step === 'choose' ? `<button type="button" class="btn btn-line" data-action="ob-back" data-to="welcome">${esc(s.back)}</button>` : ''}`;
   } else if (o.step === 'stage') {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
+      ${o.loginNote ? `<div class="notice notice-calm">${esc(A().loginRestore)}</div>` : ''}
       <h1 id="ob-title">${esc(s.stageTitle)}</h1>
       <div class="ob-options">${['pregnant', 'partner', 'ttc'].map((k) => `<button type="button" class="ob-option" data-action="ob-stage" data-stage="${k}">${esc(s.stages[k])}</button>`).join('')}</div>
-      <button type="button" class="btn btn-line" data-action="ob-back" data-to="welcome">${esc(s.back)}</button>`;
+      <button type="button" class="btn btn-line" data-action="ob-back" data-to="account">${esc(s.back)}</button>`;
   } else if (o.step === 'ttc') {
     body = `<h1 id="ob-title">${esc(s.ttcTitle)}</h1><p class="muted">${esc(s.ttcText)}</p>
       <button type="button" class="btn btn-line" data-action="ob-back" data-to="stage">${esc(s.back)}</button>`;
@@ -5093,7 +5472,7 @@ function renderOnboarding() {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
       <h1 id="ob-title">${esc(s.privacyTitle)}</h1>
       <p class="muted">${esc(s.privacyText)}</p>
-      <div>${['device', 'luna', 'stats'].map((k) => `<div class="switch-row"><label for="ob-consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="ob-consent-${k}" data-ob-consent="${k}" ${o.consents[k] ? 'checked' : ''}><span></span></span></div>`).join('')}</div>
+      <div>${['device', 'luna', 'stats', 'ads', ...(o.account ? ['backup'] : [])].map((k) => `<div class="switch-row"><label for="ob-consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="ob-consent-${k}" data-ob-consent="${k}" ${o.consents[k] ? 'checked' : ''}><span></span></span></div>`).join('')}</div>
       <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="name">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-finish">${esc(o.mode === 'moon' ? s.finishMoon : s.finish)}</button></div>`;
   }
   $('ob-card').innerHTML = body;
@@ -5481,7 +5860,7 @@ const ACTIONS = {
     toast(t().deleted);
     startOnboarding();
   },
-  'ob-start': () => { ui.ob.step = 'stage'; renderOnboarding(); },
+  'ob-start': () => { ui.acct = newAcctState('ob'); ui.ob.step = 'account'; renderOnboarding(); },
   'ob-lang': (el) => setLang(el.dataset.lang),
   'ob-lang-next': () => { ui.ob.step = ui.ob.langReturn || 'welcome'; renderOnboarding(); },
   'ob-to-lang': () => {
@@ -5492,13 +5871,66 @@ const ACTIONS = {
     renderOnboarding();
   },
   'lang-open': () => openLangSheet(),
+
+  // account
+  'acct-provider': (el) => completeAccount({ provider: el.dataset.provider }),
+  'acct-email': () => { ui.acct.step = 'email'; ui.acct.error = ''; renderAccount(); },
+  'acct-send': () => {
+    const email = $('acct-email').value.trim();
+    ui.acct.email = email;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { ui.acct.error = A().emailBad; renderAccount(); return; }
+    ui.acct.error = '';
+    ui.acct.step = 'code';
+    renderAccount();
+  },
+  'acct-verify': () => {
+    if (!/^\d{6}$/.test($('acct-code').value.trim())) { ui.acct.error = A().codeBad; renderAccount(); return; }
+    completeAccount({ provider: 'email', email: ui.acct.email });
+  },
+  'acct-back': () => { ui.acct.step = ui.acct.step === 'code' ? 'email' : 'choose'; ui.acct.error = ''; renderAccount(); },
+  'acct-mode': () => { ui.acct.mode = ui.acct.mode === 'login' ? 'signup' : 'login'; ui.acct.step = 'choose'; renderAccount(); },
+  'acct-skip': () => { ui.acct = null; ui.ob.account = null; ui.ob.loginNote = false; ui.ob.step = 'stage'; renderOnboarding(); },
+  'acct-open': () => { ui.acct = newAcctState('me'); renderAccount(); },
+  'acct-signout': () => {
+    data.profile.account = null;
+    data.profile.consents = { ...(data.profile.consents || {}), backup: false };
+    save();
+    renderMe();
+    toast(A().signedOut);
+  },
+  'acct-delete-ask': () => { ui.confirmAcctDelete = true; renderMe(); },
+  'acct-delete-cancel': () => { ui.confirmAcctDelete = false; renderMe(); },
+  'acct-delete': () => {
+    ui.confirmAcctDelete = false;
+    data.profile.account = null;
+    data.profile.consents = { ...(data.profile.consents || {}), backup: false };
+    save();
+    renderMe();
+    toast(A().deleted);
+  },
+  legal: () => openSheet('legal', `${A().terms} · ${A().privacyPolicy}`, `<p>${esc(A().legalSoon)}</p>`),
+
+  // ads and Plus
+  'ad-why': () => openAdWhy(),
+  'ad-cta': () => toast(A().adCta),
+  'ad-settings': () => { closeSheet(); showTab('me'); requestAnimationFrame(() => $('me-privacy').scrollIntoView({ block: 'start' })); },
+  'plus-open': () => openPlus(),
+  'plus-buy': () => {
+    data.plus = { plan: ui.plusPlan, since: todayISO() };
+    save();
+    closeSheet();
+    renderAll();
+    toast(A().plusOn);
+  },
+  'plus-off': () => { data.plus = null; save(); closeSheet(); renderAll(); toast(A().plusOffDone); },
+  'plus-restore': () => toast(data.plus ? A().plusOn : A().restoreNone),
   'ob-demo': () => {
     const due = addDays(todayISO(), 109);
-    finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
+    finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false, ads: false } }, true);
   },
   'ob-demo-partner': () => {
     const due = addDays(todayISO(), 109);
-    finishOnboarding({ stage: 'partner', name: J().demoPartner, partnerName: J().demoHer, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
+    finishOnboarding({ stage: 'partner', name: J().demoPartner, partnerName: J().demoHer, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false, ads: false } }, true);
   },
   'ob-code': () => {
     const res = readCode($('ob-code').value);
@@ -5537,7 +5969,7 @@ const ACTIONS = {
   },
   'ob-finish': () => {
     const o = ui.ob;
-    finishOnboarding({ stage: o.stage, name: o.name, partnerName: o.stage === 'partner' ? o.partnerName : '', due: obDue(), method: o.method, mode: o.mode, sex: o.sex || 'unknown', consents: { ...o.consents } }, false);
+    finishOnboarding({ stage: o.stage, name: o.name, partnerName: o.stage === 'partner' ? o.partnerName : '', due: obDue(), method: o.method, mode: o.mode, sex: o.sex || 'unknown', account: o.account, consents: { ...o.consents, backup: !!(o.account && o.consents.backup) } }, false);
   },
   'reveal-skip': () => endReveal(),
 
@@ -5674,6 +6106,9 @@ document.addEventListener('change', (e) => {
       ui.birthPhoto = blob;
       $('b-photo-state').textContent = J().photoAdded;
     }).catch(() => toast(T().photoFailed));
+  } else if (el.name === 'plus-plan') {
+    ui.plusPlan = el.value;
+    if ($('plus-buy')) $('plus-buy').textContent = ui.plusPlan === 'year' ? A().tryFree : A().subscribe;
   } else if (el.dataset.nbCheck) {
     data.newborn.checked[el.dataset.nbCheck] = el.checked;
     save();
@@ -5690,6 +6125,11 @@ document.addEventListener('change', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.target.id === 'acct-email' || e.target.id === 'acct-code')) {
+    e.preventDefault();
+    ACTIONS[e.target.id === 'acct-email' ? 'acct-send' : 'acct-verify']();
+    return;
+  }
   if (e.key === 'Escape') {
     if (sheetKind) closeSheet();
     else if (ui.lunaView === 'full') closeLunaFull();
