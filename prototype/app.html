@@ -497,6 +497,27 @@
   .article-row .chev svg { width: 18px; height: 18px; }
 
   /* ---------- Track ---------- */
+  .zodiac-hero { text-align: center; justify-items: center; background: linear-gradient(170deg, var(--card) 40%, var(--z-tint, var(--tint))); }
+  .zodiac-fire { --z-tint: rgba(246, 168, 120, 0.28); }
+  .zodiac-earth { --z-tint: rgba(156, 197, 169, 0.32); }
+  .zodiac-air { --z-tint: rgba(185, 174, 240, 0.32); }
+  .zodiac-water { --z-tint: rgba(120, 180, 230, 0.28); }
+  .zodiac-glyph { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: var(--midnight); color: var(--star); font: 48px/1 'Segoe UI Symbol', 'Noto Sans Symbols', 'DejaVu Sans', serif; box-shadow: 0 0 0 6px rgba(255, 230, 163, 0.18); }
+  .zodiac-hero h2 { font-size: 28px; }
+  .zodiac-hero p:not(.eyebrow) { max-width: 34ch; }
+  .zodiac-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .zodiac-tile { display: grid; justify-items: center; gap: 4px; padding: 10px 4px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); color: var(--fg); font-size: 13px; }
+  .zodiac-tile span { font: 24px/1 'Segoe UI Symbol', 'Noto Sans Symbols', 'DejaVu Sans', serif; color: var(--accent); }
+  .zodiac-tile[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); }
+  .sym-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  /* icon above the label gives the whole tile width to the text, so long Bulgarian words stay whole */
+  .sym-tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 6px; min-height: 86px; padding: 10px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); color: var(--fg); text-align: left; font-weight: 700; font-size: 14px; line-height: 1.2; overflow-wrap: break-word; }
+  .sym-ico { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--tint); font-size: 17px; line-height: 1; }
+  .sym-tile[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); }
+  .sym-tile[aria-pressed="true"] .sym-ico { background: var(--card); box-shadow: 0 0 0 2px var(--accent); }
+  .sym-info { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .sym-info:first-of-type { border-top: 0; padding-top: 0; }
+  .sym-info-head { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; }
   .levels { display: grid; gap: 8px; }
   .levels input[type="range"] { width: 100%; accent-color: var(--violet); }
   .levels-value { font-weight: 700; }
@@ -849,10 +870,11 @@
   .ob-card.ob-enter > *:nth-child(n+6) { animation-delay: 200ms; }
 
   /* touch feedback */
-  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .seg button, .lang-chip, .tab) {
+  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .seg button, .lang-chip, .tab, .sym-tile, .zodiac-tile) {
     transition: transform 160ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, color 200ms ease;
   }
-  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .lang-chip):active:not(:disabled) { transform: scale(0.96); }
+  :is(.btn, .tool-tile, .quick button, .article-row, .next-appt, .mood, .chip, .lang-row, .ob-option, .acct-btn, .mode-card, .flag-btn, .icon-btn, .choice, .photo, .lang-chip, .sym-tile, .zodiac-tile):active:not(:disabled) { transform: scale(0.96); }
+  .sym-tile[aria-pressed="true"] .sym-ico { animation: pop 380ms var(--ease-spring); }
   @media (hover: hover) {
     :is(.tool-tile, .quick button, .article-row, .next-appt):hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(42, 39, 64, 0.06), 0 12px 28px rgba(42, 39, 64, 0.1); }
   }
@@ -1170,8 +1192,10 @@ const STR = {
 
     segs: { symptoms: 'Symptoms', mood: 'Mood', kicks: 'Kicks', contractions: 'Contractions' },
     symQ: 'What are you feeling?',
-    symAll: 'Show all symptoms',
-    symFewer: 'Show fewer',
+    symDate: 'Date',
+    symTime: 'Time',
+    symOther: 'What else are you feeling?',
+    symAbout: 'About what you logged',
     intensity: 'How strong?',
     levels: ['Very mild', 'Mild', 'Moderate', 'Strong', 'Severe'],
     note: 'Note (optional)',
@@ -1184,8 +1208,6 @@ const STR = {
     recent: 'Recent entries',
     symEmpty: 'Nothing logged yet. Pick a symptom above to add your first entry.',
     example: 'Example',
-    headacheHint: 'A severe headache that doesn’t go away with painkillers can be a sign of pre-eclampsia, especially with swelling or blurred vision.',
-    swellingHint: 'Sudden swelling of the face, hands or feet can be a sign of pre-eclampsia.',
     symMonth: 'Your month',
     symLegend: 'Darker days had stronger symptoms. Tap a day to see it.',
     dayEmpty: 'Nothing logged on this day.',
@@ -1241,10 +1263,11 @@ const STR = {
     askLabel: 'Your question',
     send: 'Send',
     source: 'Source',
+    sources: 'Sources',
     lunaUnknown: 'I don’t have a checked source for that in this prototype, so I won’t guess. In the full app I answer from NHS, WHO, ACOG and NICE guidance and always show the source. Try one of the questions below, or ask your midwife or doctor.',
     lunaTriageOnly: 'I’ve put the most important thing first. When you’ve called, I’m here if you have other questions.',
     lunaThinking: 'Luna is thinking',
-    lunaChecking: 'Checking the NHS guidance',
+    lunaChecking: 'Checking trusted guidance',
     suggestLabel: 'Suggested questions',
 
     readThisWeek: 'Read this week',
@@ -1252,7 +1275,7 @@ const STR = {
     foodPh: 'Search, for example cheese',
     status: { safe: 'Safe', care: 'With care', avoid: 'Avoid' },
     noFood: 'No match. Ask Luna, or check with your midwife.',
-    groups: { food: 'Food and drink', body: 'Body and comfort', baby: 'Baby and birth', vitamins: 'Vitamins' },
+    groups: { food: 'Food and drink', body: 'Body and feelings', baby: 'Baby and birth', vitamins: 'Vitamins and iron', safe: 'Staying safe' },
     clubs: 'Birth clubs',
     clubsSoon: 'Chat with parents due in the same month as you. Coming in the full app.',
     midwife: 'Ask a midwife',
@@ -1403,8 +1426,10 @@ const STR = {
 
     segs: { symptoms: 'Симптоми', mood: 'Настроение', kicks: 'Ритници', contractions: 'Контракции' },
     symQ: 'Какво усещаш?',
-    symAll: 'Покажи всички симптоми',
-    symFewer: 'Покажи по-малко',
+    symDate: 'Дата',
+    symTime: 'Час',
+    symOther: 'Какво друго усещаш?',
+    symAbout: 'За това, което записа',
     intensity: 'Колко силно?',
     levels: ['Много слабо', 'Слабо', 'Умерено', 'Силно', 'Много силно'],
     note: 'Бележка (по желание)',
@@ -1417,8 +1442,6 @@ const STR = {
     recent: 'Последни записи',
     symEmpty: 'Още няма записи. Избери симптом отгоре, за да добавиш първия.',
     example: 'Пример',
-    headacheHint: 'Силно главоболие, което не минава с болкоуспокояващи, може да е признак на прееклампсия, особено с отоци или замъглено зрение.',
-    swellingHint: 'Внезапният оток на лицето, ръцете или краката може да е признак на прееклампсия.',
     symMonth: 'Твоят месец',
     symLegend: 'По-тъмните дни са с по-силни симптоми. Докосни ден, за да го видиш.',
     dayEmpty: 'Няма записи за този ден.',
@@ -1474,10 +1497,11 @@ const STR = {
     askLabel: 'Твоят въпрос',
     send: 'Изпрати',
     source: 'Източник',
+    sources: 'Източници',
     lunaUnknown: 'В този прототип нямам проверен източник за това, затова няма да гадая. В пълното приложение отговарям по насоките на NHS, WHO, ACOG и NICE и винаги показвам източника. Пробвай някой от въпросите отдолу или питай акушерката или лекаря.',
     lunaTriageOnly: 'Сложих най-важното най-отгоре. След като се обадиш, тук съм, ако имаш още въпроси.',
     lunaThinking: 'Luna мисли',
-    lunaChecking: 'Проверява насоките на NHS',
+    lunaChecking: 'Проверява здравните насоки',
     suggestLabel: 'Предложени въпроси',
 
     readThisWeek: 'За четене тази седмица',
@@ -1485,7 +1509,7 @@ const STR = {
     foodPh: 'Търси, например сирене',
     status: { safe: 'Безопасно', care: 'С внимание', avoid: 'Избягвай' },
     noFood: 'Няма съвпадение. Попитай Luna или акушерката.',
-    groups: { food: 'Храна и напитки', body: 'Тяло и удобство', baby: 'Бебе и раждане', vitamins: 'Витамини' },
+    groups: { food: 'Храна и напитки', body: 'Тяло и чувства', baby: 'Бебе и раждане', vitamins: 'Витамини и желязо', safe: 'Безопасност' },
     clubs: 'Клубове по термин',
     clubsSoon: 'Разговори с родители с термин в същия месец. Идва в пълното приложение.',
     midwife: 'Попитай акушерка',
@@ -1620,7 +1644,39 @@ const NHS = {
   heartburn: ['NHS · Indigestion and heartburn in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/'],
   glucose: ['NHS · Gestational diabetes', 'https://www.nhs.uk/conditions/gestational-diabetes/'],
   preeclampsia: ['NHS · Pre-eclampsia', 'https://www.nhs.uk/conditions/pre-eclampsia/'],
+  vaccines: ['NHS · Vaccinations in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/vaccinations/'],
+  medicines: ['NHS · Medicines in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/medicines/'],
+  alcohol: ['NHS · Drinking alcohol while pregnant', 'https://www.nhs.uk/pregnancy/keeping-well/drinking-alcohol-while-pregnant/'],
+  smoking: ['NHS · Stop smoking in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/stop-smoking/'],
+  travel: ['NHS · Travelling in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/travelling/'],
+  mental: ['NHS · Mental health in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/mental-health/'],
+  help: ['NHS · Pregnancy symptoms you need to get help for', 'https://www.nhs.uk/pregnancy/common-symptoms/pregnancy-symptoms-you-need-to-get-help-for/'],
+  common: ['NHS · Common health problems in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/common-health-problems/'],
+  headaches: ['NHS · Headaches in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/headaches/'],
+  pelvic: ['NHS · Pelvic pain in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/pelvic-pain/'],
+  stomach: ['NHS · Stomach pain in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/stomach-pain/'],
+  discharge: ['NHS · Vaginal discharge in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/vaginal-discharge/'],
+  bleeding: ['NHS · Vaginal bleeding in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/vaginal-bleeding/'],
+  swelling: ['NHS · Swollen ankles, feet and fingers', 'https://www.nhs.uk/pregnancy/common-symptoms/swollen-ankles-feet-and-fingers/'],
+  back: ['NHS · Back pain in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/back-pain/'],
+  tiredness: ['NHS · Tiredness in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/tiredness/'],
+  cholestasis: ['NHS · Itching and intrahepatic cholestasis', 'https://www.nhs.uk/pregnancy/complications/itching-and-intrahepatic-cholestasis/'],
 };
+// other sources, used next to the NHS where they add something (checked October 2026)
+const SRC = {
+  whoAnc: ['WHO · Antenatal care recommendations (2016)', 'https://iris.who.int/handle/10665/250796'],
+  whoActivity: ['WHO · Physical activity', 'https://www.who.int/news-room/fact-sheets/detail/physical-activity'],
+  whoMental: ['WHO · Perinatal mental health', 'https://www.who.int/teams/mental-health-and-substance-use/promotion-prevention/maternal-mental-health'],
+  acogCaffeine: ['ACOG · Moderate caffeine consumption in pregnancy', 'https://pubmed.ncbi.nlm.nih.gov/20664420/'],
+  acogVaccines: ['ACOG · 2026 maternal immunization schedule', 'https://www.immunize.org/news/iz-express/issue/1879/'],
+  cdcAlcohol: ['CDC · Alcohol use during pregnancy', 'https://www.cdc.gov/alcohol-pregnancy/about/index.html'],
+  cdcToxo: ['CDC · Toxoplasmosis prevention', 'https://www.cdc.gov/toxoplasmosis/prevention/index.html'],
+  iron: ['NHS · Low iron levels in pregnancy (United Lincolnshire Hospitals)', 'https://www.ulh.nhs.uk/patients/patient-information-library/low-iron-levels-in-your-blood-during-pregnancy/'],
+  nzok: ['НЗОК · Майчино здравеопазване', 'https://www.nhif.bg/bg/nzok-za-teb/useful/573'],
+};
+// a topic or a symptom can cite one source or several
+const srcList = (src) => (Array.isArray(src[0]) ? src : [src]);
+const srcOrgs = (src) => [...new Set(srcList(src).map((x) => x[0].split(' · ')[0]))].join(' · ');
 
 const WEEKS = [
   {
@@ -1740,7 +1796,7 @@ const TOPICS = [
     },
   },
   {
-    id: 'caffeine', group: 'food', min: 1, src: NHS.foods,
+    id: 'caffeine', group: 'food', min: 1, src: [NHS.foods, SRC.acogCaffeine, SRC.whoAnc],
     title: { en: 'Caffeine', bg: 'Кофеин' },
     q: { en: 'How much coffee is OK?', bg: 'Колко кафе е безопасно?' },
     kw: ['coffee', 'caffeine', ' tea ', ' tea?', ' cola', 'energy drink', 'кафе', 'кофеин', ' чай', 'кока-кола', 'енергийн'],
@@ -1748,17 +1804,19 @@ const TOPICS = [
       en: [
         'The usual advice is no more than 200 mg of caffeine a day.',
         'As a guide, a cup of instant coffee has about 100 mg, a cup of tea about 75 mg and a can of cola about 40 mg. Filter coffee and coffee from coffee shops can contain more.',
-        'Caffeine is also in chocolate, energy drinks and some cold and flu remedies, so check labels and ask a pharmacist before taking medicines.',
+        'Caffeine is also in chocolate, energy drinks (about 80 mg a can) and some cold and flu remedies, so check labels and ask a pharmacist before taking medicines.',
+        'Sources differ a little: the NHS and the American College of Obstetricians and Gynecologists (ACOG) say up to 200 mg a day, and the WHO advises cutting down if you have more than 300 mg. Lunabump uses the lower limit.',
       ],
       bg: [
         'Обичайната препоръка е не повече от 200 mg кофеин на ден.',
         'За ориентир: чаша разтворимо кафе съдържа около 100 mg, чаша чай около 75 mg, а кутия кола около 40 mg. Шварц кафето и кафето от кафенета може да съдържат повече.',
-        'Кофеин има и в шоколада, енергийните напитки и някои лекарства против настинка, затова чети етикетите и питай фармацевт, преди да пиеш лекарства.',
+        'Кофеин има и в шоколада, енергийните напитки (около 80 mg в кутия) и някои лекарства против настинка, затова чети етикетите и питай фармацевт, преди да пиеш лекарства.',
+        'Източниците леко се различават: NHS и Американският колеж по акушерство и гинекология (ACOG) казват до 200 mg на ден, а Световната здравна организация съветва да намалиш, ако приемаш над 300 mg. Lunabump следва по-ниската граница.',
       ],
     },
   },
   {
-    id: 'food', group: 'food', min: 2, src: NHS.foods,
+    id: 'food', group: 'food', min: 3, src: [NHS.foods, SRC.cdcToxo],
     title: { en: 'Cheese, eggs and other foods', bg: 'Сирена, яйца и други храни' },
     q: { en: 'Can I eat soft cheese?', bg: 'Мога ли да ям меко сирене?' },
     kw: ['cheese', 'brie', 'camembert', 'feta', 'sushi', 'fish', ' egg', 'meat', 'salami', 'pâté', ' pate', ' liver', 'food', 'сирен', ' бри', 'камамбер', 'фета', 'суши', 'риба', 'яйц', 'месо', 'салам', 'луканк', 'пастет', 'черен дроб', 'храна'],
@@ -1766,12 +1824,14 @@ const TOPICS = [
       en: [
         'Hard cheeses such as cheddar and parmesan are fine, even when unpasteurised. Pasteurised soft cheeses such as mozzarella, feta, halloumi, ricotta and cottage cheese are fine too.',
         'Avoid mould-ripened soft cheeses such as brie and camembert, and soft blue cheeses such as gorgonzola, unless they’re cooked until steaming hot. Avoid unpasteurised milk. White brine cheese (sirene) is a soft cheese: choose pasteurised, or cook it until steaming hot.',
-        'Also avoid liver, raw or undercooked meat, sushi made with raw fish, and shark, swordfish and marlin. Cook cold cured meats such as salami until steaming hot, and eat eggs well cooked.',
+        'Also avoid liver, raw or undercooked meat, raw shellfish, sushi made with raw fish, and shark, swordfish and marlin. Cook cold cured meats such as salami, and cold-smoked fish such as smoked salmon, until steaming hot.',
+        'Cook eggs until the whites and yolks are solid. (In the UK, eggs with the red British Lion stamp can be eaten runny.) Wash fruit and vegetables under running water, wear gloves for gardening, and let someone else empty the cat litter if you can: this lowers the risk of toxoplasmosis.',
       ],
       bg: [
         'Твърдите сирена като чедър и пармезан са безопасни, дори от непастьоризирано мляко. Пастьоризираните меки сирена като моцарела, фета, халуми, рикота и извара също са наред.',
         'Избягвай меките сирена с бяла плесен като бри и камамбер, както и меките сирена със синя плесен като горгонзола, освен ако не са сготвени до вдигане на пара. Избягвай непастьоризирано мляко. Бялото саламурено сирене е меко сирене: избирай пастьоризирано или го готви, докато се вдигне пара.',
-        'Избягвай още черен дроб, сурово или недопечено месо, суши със сурова риба, както и акула, риба меч и марлин. Сурово-сушените колбаси като салам и луканка готви до вдигане на пара, а яйцата яж добре сготвени.',
+        'Избягвай още черен дроб, сурово или недопечено месо, сурови миди и стриди, суши със сурова риба, както и акула, риба меч и марлин. Сурово-сушените колбаси като салам и луканка и студено пушената риба като пушена сьомга готви, докато се вдигне пара.',
+        'Готви яйцата, докато белтъкът и жълтъкът стегнат. Мий плодовете и зеленчуците под течаща вода, слагай ръкавици, когато работиш в градината, и ако можеш, нека някой друг чисти котешката тоалетна: така намаляваш риска от токсоплазмоза.',
       ],
     },
   },
@@ -1792,7 +1852,7 @@ const TOPICS = [
     },
   },
   {
-    id: 'exercise', group: 'body', min: 2, src: NHS.exercise,
+    id: 'exercise', group: 'body', min: 2, src: [NHS.exercise, SRC.whoActivity],
     title: { en: 'Staying active', bg: 'Движение и спорт' },
     q: { en: 'What exercise is safe now?', bg: 'Какви упражнения са безопасни сега?' },
     kw: ['exercise', 'sport', ' gym', ' run', 'swim', 'yoga', ' walk', 'workout', 'упражн', 'спорт', 'фитнес', 'тича', 'плува', 'йога', 'ходене', 'тренир'],
@@ -1801,16 +1861,18 @@ const TOPICS = [
         'If your pregnancy is going well, aim for 150 minutes of moderate activity a week, such as brisk walking, swimming or pregnancy yoga, including some muscle-strengthening exercise.',
         'Avoid sports where you could fall or be hit in the tummy, such as hockey or mountain biking, and don’t scuba dive. In later pregnancy, avoid lying flat on your back for more than a few minutes.',
         'Stop if you feel uncomfortable, too hot or unwell, and don’t exercise on an empty stomach. Tell your instructor you’re pregnant.',
+        'The WHO says regular activity in pregnancy lowers the risk of gestational diabetes and pre-eclampsia and helps with weight gain and low mood after the birth. If you were very active before, you can usually carry on.',
       ],
       bg: [
         'Ако бременността протича добре, стреми се към 150 минути умерено движение седмично, например бързо ходене, плуване или йога за бременни, включително упражнения за укрепване на мускулите.',
         'Избягвай спортове, при които може да паднеш или да те ударят в корема, като хокей или планинско колоездене, и не се гмуркай с бутилка. В по-късната бременност не лежи по гръб повече от няколко минути.',
         'Спри, ако ти е неудобно, много топло или не се чувстваш добре, и не тренирай на гладно. Кажи на инструктора, че си бременна.',
+        'Според Световната здравна организация редовното движение намалява риска от гестационен диабет и прееклампсия и помага с наддаването и настроението след раждането. Ако си тренирала усилено и преди, обикновено можеш да продължиш.',
       ],
     },
   },
   {
-    id: 'vitamins', group: 'vitamins', min: 2, src: NHS.vitamins,
+    id: 'vitamins', group: 'vitamins', min: 2, src: [NHS.vitamins, SRC.whoAnc],
     title: { en: 'Folic acid and vitamin D', bg: 'Фолиева киселина и витамин D' },
     q: { en: 'Which vitamins do I need?', bg: 'Какви витамини ми трябват?' },
     kw: ['vitamin', 'folic', 'supplement', ' iron', 'витамин', 'фолиев', 'добавк', 'желязо'],
@@ -1818,12 +1880,14 @@ const TOPICS = [
       en: [
         'Take 400 micrograms of folic acid every day for the first 12 weeks of pregnancy. It lowers the chance of problems with the baby’s brain and spine. Some women are advised a higher dose (5 mg); your doctor will tell you if that’s you.',
         'Vitamin D: 10 micrograms a day is advised, especially between October and March.',
-        'Don’t take vitamin A (retinol) supplements or cod liver oil, and avoid liver, because too much vitamin A can harm the baby. Your iron levels are checked with blood tests.',
+        'Don’t take vitamin A (retinol) supplements or cod liver oil, and avoid liver, because too much vitamin A can harm the baby.',
+        'Iron: the WHO recommends a daily iron and folic acid supplement for every pregnant woman. In many European countries iron is given when blood tests show it’s low, so follow your doctor’s advice.',
       ],
       bg: [
         'Пий 400 микрограма фолиева киселина всеки ден през първите 12 седмици. Тя намалява риска от проблеми с мозъка и гръбначния мозък на бебето. На някои жени се препоръчва по-висока доза (5 mg); лекарят ще ти каже, ако това важи за теб.',
         'Витамин D: препоръчват се 10 микрограма на ден, особено между октомври и март.',
-        'Не приемай добавки с витамин A (ретинол) или рибено масло от черен дроб и избягвай черния дроб, защото твърде много витамин A може да навреди на бебето. Нивото на желязото се проверява с кръвни изследвания.',
+        'Не приемай добавки с витамин A (ретинол) или рибено масло от черен дроб и избягвай черния дроб, защото твърде много витамин A може да навреди на бебето.',
+        'Желязо: Световната здравна организация препоръчва всеки ден добавка с желязо и фолиева киселина за всички бременни. В много европейски държави желязото се дава, когато изследванията покажат, че е ниско, затова следвай съвета на лекаря.',
       ],
     },
   },
@@ -1899,6 +1963,150 @@ const TOPICS = [
       ],
     },
   },
+  {
+    id: 'alcohol', group: 'safe', min: 1, src: [NHS.alcohol, SRC.cdcAlcohol],
+    title: { en: 'Alcohol', bg: 'Алкохол' },
+    q: { en: 'Can I have a glass of wine?', bg: 'Мога ли да пия чаша вино?' },
+    kw: ['alcohol', 'wine', 'beer', 'a drink', 'cocktail', 'алкохол', 'вино', 'бира', 'ракия', 'коктейл'],
+    a: {
+      en: [
+        'There’s no known safe amount of alcohol in pregnancy and no safe time to drink. Wine, beer and spirits are all harmful.',
+        'Alcohol passes to the baby and can cause miscarriage, stillbirth and fetal alcohol spectrum disorders, which affect the baby for life. The safest choice is not to drink at all.',
+        'It’s never too late to stop: the baby’s brain keeps growing all through pregnancy. If you drank before you knew you were pregnant, stop now and tell your midwife or doctor if you’re worried.',
+      ],
+      bg: [
+        'Няма известно безопасно количество алкохол по време на бременност и няма безопасен период за пиене. Виното, бирата и твърдият алкохол вредят еднакво.',
+        'Алкохолът стига до бебето и може да причини спонтанен аборт, мъртво раждане и фетални алкохолни нарушения, които остават за цял живот. Най-безопасно е изобщо да не пиеш.',
+        'Никога не е късно да спреш: мозъкът на бебето расте през цялата бременност. Ако си пила, преди да разбереш, че си бременна, спри сега и кажи на лекаря или акушерката, ако се тревожиш.',
+      ],
+    },
+  },
+  {
+    id: 'smoking', group: 'safe', min: 2, src: NHS.smoking,
+    title: { en: 'Smoking and vaping', bg: 'Цигари и вейпове' },
+    q: { en: 'Is vaping safer than smoking?', bg: 'Вейпът по-безопасен ли е от цигарите?' },
+    kw: ['smok', 'cigarette', 'vape', 'vaping', 'e-cig', 'nicotine', 'пуш', 'цигар', 'вейп', 'никотин', 'наргиле'],
+    a: {
+      en: [
+        'Smoking raises the risk of stillbirth, premature birth, low birth weight and sudden infant death. Other people’s smoke harms you and the baby too.',
+        'Nicotine replacement such as patches or gum is safe in pregnancy if it helps you stop. Vapes are much less risky than cigarettes, so switching is better than carrying on smoking.',
+        'You’re twice as likely to stop with support from a trained adviser. Ask your midwife or doctor where to get it.',
+      ],
+      bg: [
+        'Пушенето увеличава риска от мъртво раждане, раждане преди термина, ниско тегло и внезапна детска смърт. Пасивното пушене също вреди на теб и на бебето.',
+        'Никотиновите лепенки или дъвки са безопасни по време на бременност, ако ти помагат да спреш. Вейповете са много по-малко рискови от цигарите, затова преминаването към тях е по-добре от продължаване на пушенето.',
+        'С подкрепа от обучен консултант шансът да спреш е два пъти по-голям. Попитай лекаря или акушерката откъде да я получиш.',
+      ],
+    },
+  },
+  {
+    id: 'medicines', group: 'safe', min: 2, src: [NHS.medicines, NHS.headaches],
+    title: { en: 'Medicines and painkillers', bg: 'Лекарства и болкоуспокояващи' },
+    q: { en: 'Which painkiller can I take?', bg: 'Какво болкоуспокояващо мога да пия?' },
+    kw: ['paracetamol', 'ibuprofen', 'painkiller', 'medicine', 'medication', ' pill', 'aspirin', 'парацетамол', 'ибупрофен', 'болкоуспокоя', 'лекарств', 'хапче', 'аспирин'],
+    a: {
+      en: [
+        'Paracetamol is the first choice of painkiller in pregnancy. Take it for the shortest time you need. The NHS says it remains safe and that there’s no evidence it causes autism.',
+        'Don’t take ibuprofen and other anti-inflammatory painkillers, or painkillers with codeine, unless a doctor has prescribed them for you.',
+        'Most medicines reach the baby, so check any medicine, including herbal remedies, with a pharmacist, midwife or doctor. Don’t stop a prescribed medicine without talking to your doctor first.',
+      ],
+      bg: [
+        'Парацетамолът е първият избор срещу болка по време на бременност. Пий го за възможно най-кратко време. Според NHS той остава безопасен и няма доказателства, че причинява аутизъм.',
+        'Не пий ибупрофен и други противовъзпалителни болкоуспокояващи, нито лекарства с кодеин, освен ако лекар не ти ги е предписал.',
+        'Повечето лекарства стигат до бебето, затова проверявай всяко лекарство, включително билковите, при фармацевт, акушерка или лекар. Не спирай предписано лекарство, без да говориш с лекаря.',
+      ],
+    },
+  },
+  {
+    id: 'vaccines', group: 'safe', min: 2, src: [NHS.vaccines, SRC.acogVaccines],
+    title: { en: 'Vaccines in pregnancy', bg: 'Ваксини по време на бременност' },
+    q: { en: 'Which vaccines should I have?', bg: 'Какви ваксини да си направя?' },
+    kw: ['vaccin', 'jab', 'whooping', 'pertussis', 'tdap', 'rsv', 'flu ', 'immunis', 'ваксин', 'имуниз', 'коклюш', 'магарешка', 'грип', 'rsv'],
+    a: {
+      en: [
+        'Vaccines protect you and give your baby antibodies for the first months of life. In the UK, the NHS offers the whooping cough vaccine from 16 weeks (best before 32), the RSV vaccine from around 28 weeks, and the flu vaccine in every pregnancy.',
+        'In the US, ACOG recommends the whooping cough vaccine at 27 to 36 weeks, the RSV vaccine at 32 to 36 weeks in season, and flu and COVID-19 vaccines. Schedules differ between countries, so ask your doctor what’s offered where you live.',
+        'Live vaccines, such as MMR, are usually left until after the birth.',
+      ],
+      bg: [
+        'Ваксините пазят теб и дават на бебето антитела за първите месеци. Във Великобритания NHS предлага ваксина срещу магарешка кашлица от 16-а седмица (най-добре до 32-ра), срещу RSV около 28-а седмица и срещу грип при всяка бременност.',
+        'В САЩ ACOG препоръчва ваксина срещу магарешка кашлица между 27-а и 36-а седмица, срещу RSV между 32-ра и 36-а седмица в сезона, както и срещу грип и COVID-19. Графиците са различни в различните държави, затова попитай лекаря какво се предлага при теб.',
+        'Живите ваксини, като MMR (морбили, паротит, рубеола), обикновено се отлагат за след раждането.',
+      ],
+    },
+  },
+  {
+    id: 'travel', group: 'safe', min: 2, src: NHS.travel,
+    title: { en: 'Travel and flying', bg: 'Пътуване и полети' },
+    q: { en: 'Can I fly while pregnant?', bg: 'Мога ли да летя със самолет?' },
+    kw: [' fly', ' flying', ' flight', ' plane', 'airline', 'travel', 'holiday', ' trip', 'пътув', 'самолет', 'полет', 'летя', 'почивка', 'екскурзия'],
+    a: {
+      en: [
+        'Many women find travel easiest in mid-pregnancy, between months 4 and 6.',
+        'Many airlines won’t let you fly after 37 weeks (32 weeks with twins), and after 28 weeks they may ask for a letter with your due date. On flights over 4 hours, drink water, walk about every 30 minutes and wear compression stockings to lower the risk of blood clots.',
+        'Get travel insurance that covers pregnancy and premature birth, and avoid places with Zika virus.',
+      ],
+      bg: [
+        'На много жени им е най-лесно да пътуват в средата на бременността, между 4-ти и 6-и месец.',
+        'Много авиокомпании не допускат полети след 37-а седмица (след 32-ра при близнаци), а след 28-а може да поискат писмо с термина. При полети над 4 часа пий вода, разхождай се на около 30 минути и носи компресивни чорапи, за да намалиш риска от тромби.',
+        'Направи си застраховка, която покрива бременността и раждане преди термина, и избягвай места със зика вирус.',
+      ],
+    },
+  },
+  {
+    id: 'mental', group: 'body', min: 2, src: [NHS.mental, SRC.whoMental],
+    title: { en: 'Your feelings in pregnancy', bg: 'Чувствата по време на бременността' },
+    q: { en: 'I feel anxious all the time. Is that normal?', bg: 'Постоянно съм тревожна. Нормално ли е?' },
+    kw: ['anxious', 'anxiety', 'depress', 'low mood', ' sad', 'worried', 'stress', 'panic', 'crying', 'тревож', 'депрес', 'тъжн', 'стрес', 'притесн', 'паник', 'плача'],
+    a: {
+      en: [
+        'Pregnancy can be stressful, and depression or anxiety can start for the first time now. Worldwide, about 1 in 10 pregnant women has a mental health condition, most often depression. It can be treated.',
+        'Be honest with your midwife or doctor about how you really feel, especially if stress, worry or low mood affect your daily life. Talking therapies help, and if you need medicine you’ll be offered the safest one for you and your baby.',
+        'If you ever think about harming yourself, call 112 now.',
+      ],
+      bg: [
+        'Бременността може да е стресираща и депресията или тревожността понякога започват за първи път сега. По света около 1 от 10 бременни има психично разстройство, най-често депресия. То се лекува.',
+        'Кажи честно на акушерката или лекаря как се чувстваш, особено ако стресът, тревогата или тъгата пречат на деня ти. Разговорната терапия помага, а ако имаш нужда от лекарство, ще ти предложат най-безопасното за теб и бебето.',
+        'Ако някога мислиш да си навредиш, обади се веднага на 112.',
+      ],
+    },
+  },
+  {
+    id: 'iron', group: 'vitamins', min: 2, src: [SRC.whoAnc, SRC.iron, NHS.vitamins],
+    title: { en: 'Iron and anaemia', bg: 'Желязо и анемия' },
+    q: { en: 'How do I keep my iron up?', bg: 'Как да поддържам желязото?' },
+    kw: ['iron', 'anaemi', 'anemi', 'haemoglobin', 'hemoglobin', 'желязо', 'анеми', 'хемоглобин', 'кръвта ми'],
+    a: {
+      en: [
+        'Your body needs about three times more iron in pregnancy. Low iron can make you very tired and short of breath.',
+        'Iron-rich foods include red meat, fish, dark green leafy vegetables, beans and lentils, fortified cereals and dried fruit. Vitamin C, for example in peppers or citrus fruit, helps you absorb it; tea and coffee with meals make it harder.',
+        'Your haemoglobin is checked with blood tests. The WHO recommends daily iron for all pregnant women; in many countries you’re given a supplement when tests show it’s low. Follow your doctor’s advice.',
+      ],
+      bg: [
+        'По време на бременност тялото има нужда от около три пъти повече желязо. Ниското желязо може да те прави много уморена и задъхана.',
+        'Богати на желязо са червеното месо, рибата, тъмнозелените листни зеленчуци, бобът и лещата, обогатените зърнени закуски и сушените плодове. Витамин C, например от чушки или цитруси, помага да се усвои, а чаят и кафето към храненето го пречат.',
+        'Хемоглобинът се проверява с кръвни изследвания. Световната здравна организация препоръчва желязо всеки ден за всички бременни; в много държави се дава добавка, когато изследванията покажат, че е ниско. Следвай съвета на лекаря.',
+      ],
+    },
+  },
+  {
+    id: 'checkups', group: 'baby', min: 2, src: [SRC.whoAnc, SRC.nzok],
+    title: { en: 'Your check-ups', bg: 'Прегледите по време на бременността' },
+    q: { en: 'How many check-ups will I have?', bg: 'Колко прегледа ще имам?' },
+    kw: ['check-up', 'checkup', 'how many appointments', 'antenatal appointment', 'ultrasound', 'how many scans', 'преглед', 'ехограф', 'нзок', 'направление', 'консултац'],
+    a: {
+      en: [
+        'The WHO recommends at least 8 contacts with a health worker during pregnancy, with an ultrasound scan before 24 weeks.',
+        'In Bulgaria, the health insurance programme “Maternal health care” (НЗОК) gives insured women a check-up every month with an obstetrician, with a referral from your GP, 4 ultrasound scans, blood and urine tests, and care up to 42 days after the birth. Women without health insurance have the right to one check-up and some tests.',
+        'In other countries the schedule is different; your midwife or doctor will tell you what to expect.',
+      ],
+      bg: [
+        'Световната здравна организация препоръчва поне 8 срещи с медицинско лице по време на бременността и ехография преди 24-та седмица.',
+        'В България програмата на НЗОК „Майчино здравеопазване“ дава на осигурените жени преглед всеки месец при акушер-гинеколог с направление от личния лекар, 4 ехографии, изследвания на кръв и урина и наблюдение до 42-ия ден след раждането. Неосигурените имат право на един преглед и определени изследвания.',
+        'В другите държави графикът е различен; акушерката или лекарят ще ти кажат какво предстои.',
+      ],
+    },
+  },
 ];
 const topicById = Object.fromEntries(TOPICS.map((tp) => [tp.id, tp]));
 
@@ -1909,42 +2117,122 @@ const FOODS = [
   { s: 'avoid', en: ['Brie, camembert, chèvre', 'Avoid unless cooked until steaming hot.'], bg: ['Бри, камамбер, козе сирене с бяла кора', 'Избягвай, освен ако не е сготвено до вдигане на пара.'] },
   { s: 'avoid', en: ['Soft blue cheese (gorgonzola, roquefort)', 'Avoid unless cooked until steaming hot.'], bg: ['Меко синьо сирене (горгонзола, рокфор)', 'Избягвай, освен ако не е сготвено до вдигане на пара.'] },
   { s: 'avoid', en: ['Unpasteurised milk', 'Avoid.'], bg: ['Непастьоризирано мляко', 'Избягвай.'] },
-  { s: 'care', en: ['Eggs', 'Eat them well cooked.'], bg: ['Яйца', 'Яж ги добре сготвени.'] },
+  { s: 'care', en: ['Eggs', 'Cook until the whites and yolks are solid. In the UK, British Lion eggs can be eaten runny.'], bg: ['Яйца', 'Готви ги, докато белтъкът и жълтъкът стегнат.'] },
   { s: 'avoid', en: ['Liver and liver pâté', 'Too much vitamin A for the baby.'], bg: ['Черен дроб и пастет от черен дроб', 'Твърде много витамин A за бебето.'] },
   { s: 'care', en: ['Meat pâté (not liver)', 'Keep it chilled and eat it before the use-by date.'], bg: ['Месен пастет (не от черен дроб)', 'Дръж го в хладилник и го изяж преди срока на годност.'] },
   { s: 'care', en: ['Cold cured meats (salami, chorizo, lukanka)', 'Cook until steaming hot before eating.'], bg: ['Сурово-сушени колбаси (салам, чоризо, луканка)', 'Готви ги до вдигане на пара, преди да ги ядеш.'] },
   { s: 'avoid', en: ['Raw or rare meat', 'Cook until steaming hot all the way through.'], bg: ['Сурово или недопечено месо', 'Готви го, докато се вдигне пара навсякъде.'] },
   { s: 'avoid', en: ['Sushi with raw fish', 'Avoid. Cooked or vegetarian sushi is fine.'], bg: ['Суши със сурова риба', 'Избягвай. Суши с готвена риба или вегетарианско е наред.'] },
+  { s: 'care', en: ['Cold-smoked fish (smoked salmon, gravlax)', 'Cook until steaming hot before eating.'], bg: ['Студено пушена риба (пушена сьомга, гравлакс)', 'Готви я, докато се вдигне пара.'] },
+  { s: 'avoid', en: ['Raw shellfish (oysters, mussels, clams)', 'Avoid. Cooked shellfish is fine.'], bg: ['Сурови миди и стриди', 'Избягвай. Сготвените са наред.'] },
   { s: 'care', en: ['Tuna', 'No more than 4 cans or 2 tuna steaks a week.'], bg: ['Риба тон', 'Не повече от 4 консерви или 2 пържоли риба тон седмично.'] },
   { s: 'care', en: ['Oily fish (salmon, mackerel, sardines)', 'Good for you, up to 2 portions a week.'], bg: ['Мазна риба (сьомга, скумрия, сардини)', 'Полезна, до 2 порции седмично.'] },
   { s: 'avoid', en: ['Shark, swordfish, marlin', 'Avoid: too much mercury.'], bg: ['Акула, риба меч, марлин', 'Избягвай: твърде много живак.'] },
   { s: 'care', en: ['Coffee and tea', 'Up to 200 mg of caffeine a day, about 2 cups of instant coffee.'], bg: ['Кафе и чай', 'До 200 mg кофеин на ден, около 2 чаши разтворимо кафе.'] },
-  { s: 'avoid', en: ['Alcohol', 'It’s safest not to drink at all.'], bg: ['Алкохол', 'Най-безопасно е изобщо да не пиеш.'] },
+  { s: 'care', en: ['Energy drinks', 'About 80 mg of caffeine a can: count it towards your 200 mg.'], bg: ['Енергийни напитки', 'Около 80 mg кофеин в кутия: брои ги към 200-те mg.'] },
+  { s: 'care', en: ['Herbal tea', 'No more than 4 cups a day, and none with liquorice root.'], bg: ['Билков чай', 'Не повече от 4 чаши на ден и без чай с корен от женско биле.'] },
+  { s: 'avoid', en: ['Liquorice root', 'Avoid: it may affect the baby’s development.'], bg: ['Корен от женско биле', 'Избягвай: може да навреди на развитието на бебето.'] },
+  { s: 'safe', en: ['Peanuts and other nuts', 'Fine, unless you’re allergic or have been told not to eat them.'], bg: ['Фъстъци и други ядки', 'Безопасни, освен ако си алергична или лекар ти е казал да не ги ядеш.'] },
+  { s: 'care', en: ['Fruit, vegetables and salad', 'Wash well under running water.'], bg: ['Плодове, зеленчуци и салати', 'Мий ги добре под течаща вода.'] },
+  { s: 'avoid', en: ['Alcohol', 'There’s no known safe amount: it’s safest not to drink at all.'], bg: ['Алкохол', 'Няма известно безопасно количество: най-безопасно е изобщо да не пиеш.'] },
 ];
 
+// The symptom tracker. Every symptom has an icon; most have a tip and a line on when to get help,
+// from the NHS symptom pages (checked October 2026). `flag` opens the matching urgent screen.
 const SYMPTOMS = {
-  nausea: { en: 'Nausea', bg: 'Гадене' },
-  tired: { en: 'Tiredness', bg: 'Умора' },
-  breasts: { en: 'Tender breasts', bg: 'Чувствителни гърди' },
-  headache: { en: 'Headache', bg: 'Главоболие' },
-  constipation: { en: 'Constipation', bg: 'Запек' },
-  moody: { en: 'Mood swings', bg: 'Промени в настроението' },
-  backpain: { en: 'Back pain', bg: 'Болки в гърба' },
-  heartburn: { en: 'Heartburn', bg: 'Киселини' },
-  cramps: { en: 'Leg cramps', bg: 'Крампи в краката' },
-  ligament: { en: 'Pulling pain low in the bump', bg: 'Дърпаща болка ниско в корема' },
-  nose: { en: 'Blocked nose', bg: 'Запушен нос' },
-  swelling: { en: 'Swollen feet or ankles', bg: 'Подути стъпала или глезени' },
-  sleep: { en: 'Trouble sleeping', bg: 'Лош сън' },
-  braxton: { en: 'Practice tightenings', bg: 'Тренировъчни контракции' },
-  pelvic: { en: 'Pelvic pain', bg: 'Болка в таза' },
-  breathless: { en: 'Breathlessness', bg: 'Задух' },
+  none: { icon: '😊', en: 'No symptoms', bg: 'Без симптоми' },
+  backpain: { icon: '🦴', en: 'Back pain', bg: 'Болки в гърба', src: [NHS.back, NHS.stomach],
+    tip: { en: 'Bend your knees and keep your back straight when you lift, wear flat shoes and rest when you can.', bg: 'Свивай коленете и дръж гърба изправен, когато вдигаш нещо, носи обувки без ток и почивай, когато можеш.' },
+    help: { en: 'Call your maternity unit if back pain comes with regular tightenings, bleeding or a fever.', bg: 'Обади се в родилното отделение, ако болката в кръста е заедно с редовни стягания, кървене или температура.' }, flag: 'pain' },
+  bloating: { icon: '🎈', en: 'Bloating and wind', bg: 'Подуване и газове', src: NHS.stomach,
+    tip: { en: 'Trapped wind is a common cause of mild tummy pain. Small, frequent meals and gentle walks can help.', bg: 'Газовете са честа причина за лека болка в корема. Малките и чести хранения и леките разходки помагат.' } },
+  leaking: { icon: '🍼', en: 'Breast leaking', bg: 'Изтичане от гърдите',
+    tip: { en: 'Leaking a little early milk (colostrum) is normal later in pregnancy. Breast pads help.', bg: 'Изтичането на малко коластра е нормално към края на бременността. Подплънките за гърди помагат.' } },
+  breasts: { icon: '💗', en: 'Tender breasts', bg: 'Чувствителни гърди',
+    tip: { en: 'Common in early pregnancy. A soft, supportive bra helps, also at night.', bg: 'Често е в началото на бременността. Мек сутиен с добра опора помага, също и нощем.' } },
+  constipation: { icon: '🧻', en: 'Constipation', bg: 'Запек', src: NHS.common,
+    tip: { en: 'Eat high-fibre foods such as wholemeal bread, fruit, vegetables and pulses, drink plenty of water and keep active.', bg: 'Яж храни с много фибри като пълнозърнест хляб, плодове, зеленчуци и бобови, пий много вода и се движи.' } },
+  braxton: { icon: '🌊', en: 'Contractions or tightenings', bg: 'Контракции или стягания', src: [NHS.stomach, NHS.labour],
+    tip: { en: 'Practice tightenings are usually irregular and ease when you rest or change position.', bg: 'Тренировъчните стягания обикновено са нередовни и минават при почивка или смяна на позата.' },
+    help: { en: 'Before 37 weeks, regular tightenings need checking straight away: call your maternity unit. From 37 weeks, call when they’re regular and every 5 minutes or more often.', bg: 'Преди 37-а седмица редовните стягания трябва да се проверят веднага: обади се в родилното отделение. След 37-а седмица се обади, когато са редовни и през 5 минути или по-често.' }, flag: 'preterm', urgent: true },
+  cramping: { icon: '🌀', en: 'Tummy cramps', bg: 'Спазми в корема', src: NHS.stomach,
+    tip: { en: 'Mild cramps from stretching ligaments, constipation or wind usually ease with rest, a change of position or going to the toilet.', bg: 'Леките спазми от разтягане на връзките, запек или газове обикновено минават с почивка, смяна на позата или тоалетна.' },
+    help: { en: 'Call your maternity unit if cramps come with bleeding, fluid, regular tightenings or pain when you pee, or don’t ease after 30 to 60 minutes of rest. Severe pain or heavy bleeding: call 112.', bg: 'Обади се в родилното отделение, ако спазмите са с кървене, изтичане, редовни стягания или болка при уриниране, или не минават след 30–60 минути почивка. При силна болка или силно кървене: 112.' }, flag: 'pain', urgent: true },
+  dizzy: { icon: '💫', en: 'Dizzy or lightheaded', bg: 'Световъртеж или прималяване', src: NHS.common,
+    tip: { en: 'Get up slowly after sitting or lying down. If you feel faint, sit down; if it doesn’t pass, lie on your side.', bg: 'Ставай бавно, след като си седяла или лежала. Ако ти прилошее, седни; ако не минава, легни на една страна.' },
+    help: { en: 'If you faint, or have chest pain or trouble breathing, call 112.', bg: 'Ако припаднеш или имаш болка в гърдите или затруднено дишане, обади се на 112.' }, flag: 'emergency' },
+  tired: { icon: '🥱', en: 'Tiredness', bg: 'Умора', src: [NHS.tiredness, SRC.iron],
+    tip: { en: 'Very common, especially early and late in pregnancy. Rest when you can and go to bed earlier.', bg: 'Много често е, особено в началото и в края на бременността. Почивай, когато можеш, и лягай по-рано.' },
+    help: { en: 'Tell your midwife or doctor if you’re always exhausted or breathless: it can be a sign of low iron.', bg: 'Кажи на лекаря или акушерката, ако постоянно си изтощена или задъхана: може да е от ниско желязо.' } },
+  aversions: { icon: '🙅', en: 'Food aversions', bg: 'Отвращение към храни',
+    tip: { en: 'Common in early pregnancy. Plain, cold foods are often easier.', bg: 'Често е в началото на бременността. Леките и студени храни често се понасят по-лесно.' } },
+  cravings: { icon: '🍩', en: 'Food cravings', bg: 'Желание за определени храни',
+    tip: { en: 'Fine in moderation as part of a balanced diet.', bg: 'Наред е в умерени количества, като част от разнообразното хранене.' },
+    help: { en: 'Tell your midwife if you crave things that aren’t food, such as soil, chalk or ice.', bg: 'Кажи на акушерката, ако ти се яде нещо, което не е храна, например пръст, тебешир или лед.' } },
+  urination: { icon: '🚻', en: 'Peeing a lot', bg: 'Често уриниране', src: NHS.common,
+    tip: { en: 'Common in pregnancy. Cutting down on drinks late in the evening can help at night.', bg: 'Често е по време на бременност. По-малко течности късно вечер помагат през нощта.' },
+    help: { en: 'If it hurts or burns when you pee, or there’s blood in your pee, see your doctor: it may be a urine infection.', bg: 'Ако те боли или пари при уриниране или има кръв в урината, иди на лекар: може да е инфекция.' } },
+  headache: { icon: '🤕', en: 'Headache', bg: 'Главоболие', src: [NHS.headaches, NHS.preeclampsia],
+    tip: { en: 'Drink plenty of fluids and rest. Paracetamol is the first choice of painkiller.', bg: 'Пий много течности и почивай. Парацетамолът е първият избор срещу болка.' },
+    help: { en: 'Call your maternity unit now if the headache is severe or comes with blurred vision or flashing lights, pain just below the ribs, vomiting or sudden swelling.', bg: 'Обади се веднага в родилното отделение, ако главоболието е силно или е със замъглено зрение или проблясъци, болка под ребрата, повръщане или внезапен оток.' }, flag: 'preeclampsia', urgent: true },
+  heartburn: { icon: '🔥', en: 'Heartburn and indigestion', bg: 'Киселини и лошо храносмилане', src: NHS.heartburn,
+    tip: { en: 'Eat small meals often and nothing in the 3 hours before bed. Prop up your head and shoulders at night.', bg: 'Храни се често и на малки порции и не яж 3 часа преди сън. Повдигни главата и раменете си нощем.' },
+    help: { en: 'Heartburn that won’t go away with medicine, together with a headache or swelling, can be pre-eclampsia: call your maternity unit.', bg: 'Киселини, които не минават с лекарства, заедно с главоболие или отоци, може да са прееклампсия: обади се в родилното отделение.' }, flag: 'preeclampsia' },
+  itching: { icon: '🖐️', en: 'Itching', bg: 'Сърбеж', src: [NHS.cholestasis, NHS.help],
+    tip: { en: 'Mild itching from stretching skin is common. Loose cotton clothes help.', bg: 'Лекият сърбеж от разтягане на кожата е чест. Помагат свободни памучни дрехи.' },
+    help: { en: 'Tell your midwife if the itching is on your palms or soles, is worse at night, or starts after 28 weeks: it can be a liver condition called cholestasis.', bg: 'Кажи на акушерката, ако сърбежът е по дланите или стъпалата, по-силен е нощем или започва след 28-а седмица: може да е чернодробно състояние, наречено холестаза.' }, flag: 'itching' },
+  moody: { icon: '🎭', en: 'Mood changes', bg: 'Промени в настроението', src: NHS.mental,
+    tip: { en: 'Ups and downs are common. Talk to someone you trust.', bg: 'Възходите и спадовете са чести. Сподели с човек, на когото имаш доверие.' },
+    help: { en: 'If stress, worry or low mood affect your daily life, tell your midwife or doctor. If you think about harming yourself, call 112.', bg: 'Ако стресът, тревогата или тъгата пречат на деня ти, кажи на акушерката или лекаря. Ако мислиш да си навредиш, обади се на 112.' } },
+  nausea: { icon: '🤢', en: 'Nausea', bg: 'Гадене', src: NHS.nausea,
+    tip: { en: 'Small, frequent meals of plain food, sips of water and rest. Ginger may help some people.', bg: 'Малки и чести хранения с лека храна, глътки вода и почивка. На някои хора помага джинджифилът.' },
+    help: { en: 'Contact your doctor the same day if you can’t keep food or fluids down for 24 hours.', bg: 'Свържи се с лекаря още същия ден, ако 24 часа не задържаш храна и течности.' }, flag: 'vomiting' },
+  pelvic: { icon: '💥', en: 'Pelvic pain', bg: 'Болка в таза', src: NHS.pelvic,
+    tip: { en: 'Keep your knees together when you get in and out of the car, sleep with a pillow between your legs and avoid heavy lifting.', bg: 'Дръж коленете заедно, когато влизаш и излизаш от колата, спи с възглавница между краката и не вдигай тежко.' },
+    help: { en: 'Tell your midwife if it makes walking, stairs or turning over in bed hard: a physiotherapist can help.', bg: 'Кажи на акушерката, ако ти е трудно да ходиш, да се качваш по стълби или да се обръщаш в леглото: физиотерапевт може да помогне.' } },
+  ligament: { icon: '🤰', en: 'Pulling pain low in the bump', bg: 'Дърпаща болка ниско в корема', src: NHS.stomach,
+    tip: { en: 'A sharp, one-sided pain low in the bump is often the ligaments stretching. It usually eases with rest or a change of position.', bg: 'Острата болка от едната страна ниско в корема често е от разтягане на връзките. Обикновено минава с почивка или смяна на позата.' },
+    help: { en: 'Call your maternity unit if the pain is severe or doesn’t ease after 30 to 60 minutes of rest.', bg: 'Обади се в родилното отделение, ако болката е силна или не минава след 30–60 минути почивка.' }, flag: 'pain' },
+  cramps: { icon: '🦵', en: 'Leg cramps', bg: 'Крампи в краката', src: NHS.common,
+    tip: { en: 'Pull your toes hard up towards your ankle or rub the muscle hard. Gentle ankle and leg exercises help.', bg: 'Издърпай силно пръстите към глезена или разтрий силно мускула. Леките упражнения за глезените и краката помагат.' },
+    help: { en: 'Pain, redness or swelling in one calf needs a doctor the same day: it can be a blood clot.', bg: 'Болка, зачервяване или подуване на единия прасец трябва да се види от лекар още същия ден: може да е тромб.' } },
+  breathless: { icon: '🌬️', en: 'Breathlessness', bg: 'Задух', src: NHS.help,
+    tip: { en: 'Mild breathlessness is common as the bump grows.', bg: 'Лекият задух е чест, докато коремът расте.' },
+    help: { en: 'Call 112 if it comes on suddenly, you’re breathless lying down, or you have chest pain.', bg: 'Обади се на 112, ако задухът започне внезапно, ако се задъхваш в легнало положение или имаш болка в гърдите.' }, flag: 'emergency', urgent: true },
+  skin: { icon: '💅', en: 'Skin, hair and nail changes', bg: 'Промени в кожата, косата и ноктите', src: NHS.common,
+    tip: { en: 'Darker patches and a dark line down the bump are common. Your skin burns more easily, so use high-factor sunscreen.', bg: 'Потъмнелите петна и тъмната линия по корема са чести. Кожата изгаря по-лесно, затова ползвай слънцезащита с висок фактор.' } },
+  sleep: { icon: '🌙', en: 'Trouble sleeping', bg: 'Лош сън', src: NHS.sleep,
+    tip: { en: 'From 28 weeks, go to sleep on your side. A pillow under the bump or between your knees can help.', bg: 'От 28-а седмица заспивай на една страна. Възглавница под корема или между коленете помага.' } },
+  spotting: { icon: '🩸', en: 'Spotting or bleeding', bg: 'Зацапване или кървене', src: [NHS.bleeding, NHS.help],
+    help: { en: 'Any bleeding in pregnancy needs advice the same day: call your maternity unit or doctor. If it’s heavy, or you have severe pain or feel faint, call 112.', bg: 'Всяко кървене по време на бременност трябва да се провери още същия ден: обади се в родилното отделение или на лекаря. Ако е силно или имаш силна болка или ти прилошава, обади се на 112.' }, flag: 'bleeding', urgent: true },
+  smell: { icon: '👃', en: 'Strong sense of smell', bg: 'Силно обоняние',
+    tip: { en: 'Common in early pregnancy. Fresh air and cold food with less smell can help.', bg: 'Често е в началото на бременността. Помагат чистият въздух и студената храна с по-слаба миризма.' } },
+  nose: { icon: '🤧', en: 'Blocked nose', bg: 'Запушен нос',
+    tip: { en: 'A blocked nose is common in pregnancy. Steam or salt-water drops may help; ask a pharmacist before using any decongestant.', bg: 'Запушеният нос е чест по време на бременност. Парата или солените капки помагат; питай фармацевт, преди да ползваш капки срещу хрема.' } },
+  sweating: { icon: '💦', en: 'Feeling hot or sweaty', bg: 'Горещини и потене', src: NHS.common,
+    tip: { en: 'Wear loose clothes made of natural fibres and keep your room cool.', bg: 'Носи свободни дрехи от естествени материи и дръж стаята хладна.' },
+    help: { en: 'A temperature of 38°C or more needs advice the same day.', bg: 'Температура 38 °C или повече трябва да се провери още същия ден.' }, flag: 'fever' },
+  swelling: { icon: '🦶', en: 'Swelling', bg: 'Отоци', src: [NHS.swelling, NHS.help],
+    tip: { en: 'Mild swelling of the feet and ankles is common, especially late in the day. Rest with your feet up.', bg: 'Лекият оток на стъпалата и глезените е чест, особено вечер. Почивай с вдигнати крака.' },
+    help: { en: 'Sudden swelling of the face, hands or feet can be pre-eclampsia: call your maternity unit now.', bg: 'Внезапният оток на лицето, ръцете или краката може да е прееклампсия: обади се веднага в родилното отделение.' }, flag: 'preeclampsia', urgent: true },
+  discharge: { icon: '💧', en: 'Vaginal discharge', bg: 'Вагинално течение', src: NHS.discharge,
+    tip: { en: 'More discharge is normal in pregnancy. It should be thin, clear or milky white, and not smell unpleasant.', bg: 'По-обилното течение е нормално по време на бременност. То трябва да е рядко, прозрачно или млечнобяло и без неприятна миризма.' },
+    help: { en: 'Tell your midwife if it smells, is green or yellow, or you feel itchy or sore. If fluid is leaking or there’s bleeding, call your maternity unit now.', bg: 'Кажи на акушерката, ако мирише, зелено или жълто е, или те сърби и боли. Ако изтича течност или има кървене, обади се веднага в родилното отделение.' }, flag: 'fluid' },
+  vomiting: { icon: '🤮', en: 'Vomiting', bg: 'Повръщане', src: [NHS.nausea, NHS.help],
+    tip: { en: 'Sip water little and often, and try small amounts of plain food.', bg: 'Пий вода често и на малки глътки и опитвай малки количества лека храна.' },
+    help: { en: 'Contact your doctor the same day if you can’t keep food or fluids down for 24 hours, your pee is very dark, or you vomit blood.', bg: 'Свържи се с лекаря още същия ден, ако 24 часа не задържаш храна и течности, ако урината е много тъмна или повръщаш кръв.' }, flag: 'vomiting', urgent: true },
+  other: { icon: '➕', en: 'Other', bg: 'Друго' },
 };
-const TRI_SYMPTOMS = [
-  ['nausea', 'tired', 'breasts', 'headache', 'constipation', 'moody'],
-  ['backpain', 'heartburn', 'cramps', 'ligament', 'nose', 'headache'],
-  ['heartburn', 'backpain', 'swelling', 'sleep', 'braxton', 'pelvic', 'breathless'],
-];
+
+// the tiles in alphabetical order for the current language, "no symptoms" first and "other" last
+function symptomOrder() {
+  const ids = Object.keys(SYMPTOMS).filter((id) => id !== 'none' && id !== 'other');
+  ids.sort((a, b) => L(SYMPTOMS[a]).localeCompare(L(SYMPTOMS[b]), lang));
+  return ['none', ...ids, 'other'];
+}
+
+// "preterm" only makes sense before 37 weeks; after that it's the labour screen
+const symptomFlag = (x) => (x.flag === 'preterm' && weekNow() >= 37 ? 'labour' : x.flag);
 
 // Rules, not AI: an urgent symptom always gets a clear action first
 const RED = [
@@ -2072,7 +2360,6 @@ const ui = {
   calc: { method: 'due', ivfDay: 5, date: '' },
   symPicked: new Set(),
   symLevel: 3,
-  symAll: false,
   symNotice: '',
   calMonth: { symptoms: null, mood: null },
   calPick: { symptoms: null, mood: null },
@@ -2388,13 +2675,13 @@ function renderHeroCaption() {
 }
 
 function forYou(w) {
-  const ids = w < 14 ? ['nausea', 'vitamins', 'food'] : w < 22 ? ['exercise', 'movements', 'food'] : w < 28 ? ['glucose', 'movements', 'sleep'] : w < 36 ? ['sleep', 'movements', 'heartburn'] : ['labour', 'movements', 'sleep'];
+  const ids = w < 14 ? ['nausea', 'vitamins', 'checkups'] : w < 22 ? ['vaccines', 'exercise', 'food'] : w < 28 ? ['glucose', 'movements', 'iron'] : w < 36 ? ['sleep', 'movements', 'vaccines'] : ['labour', 'movements', 'sleep'];
   if (isPartner()) return [w < 28 ? 'support' : 'birthpartner', ids[0], ids[1]].map((id) => topicById[id]);
   return ids.map((id) => topicById[id]);
 }
 
 function articleRow(tp) {
-  return `<button type="button" class="article-row" data-action="article" data-topic="${tp.id}"><span class="icon">${ICON.book}</span><span><strong>${esc(L(tp.title))}</strong><span class="meta">${esc(t().minRead(tp.min))} · ${esc(tp.src[0].split(' · ')[0])}</span></span><span class="chev">${ICON.chev}</span></button>`;
+  return `<button type="button" class="article-row" data-action="article" data-topic="${tp.id}"><span class="icon">${ICON.book}</span><span><strong>${esc(L(tp.title))}</strong><span class="meta">${esc(t().minRead(tp.min))} · ${esc(srcOrgs(tp.src))}</span></span><span class="chev">${ICON.chev}</span></button>`;
 }
 
 /* =========================================================================
@@ -2402,23 +2689,32 @@ function articleRow(tp) {
    ========================================================================= */
 
 /* ---------- Symptoms ---------- */
+const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+
 function renderSymptoms() {
-  const w = weekNow();
-  const ids = ui.symAll ? Object.keys(SYMPTOMS) : TRI_SYMPTOMS[triOf(w)];
-  const chips = ids.map((id) => `<button type="button" class="chip" aria-pressed="${ui.symPicked.has(id)}" data-action="sym-chip" data-sym="${id}">${esc(L(SYMPTOMS[id]))}</button>`).join('');
+  if (!ui.symDate) ui.symDate = todayISO();
+  if (!ui.symTime) ui.symTime = nowHM();
+  const picked = ui.symPicked;
+  const any = picked.size > 0 && !picked.has('none');
+  const tiles = symptomOrder().map((id) => `<button type="button" class="sym-tile" aria-pressed="${picked.has(id)}" data-action="sym-chip" data-sym="${id}"><span class="sym-ico" aria-hidden="true">${SYMPTOMS[id].icon}</span><span>${esc(L(SYMPTOMS[id]))}</span></button>`).join('');
   const entries = [...data.symptoms].sort((a, b) => b.at - a.at).slice(0, 6);
   if (!ui.calMonth.symptoms) ui.calMonth.symptoms = todayISO().slice(0, 7) + '-01';
   const pickedDay = ui.calPick.symptoms;
   const dayList = pickedDay ? data.symptoms.filter((e) => isoOf(new Date(e.at)) === pickedDay).sort((a, b) => a.at - b.at) : [];
   $('tool-body').innerHTML = `
+    ${symInfoHTML(ui.symLogged || [])}
     <section class="card" aria-labelledby="sym-q">
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 150px"><span>${esc(t().symDate)}</span><input class="input" type="date" id="sym-date" value="${esc(ui.symDate)}" max="${todayISO()}" min="${addDays(todayISO(), -280)}"></label>
+        <label class="field" style="flex:1 1 110px"><span>${esc(t().symTime)}</span><input class="input" type="time" id="sym-time" value="${esc(ui.symTime)}"></label>
+      </div>
       <h2 id="sym-q">${esc(t().symQ)}</h2>
-      <div class="chips">${chips}</div>
-      <button type="button" class="link-btn" data-action="sym-all">${esc(ui.symAll ? t().symFewer : t().symAll)}</button>
-      <div class="levels">
+      <div class="sym-grid" role="group" aria-labelledby="sym-q">${tiles}</div>
+      ${picked.has('other') ? `<label class="field"><span>${esc(t().symOther)}</span><input class="input" id="sym-other" maxlength="80" value="${esc(ui.symOther || '')}" autocomplete="off"></label>` : ''}
+      ${any ? `<div class="levels">
         <label for="sym-level" class="row-between"><span class="small" style="font-weight:600">${esc(t().intensity)}</span><span class="levels-value" id="sym-level-value">${esc(t().levels[ui.symLevel - 1])}</span></label>
         <input type="range" id="sym-level" min="1" max="5" step="1" value="${ui.symLevel}" aria-valuetext="${esc(t().levels[ui.symLevel - 1])}">
-      </div>
+      </div>` : ''}
       <label class="field"><span>${esc(t().note)}</span><textarea class="input" id="sym-note" placeholder="${esc(t().notePh)}"></textarea></label>
       ${ui.symNotice ? `<div class="notice notice-care" role="status">${ui.symNotice}</div>` : ''}
       <button type="button" class="btn btn-block" data-action="sym-save">${esc(t().save)}</button>
@@ -2431,7 +2727,7 @@ function renderSymptoms() {
     <section class="card" aria-labelledby="sym-cal-title">
       <h2 id="sym-cal-title">${esc(t().symMonth)}</h2>
       ${calendar('symptoms', (iso) => {
-        const level = Math.max(0, ...data.symptoms.filter((e) => isoOf(new Date(e.at)) === iso).map((e) => e.level));
+        const level = Math.max(0, ...data.symptoms.filter((e) => isoOf(new Date(e.at)) === iso).map((e) => e.level || 0));
         return level ? `background:rgba(var(--heat),${(0.15 + level * 0.15).toFixed(2)});color:${level >= 4 ? 'var(--on-accent)' : 'inherit'}` : '';
       })}
       <p class="fine">${esc(t().symLegend)}</p>
@@ -2439,9 +2735,24 @@ function renderSymptoms() {
     </section>`;
 }
 
+// tips and when to get help for what was just logged, the urgent ones first
+function symInfoHTML(ids) {
+  const list = ids.map((id) => SYMPTOMS[id]).filter((x) => x && (x.tip || x.help)).sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+  if (!list.length) return '';
+  return `<section class="card" aria-labelledby="sym-about" id="sym-about-card">
+    <div class="row-between"><h2 id="sym-about">${esc(t().symAbout)}</h2><button type="button" class="icon-btn" data-action="sym-about-close" aria-label="${esc(t().close)}">${TOOL_ICON.x}</button></div>
+    ${list.map((x) => `<div class="sym-info">
+      <div class="sym-info-head"><span class="sym-ico" aria-hidden="true">${x.icon}</span><strong>${esc(L(x))}</strong></div>
+      ${x.tip ? `<p class="small">${esc(L(x.tip))}</p>` : ''}
+      ${x.help ? `<div class="notice ${x.urgent ? 'notice-alert' : 'notice-care'}"><span>${esc(L(x.help))}</span>${x.flag ? `<button type="button" class="link-btn" data-action="flag" data-flag="${symptomFlag(x)}">${esc(t().whatToDo)}</button>` : ''}</div>` : ''}
+      ${x.src ? sourceLine(x.src) : ''}
+    </div>`).join('')}
+  </section>`;
+}
+
 function symEntry(e) {
-  const names = e.items.map((id) => L(SYMPTOMS[id])).join(', ');
-  return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(e.at))} · ${esc(fmtTime(e.at))}</span>${e.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(names)}</div><div class="small muted">${esc(t().levels[e.level - 1])}</div>${e.note ? `<div class="entry-note">${esc(e.note)}</div>` : ''}</li>`;
+  const names = e.items.map((id) => (id === 'other' && e.other ? e.other : SYMPTOMS[id] ? L(SYMPTOMS[id]) : id)).join(', ');
+  return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(e.at))} · ${esc(fmtTime(e.at))}</span>${e.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : ''}</div><div class="entry-main">${esc(names)}</div>${e.level ? `<div class="small muted">${esc(t().levels[e.level - 1])}</div>` : ''}${e.note ? `<div class="entry-note">${esc(e.note)}</div>` : ''}</li>`;
 }
 
 /* ---------- Calendars ---------- */
@@ -2634,6 +2945,7 @@ const TOOL_STR = {
       shopping: ['For the baby', 'What you’ll need'],
       duedate: ['Due date calculator', 'Check the dates'],
       partnerlist: ['Partner checklist', 'Before the birth'],
+      zodiac: ['Baby zodiac', 'Just for fun'],
       checks: ['First weeks', 'Checks for your baby'],
     },
     back: 'All tools',
@@ -2736,6 +3048,7 @@ const TOOL_STR = {
       shopping: ['За бебето', 'Какво ще ти трябва'],
       duedate: ['Калкулатор за термина', 'Провери датите'],
       partnerlist: ['Задачи за партньора', 'Преди раждането'],
+      zodiac: ['Зодия на бебето', 'Само за забавление'],
       checks: ['Първите седмици', 'Прегледи на бебето'],
     },
     back: 'Всички инструменти',
@@ -2971,7 +3284,7 @@ const NAMES = {
   },
 };
 
-const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weeks', 'weight', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'shopping', 'duedate'];
+const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weeks', 'weight', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'duedate'];
 const TOOL_ICON = {
   kicks: ICON.kick,
   contractions: ICON.wave,
@@ -2989,6 +3302,7 @@ const TOOL_ICON = {
   duedate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M8.5 7.5h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/></svg>',
   partnerlist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17" rx="3"/><path d="m8 9 1.5 1.5L12 8M8 15l1.5 1.5L12 14M14.5 9.5H17M14.5 15.5H17"/></svg>',
   checks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5v5a4 4 0 0 0 8 0v-5"/><path d="M10 12.5v2a5 5 0 0 0 10 0V12"/><circle cx="20" cy="10" r="2"/></svg>',
+  zodiac: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 13.6 8l4.7.2-3.7 2.9 1.3 4.6-3.9-2.7-3.9 2.7 1.3-4.6L5.7 8.2 10.4 8z"/><path d="M5 19.5h14M8 21.5h8"/></svg>',
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   heartLine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>',
@@ -3003,6 +3317,7 @@ function toolMeta(id) {
   if (id === 'weight') { const last = [...data.weights].sort((a, b) => (a.date < b.date ? 1 : -1))[0]; return last ? `${String(last.kg).replace('.', lang === 'bg' ? ',' : '.')} ${s.kg}` : ''; }
   if (id === 'bump') return data.photoIndex.length ? s.photos(data.photoIndex.length) : '';
   if (id === 'names') return data.names.favs.length ? `${data.names.favs.length} ♥` : '';
+  if (id === 'zodiac' && data.profile) return L(signOf(journey() === 'born' && data.birth ? data.birth.date : data.profile.due));
   if (id === 'partnerlist') { const done = PARTNER_TODO.filter((i) => data.checklist[i.id]).length; return done ? J().partnerListDone(done, PARTNER_TODO.length) : ''; }
   if (id === 'checks' && data.birth) { const next = NEWBORN_CHECKS.find((c) => !data.newborn.checked[c.id]); return next ? L(next)[0] : ''; }
   return '';
@@ -3019,6 +3334,7 @@ function renderTools() {
 
 function openTool(id) {
   ui.tool = id;
+  ui.zodiacView = null;
   ui.symNotice = '';
   ui.tab = 'tools';
   for (const name of ['today', 'tools', 'explore', 'me']) $(`screen-${name}`).hidden = true;
@@ -3043,8 +3359,113 @@ function renderTool() {
     kicks: renderKicks, contractions: renderContractions, symptoms: renderSymptoms, mood: renderMood,
     weeks: renderWeeks, weight: renderWeight, bump: renderBump, appointments: renderAppointments,
     questions: renderQuestions, bag: renderBag, plan: renderPlan, names: renderNames,
-    shopping: renderShopping, duedate: renderDueCalc, partnerlist: renderPartnerList, checks: renderChecks,
+    shopping: renderShopping, duedate: renderDueCalc, partnerlist: renderPartnerList, checks: renderChecks, zodiac: renderZodiac,
   })[ui.tool]();
+}
+
+/* ---------- Baby zodiac (just for fun) ---------- */
+// sign dates as usually printed; the exact switch can move by a day from year to year
+const ZODIAC = [
+  { id: 'aries', glyph: '♈', from: [3, 21], el: 'fire', en: 'Aries', bg: 'Овен',
+    text: { en: 'Brave, lively and quick off the mark. Your little ram may be the first to crawl towards anything new, and the loudest to cheer on arrival.', bg: 'Смело, живо и бързо. Малкото овенче може първо да пропълзи към всичко ново и най-шумно да се зарадва, когато стигне.' } },
+  { id: 'taurus', glyph: '♉', from: [4, 20], el: 'earth', en: 'Taurus', bg: 'Телец',
+    text: { en: 'Calm, loyal and fond of comfort. Expect a baby who loves a cosy routine, a soft blanket and a feed without hurry.', bg: 'Спокойно, вярно и обича уюта. Очаквай бебе, което обича спокойния ритъм, мекото одеялце и храненето без бързане.' } },
+  { id: 'gemini', glyph: '♊', from: [5, 21], el: 'air', en: 'Gemini', bg: 'Близнаци',
+    text: { en: 'Curious, chatty and quick to smile. Your little one may babble early and find every face in the room fascinating.', bg: 'Любопитно, приказливо и усмихнато. Може рано да загука и да намира всяко лице в стаята за безкрайно интересно.' } },
+  { id: 'cancer', glyph: '♋', from: [6, 21], el: 'water', en: 'Cancer', bg: 'Рак',
+    text: { en: 'Gentle, sensitive and home-loving. A baby who feels safest snuggled close, with familiar voices and little rituals around them.', bg: 'Нежно, чувствително и домошарско. Бебе, което се чувства най-сигурно сгушено до теб, с познати гласове и малки ритуали наоколо.' } },
+  { id: 'leo', glyph: '♌', from: [7, 23], el: 'fire', en: 'Leo', bg: 'Лъв',
+    text: { en: 'Warm, sunny and made for an audience. Your little lion may love being the centre of attention and beam when you clap.', bg: 'Топло, слънчево и родено за публика. Малкото лъвче може да обича да е в центъра на вниманието и да грейва, когато ръкопляскаш.' } },
+  { id: 'virgo', glyph: '♍', from: [8, 23], el: 'earth', en: 'Virgo', bg: 'Дева',
+    text: { en: 'Thoughtful, observant and fond of order. A baby who watches carefully before joining in, and enjoys a day that goes as planned.', bg: 'Замислено, наблюдателно и обича реда. Бебе, което първо внимателно наблюдава и после се включва, и обича денят да върви по план.' } },
+  { id: 'libra', glyph: '♎', from: [9, 23], el: 'air', en: 'Libra', bg: 'Везни',
+    text: { en: 'Sociable, easy-going and charming. Your little one may be all smiles for visitors and happiest when everyone gets along.', bg: 'Общително, ведро и очарователно. Може да раздава усмивки на всички гости и да е най-щастливо, когато всички са в хармония.' } },
+  { id: 'scorpio', glyph: '♏', from: [10, 23], el: 'water', en: 'Scorpio', bg: 'Скорпион',
+    text: { en: 'Intense, determined and deeply loving. A baby with a strong will and a fierce bond with their favourite people.', bg: 'Силно, упорито и обичащо от сърце. Бебе със силна воля и голяма привързаност към любимите си хора.' } },
+  { id: 'sagittarius', glyph: '♐', from: [11, 22], el: 'fire', en: 'Sagittarius', bg: 'Стрелец',
+    text: { en: 'Adventurous, cheerful and always on the move. Your little explorer may love outings, new places and a good laugh.', bg: 'Приключенско, весело и вечно в движение. Малкият изследовател може да обожава разходките, новите места и смеха.' } },
+  { id: 'capricorn', glyph: '♑', from: [12, 22], el: 'earth', en: 'Capricorn', bg: 'Козирог',
+    text: { en: 'Patient, steady and quietly determined. A baby who takes things at their own pace and loves mastering each new skill.', bg: 'Търпеливо, стабилно и тихо упорито. Бебе, което върви със собственото си темпо и обича да усвоява всяко ново умение.' } },
+  { id: 'aquarius', glyph: '♒', from: [1, 20], el: 'air', en: 'Aquarius', bg: 'Водолей',
+    text: { en: 'Original, independent and full of surprises. Your little one may do things their own way, right from the start.', bg: 'Оригинално, самостоятелно и пълно с изненади. Може да прави нещата по свой начин още от самото начало.' } },
+  { id: 'pisces', glyph: '♓', from: [2, 19], el: 'water', en: 'Pisces', bg: 'Риби',
+    text: { en: 'Dreamy, gentle and imaginative. A baby who loves music, cuddles and the soothing sound of water.', bg: 'Мечтателно, нежно и с богато въображение. Бебе, което обича музиката, гушкането и успокояващия шум на водата.' } },
+];
+const ZODIAC_STR = {
+  en: {
+    elements: { fire: 'Fire', earth: 'Earth', air: 'Air', water: 'Water' },
+    byDue: (d) => `From the due date, ${d}`,
+    byBirth: (d) => `Born ${d}`,
+    couldBe: 'Babies arrive any time between 37 and 42 weeks, so your little one could also be:',
+    range: (a, b) => `${a} – ${b}`,
+    others: 'All the signs',
+    back: 'Back to your baby’s sign',
+    viewing: 'You’re looking at',
+    fun: 'Just for fun: astrology isn’t science and can’t predict your baby’s personality. Every baby is their own little person.',
+  },
+  bg: {
+    elements: { fire: 'Огън', earth: 'Земя', air: 'Въздух', water: 'Вода' },
+    byDue: (d) => `По термина, ${d}`,
+    byBirth: (d) => `Роди се на ${d}`,
+    couldBe: 'Бебетата идват между 37-а и 42-ра седмица, затова може да е и:',
+    range: (a, b) => `${a} – ${b}`,
+    others: 'Всички зодии',
+    back: 'Обратно към зодията на бебето',
+    viewing: 'Разглеждаш',
+    fun: 'Само за забавление: астрологията не е наука и не предсказва характера на бебето. Всяко бебе е отделна личност.',
+  },
+};
+const Z = () => ZODIAC_STR[lang];
+const glyphText = (g) => `${g}︎`; // the sign as a text glyph, not an emoji tile
+
+function signOf(iso) {
+  const d = dateOf(iso);
+  const md = (d.getMonth() + 1) * 100 + d.getDate();
+  // the sign is the last one whose start date is on or before this day (Capricorn wraps the new year)
+  const sorted = [...ZODIAC].sort((a, b) => (a.from[0] * 100 + a.from[1]) - (b.from[0] * 100 + b.from[1]));
+  let sign = sorted[sorted.length - 1];
+  for (const z of sorted) if (z.from[0] * 100 + z.from[1] <= md) sign = z;
+  return sign;
+}
+
+function signRange(z) {
+  const i = ZODIAC.indexOf(z);
+  const next = ZODIAC[(i + 1) % ZODIAC.length];
+  const end = new Date(2026, next.from[0] - 1, next.from[1] - 1, 12);
+  const fmt = (m, d) => new Date(2026, m - 1, d, 12).toLocaleDateString(t().locale, { day: 'numeric', month: 'long' });
+  return Z().range(fmt(z.from[0], z.from[1]), fmt(end.getMonth() + 1, end.getDate()));
+}
+
+function renderZodiac() {
+  const born = journey() === 'born' && data.birth;
+  const baseISO = born ? data.birth.date : data.profile.due;
+  const own = signOf(baseISO);
+  const view = ZODIAC.find((z) => z.id === ui.zodiacView) || own;
+  const s = Z();
+  // signs a baby due on this date could also have, from 37 to 42 weeks
+  const possible = [];
+  if (!born) {
+    for (let d = -21; d <= 14; d++) {
+      const z = signOf(addDays(data.profile.due, d));
+      if (z !== own && !possible.includes(z)) possible.push(z);
+    }
+  }
+  $('tool-body').innerHTML = `
+    <section class="card zodiac-hero zodiac-${view.el}" aria-labelledby="z-name">
+      ${view !== own ? `<p class="eyebrow">${esc(s.viewing)}</p>` : ''}
+      <span class="zodiac-glyph" aria-hidden="true">${glyphText(view.glyph)}</span>
+      <h2 id="z-name">${esc(L(view))}</h2>
+      <p class="muted small">${esc(signRange(view))} · <span class="pill pill-example">${esc(s.elements[view.el])}</span></p>
+      ${view === own ? `<p class="small">${esc(born ? s.byBirth(fmtDate(baseISO)) : s.byDue(fmtDate(baseISO)))}</p>` : ''}
+      <p>${esc(L(view.text))}</p>
+      ${view !== own ? `<button type="button" class="btn btn-quiet" data-action="zodiac-view" data-sign="${own.id}">${esc(s.back)}</button>` : ''}
+    </section>
+    ${possible.length && view === own ? `<section class="card"><p class="small">${esc(s.couldBe)}</p><div class="chips">${possible.map((z) => `<button type="button" class="chip" data-action="zodiac-view" data-sign="${z.id}">${glyphText(z.glyph)} ${esc(L(z))}</button>`).join('')}</div></section>` : ''}
+    <section class="card" aria-labelledby="z-all">
+      <h2 id="z-all">${esc(s.others)}</h2>
+      <div class="zodiac-grid">${ZODIAC.map((z) => `<button type="button" class="zodiac-tile" aria-pressed="${z === view}" data-action="zodiac-view" data-sign="${z.id}"><span aria-hidden="true">${glyphText(z.glyph)}</span><strong>${esc(L(z))}</strong></button>`).join('')}</div>
+    </section>
+    <p class="fine">${esc(s.fun)}</p>`;
 }
 
 /* ---------- Week by week ---------- */
@@ -4756,8 +5177,8 @@ function renderMePartner() {
 function toolIds() {
   const st = journey();
   if (st === 'loss') return ['mood', 'appointments', 'questions'];
-  if (st === 'born') return ['checks', 'mood', 'appointments', 'questions', 'bump'];
-  if (isPartner()) return ['partnerlist', 'contractions', 'weeks', 'appointments', 'questions', 'bag', 'plan', 'names', 'shopping', 'mood', 'duedate'];
+  if (st === 'born') return ['checks', 'mood', 'appointments', 'questions', 'bump', 'zodiac'];
+  if (isPartner()) return ['partnerlist', 'contractions', 'weeks', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'mood', 'duedate'];
   return TOOL_IDS;
 }
 
@@ -4808,7 +5229,7 @@ function renderExplore() {
   $('explore-partner').innerHTML = isPartner() ? `<h2 class="eyebrow" id="group-partner">${esc(J().forPartners)}</h2><div class="articles">${['support', 'birthpartner'].map((id) => articleRow(topicById[id])).join('')}</div>` : '';
   $('explore-week').innerHTML = forYou(weekNow()).filter((tp) => tp.group !== 'partner').map(articleRow).join('');
   renderFoods();
-  const groups = ['food', 'body', 'baby', 'vitamins'];
+  const groups = ['food', 'safe', 'body', 'baby', 'vitamins'];
   $('explore-groups').innerHTML = groups.map((g) => `<section style="display:grid;gap:10px" aria-labelledby="group-${g}"><h2 class="eyebrow" id="group-${g}">${esc(t().groups[g])}</h2><div class="articles">${TOPICS.filter((tp) => tp.group === g).map(articleRow).join('')}</div></section>`).join('');
   $('food-source').innerHTML = `${esc(t().source)}: <a href="${NHS.foods[1]}" target="_blank" rel="noopener">${esc(NHS.foods[0])}</a>`;
 }
@@ -4946,7 +5367,8 @@ function closeSheet() {
 }
 
 function sourceLine(src, lng = lang) {
-  return `<p class="source">${esc(STR[lng].source)}: <a href="${src[1]}" target="_blank" rel="noopener">${esc(src[0])}</a></p>`;
+  const list = srcList(src);
+  return `<p class="source">${esc(list.length > 1 ? STR[lng].sources : STR[lng].source)}: ${list.map((x) => `<a href="${x[1]}" target="_blank" rel="noopener">${esc(x[0])}</a>`).join(' · ')}</p>`;
 }
 
 function openArticle(id) {
@@ -4995,7 +5417,7 @@ function openFlag(id) {
 /* ---------- Luna (prepared answers, triage first) ---------- */
 function suggestions() {
   const tri = triOf(weekNow());
-  const ids = [['nausea', 'vitamins', 'caffeine', 'food'], ['movements', 'glucose', 'exercise', 'food'], ['sleep', 'labour', 'movements', 'heartburn']][tri];
+  const ids = [['nausea', 'medicines', 'caffeine', 'alcohol'], ['movements', 'vaccines', 'travel', 'food'], ['sleep', 'labour', 'movements', 'mental']][tri];
   if (isPartner()) return [tri < 2 ? 'support' : 'birthpartner', ...ids.slice(0, 3)].map((id) => topicById[id]);
   return ids.map((id) => topicById[id]);
 }
@@ -5916,25 +6338,32 @@ const ACTIONS = {
   'sheet-close': () => closeSheet(),
   'sym-chip': (el) => {
     const id = el.dataset.sym;
-    if (ui.symPicked.has(id)) ui.symPicked.delete(id); else ui.symPicked.add(id);
-    el.setAttribute('aria-pressed', String(ui.symPicked.has(id)));
+    const set = ui.symPicked;
+    if (set.has(id)) set.delete(id);
+    else if (id === 'none') { set.clear(); set.add('none'); }
+    else { set.delete('none'); set.add(id); }
+    ui.symNotice = '';
+    const y = window.scrollY;
+    keepNote(renderSymptoms);
+    window.scrollTo(0, y);
   },
-  'sym-all': () => { ui.symAll = !ui.symAll; keepNote(renderSymptoms); },
+  'sym-about-close': () => { ui.symLogged = []; keepNote(renderSymptoms); },
   'sym-save': () => {
     if (!ui.symPicked.size) { ui.symNotice = esc(t().pickSymptom); keepNote(renderSymptoms); return; }
     const items = [...ui.symPicked];
-    const level = ui.symLevel;
-    data.symptoms.push({ id: uid(), at: Date.now(), items, level, note: ($('sym-note').value || '').trim().slice(0, 500) });
+    const none = items.includes('none');
+    const [h, m] = String(ui.symTime || '').split(':').map(Number);
+    const when = validISO(ui.symDate) ? at(ui.symDate, Number.isFinite(h) ? h : 12, Number.isFinite(m) ? m : 0) : Date.now();
+    data.symptoms.push({ id: uid(), at: when, items, level: none ? 0 : ui.symLevel, note: ($('sym-note').value || '').trim().slice(0, 500), other: items.includes('other') ? String(ui.symOther || '').trim().slice(0, 80) : '' });
     save();
-    const hints = [];
-    if (items.includes('headache') && level >= 4) hints.push(t().headacheHint);
-    if (items.includes('swelling') && level >= 4) hints.push(t().swellingHint);
-    ui.symNotice = hints.length ? `${hints.map(esc).join(' ')} <button type="button" class="link-btn" data-action="flag" data-flag="preeclampsia">${esc(t().whatToDo)}</button>` : '';
+    ui.symLogged = items.filter((id) => id !== 'none' && id !== 'other');
+    Object.assign(ui, { symNotice: '', symLevel: 3, symOther: '', symDate: todayISO(), symTime: nowHM() });
     ui.symPicked.clear();
-    ui.symLevel = 3;
     renderSymptoms();
+    window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
     toast(t().saved);
   },
+  'zodiac-view': (el) => { ui.zodiacView = el.dataset.sign; renderZodiac(); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' }); },
   'cal-prev': (el) => { shiftMonth(el.dataset.cal, -1); renderTool(); },
   'cal-next': (el) => { shiftMonth(el.dataset.cal, 1); renderTool(); },
   'cal-day': (el) => { ui.calPick[el.dataset.cal] = ui.calPick[el.dataset.cal] === el.dataset.day ? null : el.dataset.day; renderTool(); },
@@ -6339,6 +6768,12 @@ document.addEventListener('input', (e) => {
     const pos = e.target.value;
     renderDueCalc();
     $('calc-date').value = pos;
+  } else if (e.target.id === 'sym-date') {
+    ui.symDate = e.target.value;
+  } else if (e.target.id === 'sym-time') {
+    ui.symTime = e.target.value;
+  } else if (e.target.id === 'sym-other') {
+    ui.symOther = e.target.value;
   } else if (e.target.id === 'sym-level') {
     ui.symLevel = Number(e.target.value);
     const label = t().levels[ui.symLevel - 1];
