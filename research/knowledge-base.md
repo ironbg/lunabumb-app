@@ -83,6 +83,19 @@
 
 Не е проверено: точният срок за акта за раждане. Приложението казва само, че болницата съобщава в общината и удостоверението се взема оттам.
 
+## 6б. Кръвно налягане
+
+| Ниво (у дома) | Стойности, mmHg | Какво да направиш |
+|---|---|---|
+| Много високо | 160 и повече горно или 110 и повече долно | 5 минути почивка и повторно измерване; ако пак е толкова, веднага в родилното отделение (NHS: 160/110 е тежко високо) |
+| Високо | 150–159 или 100–109 | повторно след 5 минути; ако пак е високо, свържи се с родилното отделение до 4 часа; при главоболие или болка в корема веднага |
+| Повишено | 140–149 или 90–99 | повторно след 5 минути; ако пак е повишено, до 24 часа и мерене всеки ден |
+| Близо до повишеното | 135–139 или 85–89 | повторно; ако пак е така, мерене всеки ден |
+| Нормално | 110–134 и 70–84 | както е уговорено |
+| Ниско | 109 и по-малко и 69 и по-малко | без действие, ако не пиеш лекарство за кръвно и се чувстваш добре; с лекарство: повторно, после до 24 часа (до 4 часа при световъртеж) |
+
+Таблицата е от листовките на Oxford University Hospitals и University Hospital Southampton (преразгледана февруари 2026), които я взимат от RCOG. NHS определя 140/90–159/109 като високо, а 160/110 и повече като тежко високо. Симптомите на прееклампсия (силно главоболие, проблеми със зрението, болка под ребрата, внезапен оток на лицето, ръцете или краката, много лошо самочувствие, повръщане) са причина да се обадиш веднага, каквото и да е кръвното; прееклампсията може да започне и до седмици след раждането. Как се мери: валидиран за бременни апарат за горната част на ръката (не за китка), подходящ маншет, без кофеин, цигари и спорт 30 минути преди това, 5 минути спокойно седене, опрян гръб, стъпала на пода, ръка на нивото на сърцето, маншет на гола ръка 2–3 см над лакътя, една и съща ръка, две измервания през минута и се записва второто. Целта у дома обикновено е под 135/85. Българско ръководство за мерене у дома при бременност не намерих; на български приложението цитира ISSHP 2021 и ESH 2021.
+
 ## 7. Движение
 
 - **СЗО (2020):** поне **150 минути** умерена аеробна активност седмично по време на бременността и след раждането, плюс упражнения за сила; по-малко седене. Жени, които са тренирали интензивно преди, могат да продължат. Ползи: по-малко наддаване, по-малък риск от гестационен диабет и прееклампсия, по-малко следродилна депресия.
@@ -123,5 +136,9 @@
 - МЗ. [Национален експертен съвет по имунизации: коклюш при бременни (12.02.2025)](https://mh.government.bg/upload/15184/%D0%9A%D0%BE%D0%BA%D0%BB%D1%8E%D1%88-%D0%9D%D0%95%D0%A1%D0%98-12.02.2025-1.pdf); [Мотиви към промените в Наредба № 15 (2025)](https://www.mh.government.bg/upload/13974/motivi_nar_imunizacii_8_04_25.pdf); [Наредба № 15 за имунизациите](https://www.mh.government.bg/upload/4363/naredba15-ot-12-05-2005g-imunizatsiite-v-republika-bulgaria.pdf)
 - МЗ. [Неонатален скрининг: информация за родители](https://www.mh.government.bg/upload/14516/Broshura.pdf); [Наредба № 8, Приложение 1: профилактични прегледи на децата](https://www.mh.government.bg/upload/4246/naredba-profpregled-dispanserizaciq-prilo1-22.pdf)
 - Михайлова Ф., Руев П. [Neonatal hearing screening in Bulgaria 2016–2019](https://journals.mu-varna.bg/index.php/orl/article/view/8479)
+- NHS. [High blood pressure in pregnancy](https://www.nhs.uk/pregnancy/related-conditions/complications/high-blood-pressure/); [Pre-eclampsia](https://www.nhs.uk/conditions/pre-eclampsia/)
+- Oxford University Hospitals. [Monitoring your blood pressure at home during pregnancy](https://www.ouh.nhs.uk/media/ujbfd5yt/117691monitoring.pdf); University Hospital Southampton. [Self-monitoring of blood pressure during pregnancy](https://www.uhs.nhs.uk/Media/UHS-website-2019/Patientinformation/Pregnancyandbirth/Self-monitoring-of-blood-pressure-during-pregnancy-2580-PIL.pdf)
+- Magee L. A. и др. [The 2021 ISSHP classification, diagnosis & management recommendations for international practice](https://pubmed.ncbi.nlm.nih.gov/35066406/), Pregnancy Hypertension, 2022
+- ESH. [Home blood pressure monitoring: 2021 position paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9904446/)
 - NHS. [Your antenatal appointments](https://www.nhs.uk/pregnancy/your-pregnancy-care/your-antenatal-appointments/)
 - НЗОК. [Програма „Майчино здравеопазване“](https://www.nhif.bg/bg/nzok-za-teb/useful/573); Министерство на здравеопазването, Наредба № 26 от 2007 г. (за неосигурените)

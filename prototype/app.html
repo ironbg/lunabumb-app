@@ -49,6 +49,8 @@
     --mood-4: #F6C8B5;
     --mood-5: #FFD98A;
     --heat: 110, 91, 208;
+    --bp-sys: #6E5BD0;
+    --bp-dia: #D97A2B;
 
     --display: 'Lora', Georgia, 'Times New Roman', serif;
     --body: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -75,6 +77,8 @@
       --alert-bg: #43201F;
       --alert-fg: #F6A39C;
       --mood-1: #6F6A99;
+      --bp-sys: #8A78E6;
+      --bp-dia: #CF7A2A;
       --mood-2: #8F84D6;
       --mood-3: #8D8678;
       --mood-4: #D9A48E;
@@ -100,6 +104,8 @@
     --alert-bg: #43201F;
     --alert-fg: #F6A39C;
     --mood-1: #6F6A99;
+    --bp-sys: #8A78E6;
+    --bp-dia: #CF7A2A;
     --mood-2: #8F84D6;
     --mood-3: #8D8678;
     --mood-4: #D9A48E;
@@ -595,6 +601,31 @@
   .stat span { font-size: 12px; color: var(--muted); }
   .chart svg { width: 100%; height: auto; display: block; }
   .chart text { fill: var(--muted); font-size: 11px; font-family: var(--body); }
+  .chart .t-strong { fill: var(--fg); font-weight: 700; }
+  .bp-chart { position: relative; border-radius: 12px; touch-action: pan-y; }
+  .bp-chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted); }
+  .chart-legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .key { display: inline-block; width: 16px; height: 0; border-top: 2px solid var(--muted); border-radius: 2px; flex: none; }
+  .key-sys { border-color: var(--bp-sys); }
+  .key-dia { border-color: var(--bp-dia); }
+  .key-line { border-top: 1.5px dashed var(--muted); }
+  .chart-tip { position: absolute; top: -6px; z-index: 2; min-width: 136px; padding: 8px 10px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(42, 39, 64, 0.14); font-size: 12px; color: var(--muted); pointer-events: none; display: grid; gap: 2px; }
+  .chart-tip .tip-head { color: var(--muted); }
+  .chart-tip .tip-row { display: flex; align-items: center; gap: 6px; }
+  .chart-tip strong { color: var(--fg); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .bp-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .bp-inputs .field span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bp-big { font: 600 40px/1.1 var(--display); color: var(--fg); }
+  .bp-big small { font: 600 14px/1.2 var(--body); color: var(--muted); }
+  .bp-how summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .bp-how summary::-webkit-details-marker { display: none; }
+  .bp-how summary::after { content: '+'; font: 600 22px/1 var(--body); color: var(--accent); }
+  .bp-how[open] summary::after { content: '−'; }
+  .bp-how summary h2 { margin: 0; }
+  .bp-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  .bp-how > :not(summary) { margin: 12px 0 0; }
+  .bp-how h3 + p { margin-top: 4px; }
   .num { font-variant-numeric: tabular-nums; }
 
   /* ---------- Explore ---------- */
@@ -1316,7 +1347,7 @@ const STR = {
     notSaved: 'Not saved on this device. Turn on the first switch to keep your details.',
     stored: 'What’s stored',
     storedWhere: 'Only in this browser, on this device. Nothing is sent anywhere.',
-    storedRows: { profile: 'Your details', moods: 'Mood check-ins', symptoms: 'Symptom entries', kicks: 'Kick sessions and kicks', contractions: 'Contractions', weights: 'Weight entries', appointments: 'Appointments', photos: 'Bump photos' },
+    storedRows: { profile: 'Your details', moods: 'Mood check-ins', symptoms: 'Symptom entries', kicks: 'Kick sessions and kicks', contractions: 'Contractions', weights: 'Weight entries', bp: 'Blood pressure readings', appointments: 'Appointments', photos: 'Bump photos' },
     showData: 'Show my data',
     deleteAll: 'Delete all my data',
     deleteConfirm: 'This deletes your details and every entry from this device. It can’t be undone.',
@@ -1550,7 +1581,7 @@ const STR = {
     notSaved: 'Не се пази на това устройство. Включи първия превключвател, за да запазиш данните си.',
     stored: 'Какво се пази',
     storedWhere: 'Само в този браузър, на това устройство. Нищо не се изпраща никъде.',
-    storedRows: { profile: 'Твоите данни', moods: 'Записи на настроението', symptoms: 'Записи на симптоми', kicks: 'Сесии и ритници', contractions: 'Контракции', weights: 'Записи за тегло', appointments: 'Прегледи', photos: 'Снимки на коремчето' },
+    storedRows: { profile: 'Твоите данни', moods: 'Записи на настроението', symptoms: 'Записи на симптоми', kicks: 'Сесии и ритници', contractions: 'Контракции', weights: 'Записи за тегло', bp: 'Измервания на кръвното', appointments: 'Прегледи', photos: 'Снимки на коремчето' },
     showData: 'Покажи данните ми',
     deleteAll: 'Изтрий всичките ми данни',
     deleteConfirm: 'Това изтрива данните ти и всички записи от това устройство. Не може да се върне.',
@@ -1645,6 +1676,7 @@ const NHS = {
   heartburn: ['NHS · Indigestion and heartburn in pregnancy', 'https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/'],
   glucose: ['NHS · Gestational diabetes', 'https://www.nhs.uk/conditions/gestational-diabetes/'],
   preeclampsia: ['NHS · Pre-eclampsia', 'https://www.nhs.uk/conditions/pre-eclampsia/'],
+  highbp: ['NHS · High blood pressure in pregnancy', 'https://www.nhs.uk/pregnancy/related-conditions/complications/high-blood-pressure/'],
   vaccines: ['NHS · Vaccinations in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/vaccinations/'],
   medicines: ['NHS · Medicines in pregnancy', 'https://www.nhs.uk/pregnancy/keeping-well/medicines/'],
   alcohol: ['NHS · Drinking alcohol while pregnant', 'https://www.nhs.uk/pregnancy/keeping-well/drinking-alcohol-while-pregnant/'],
@@ -1674,6 +1706,10 @@ const SRC = {
   cdcToxo: ['CDC · Toxoplasmosis prevention', 'https://www.cdc.gov/toxoplasmosis/prevention/index.html'],
   iron: ['NHS · Low iron levels in pregnancy (United Lincolnshire Hospitals)', 'https://www.ulh.nhs.uk/patients/patient-information-library/low-iron-levels-in-your-blood-during-pregnancy/'],
   nzok: ['НЗОК · Майчино здравеопазване', 'https://www.nhif.bg/bg/nzok-za-teb/useful/573'],
+  isshp: ['ISSHP · Hypertensive disorders of pregnancy: international recommendations (2021)', 'https://pubmed.ncbi.nlm.nih.gov/35066406/'],
+  eshHome: ['ESH · Home blood pressure monitoring (2021)', 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9904446/'],
+  ouhBp: ['NHS · Oxford University Hospitals: monitoring your blood pressure at home in pregnancy', 'https://www.ouh.nhs.uk/media/ujbfd5yt/117691monitoring.pdf'],
+  uhsBp: ['NHS · University Hospital Southampton: self-monitoring of blood pressure in pregnancy', 'https://www.uhs.nhs.uk/Media/UHS-website-2019/Patientinformation/Pregnancyandbirth/Self-monitoring-of-blood-pressure-during-pregnancy-2580-PIL.pdf'],
   nhsAntenatal: ['NHS · Your antenatal appointments', 'https://www.nhs.uk/pregnancy/your-pregnancy-care/your-antenatal-appointments/'],
   mhPertussis: ['МЗ · Национален експертен съвет по имунизации: коклюш при бременни (2025)', 'https://mh.government.bg/upload/15184/%D0%9A%D0%BE%D0%BA%D0%BB%D1%8E%D1%88-%D0%9D%D0%95%D0%A1%D0%98-12.02.2025-1.pdf'],
   mhImmun2025: ['МЗ · Мотиви към промените в Наредба № 15 за имунизациите (2025)', 'https://www.mh.government.bg/upload/13974/motivi_nar_imunizacii_8_04_25.pdf'],
@@ -1915,6 +1951,24 @@ const TOPICS = [
         'Почивай, когато можеш, защото умората засилва гаденето. Опитай сух хляб или обикновена бисквита сутрин и малки, чести хранения с лека храна.',
         'Пий вода често и на малки глътки. Студената храна може да се понася по-лесно от топлата, ако миризмите те дразнят. На някои хора помага джинджифилът.',
         'Свържи се с акушерката или лекаря още същия ден, ако 24 часа не задържаш храна и течности, ако урината ти е много тъмна или не си уринирала от 8 часа, ако се чувстваш много отпаднала или замаяна, или ако имаш болка в корема, висока температура или повръщаш кръв.',
+      ],
+    },
+  },
+  {
+    id: 'bp', group: 'body', min: 2, src: { en: [NHS.highbp, NHS.preeclampsia], bg: [SRC.isshp, NHS.preeclampsia] },
+    title: { en: 'Blood pressure in pregnancy', bg: 'Кръвното налягане по време на бременност' },
+    q: { en: 'What blood pressure is too high?', bg: 'Какво кръвно е високо?' },
+    kw: ['blood pressure', 'hypertension', 'pre-eclampsia', 'preeclampsia', '140/90', 'кръвно', 'хипертония', 'прееклампсия', 'налягане'],
+    a: {
+      en: [
+        'Your blood pressure is checked at every antenatal appointment. A reading of 140/90 or higher is high blood pressure, and 160/110 or higher is severe.',
+        'High blood pressure can be a sign of pre-eclampsia. It usually starts after 20 weeks, and it can also start in the days or weeks after the birth. Call your maternity unit straight away if you have a severe headache, problems with your vision, pain just below the ribs, or sudden swelling of the face, hands or feet.',
+        'If your team asks you to measure at home, use an upper-arm monitor validated for pregnancy. The Blood pressure tool shows what each reading means and when to call.',
+      ],
+      bg: [
+        'Кръвното налягане се мери на всеки преглед. 140/90 или повече е високо кръвно, а 160/110 или повече е тежко високо.',
+        'Високото кръвно може да е признак на прееклампсия. Тя обикновено започва след 20-ата седмица, но може да започне и в дните или седмиците след раждането. Обади се веднага в родилното отделение, ако имаш силно главоболие, проблеми със зрението, болка точно под ребрата или внезапен оток на лицето, ръцете или краката.',
+        'Ако лекарят ти каже да мериш у дома, използвай апарат за горната част на ръката, проверен за бременни. Инструментът „Кръвно налягане“ показва какво означава всяко измерване и кога да се обадиш.',
       ],
     },
   },
@@ -2355,6 +2409,8 @@ const blank = () => ({
   care: { unit: '', doctor: '' },
   weights: [],
   weightSetup: null,
+  bp: [],
+  bpSetup: { meds: false },
   photoIndex: [],
   appointments: [],
   questions: [],
@@ -2376,7 +2432,7 @@ function loadData() {
     if (parsed && parsed.v === 1) {
       const base = blank();
       const merged = { ...base, ...parsed };
-      for (const key of ['care', 'bag', 'shopping', 'names', 'newborn']) merged[key] = { ...base[key], ...(parsed[key] || {}) };
+      for (const key of ['care', 'bag', 'shopping', 'names', 'newborn', 'bpSetup']) merged[key] = { ...base[key], ...(parsed[key] || {}) };
       return merged;
     }
   } catch (err) { /* storage unavailable or unreadable */ }
@@ -2406,6 +2462,11 @@ const ui = {
   tool: null,
   returnTool: null,
   names: { list: 'F', query: '' },
+  bpForm: { date: '', time: '', sys: '', dia: '', pulse: '', note: '', sym: new Set() },
+  bpRange: '30',
+  bpLogged: null,
+  bpError: '',
+  bpRest: 0,
   calc: { method: 'due', ivfDay: 5, date: '' },
   symPicked: new Set(),
   symLevel: 3,
@@ -2982,6 +3043,7 @@ const TOOL_STR = {
       mood: ['Mood', 'Your month at a glance'],
       weeks: ['Week by week', 'Size and milestones'],
       weight: ['My weight', 'Log it, see the trend'],
+      bp: ['Blood pressure', 'Readings and chart'],
       bump: ['My bump', 'A photo each week'],
       appointments: ['Appointments', 'Scans and check-ups'],
       questions: ['Questions', 'To ask your doctor'],
@@ -3084,6 +3146,7 @@ const TOOL_STR = {
       mood: ['Настроение', 'Месецът ти с един поглед'],
       weeks: ['Седмица по седмица', 'Размер и етапи'],
       weight: ['Моето тегло', 'Записи и тенденция'],
+      bp: ['Кръвно налягане', 'Измервания и графика'],
       bump: ['Моето коремче', 'Снимка всяка седмица'],
       appointments: ['Прегледи', 'Ехографии и консултации'],
       questions: ['Въпроси', 'Към лекаря'],
@@ -3329,13 +3392,14 @@ const NAMES = {
   },
 };
 
-const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weeks', 'weight', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'duedate'];
+const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weight', 'bp', 'weeks', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'duedate'];
 const TOOL_ICON = {
   kicks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g fill="currentColor" stroke-width="1"><path d="M7.4 11.64C5.29 11.64 4.23 13.49 4.5 15.86C4.76 18.5 6.08 20.22 7.66 20.22C9.25 20.22 10.3 18.9 10.3 17.18C10.3 15.86 9.64 15.07 9.64 13.88C9.64 12.56 8.85 11.64 7.4 11.64zM16.6 5.24C18.71 5.24 19.77 7.09 19.5 9.46C19.24 12.1 17.92 13.82 16.34 13.82C14.75 13.82 13.7 12.5 13.7 10.78C13.7 9.46 14.36 8.67 14.36 7.48C14.36 6.16 15.15 5.24 16.6 5.24z"/><circle cx="9.51" cy="9.13" r="1.12"/><circle cx="7.27" cy="8.34" r="0.95"/><circle cx="5.29" cy="8.87" r="0.82"/><circle cx="14.49" cy="2.73" r="1.12"/><circle cx="16.73" cy="1.94" r="0.95"/><circle cx="18.71" cy="2.47" r="0.82"/></g></svg>',
   contractions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M10 2.8h4M12 2.8V6M18.3 6.8l1.3-1.3"/><path d="M7 13.5h2l1.2-2.6 2.2 5.2 1.4-3.2.9.6H17"/></svg>',
   symptoms: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 4.5V4a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4v.5"/><path d="M12 16.8s-3.3-2-4-4c-.5-1.5.4-3 1.9-3 1 0 1.6.5 2.1 1.2.5-.7 1.1-1.2 2.1-1.2 1.5 0 2.4 1.5 1.9 3-.7 2-4 4-4 4z"/></svg>',
   mood: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1.9 2 5.1 2 7 0M9.2 9.8h.01M14.8 9.8h.01"/></svg>',
   weeks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5c-1.7 0-2.6 1.3-2.8 3-.2 1.6-1.3 2.5-2.4 3.7A5.5 5.5 0 0 0 12 21a5.5 5.5 0 0 0 5.2-7.8c-1.1-1.2-2.2-2.1-2.4-3.7-.2-1.7-1.1-3-2.8-3z"/><path d="M12 6.5c0-1.4.5-2.6 1.4-3.5M13.4 4.3c1.4-.9 3-.9 4.3 0-1.3 1.1-2.9 1.2-4.3 0z"/></svg>',
+  bp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/><path d="M8.5 13a3.5 3.5 0 0 1 7 0M12 13l1.6-2"/></svg>',
   weight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M7.5 11.5a4.5 4.5 0 0 1 9 0z"/><path d="m12 11.5 1.4-2.2"/></svg>',
   bump: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><path d="M12 15.6s-2.6-1.5-3.1-3.1c-.4-1.2.3-2.4 1.5-2.4.8 0 1.2.4 1.6.9.4-.5.8-.9 1.6-.9 1.2 0 1.9 1.2 1.5 2.4-.5 1.6-3.1 3.1-3.1 3.1z"/></svg>',
   appointments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M12 12.8v4.4M9.8 15h4.4"/></svg>',
@@ -3360,6 +3424,7 @@ function toolMeta(id) {
   if (id === 'appointments') { const a = nextAppointment(); return a ? fmtDate(a.date) : ''; }
   if (id === 'bag') { const total = Object.values(BAG).flat().length + data.bag.custom.length; const done = Object.values(data.bag.checked).filter(Boolean).length; return done ? s.packed(done, total) : ''; }
   if (id === 'weight') { const last = [...data.weights].sort((a, b) => (a.date < b.date ? 1 : -1))[0]; return last ? `${String(last.kg).replace('.', lang === 'bg' ? ',' : '.')} ${s.kg}` : ''; }
+  if (id === 'bp') { const l = [...data.bp].sort((a, b) => b.at - a.at)[0]; return l ? `${l.sys}/${l.dia}` : ''; }
   if (id === 'bump') return data.photoIndex.length ? s.photos(data.photoIndex.length) : '';
   if (id === 'names') return data.names.favs.length ? `${data.names.favs.length} ♥` : '';
   if (id === 'zodiac' && data.profile) return L(signOf(journey() === 'born' && data.birth ? data.birth.date : data.profile.due));
@@ -3381,6 +3446,8 @@ function openTool(id) {
   ui.tool = id;
   ui.zodiacView = null;
   ui.symNotice = '';
+  ui.bpLogged = null;
+  ui.bpError = '';
   ui.tab = 'tools';
   for (const name of ['today', 'tools', 'explore', 'me']) $(`screen-${name}`).hidden = true;
   $('screen-tool').hidden = false;
@@ -3402,7 +3469,7 @@ function renderTool() {
   $('tool-back').setAttribute('aria-label', T().back);
   ({
     kicks: renderKicks, contractions: renderContractions, symptoms: renderSymptoms, mood: renderMood,
-    weeks: renderWeeks, weight: renderWeight, bump: renderBump, appointments: renderAppointments,
+    weeks: renderWeeks, weight: renderWeight, bp: renderBp, bump: renderBump, appointments: renderAppointments,
     questions: renderQuestions, bag: renderBag, plan: renderPlan, names: renderNames,
     shopping: renderShopping, duedate: renderDueCalc, partnerlist: renderPartnerList, checks: renderChecks, zodiac: renderZodiac,
   })[ui.tool]();
@@ -3601,6 +3668,410 @@ function weightChart(list, pre) {
     ${pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i === pts.length - 1 ? 5 : 3.5}" fill="var(--accent)"/>`).join('')}
     <text x="${W - R}" y="${H - 8}" text-anchor="end" dy="-12">${esc(T().weekAxis)}</text>
   </svg></div>`;
+}
+
+/* ---------- Blood pressure ---------- */
+// Home readings sorted into the levels NHS maternity units use for self-monitoring
+// (Oxford and Southampton leaflets, adapted from RCOG), with the NHS "severe" line at 160/110.
+// The second of two readings is the one that counts; a reading within 30 minutes of the last is a repeat.
+const BP_STR = {
+  en: {
+    log: 'Log a reading',
+    sys: 'Upper (SYS)',
+    dia: 'Lower (DIA)',
+    pulse: 'Pulse',
+    unit: 'mmHg',
+    secondTip: 'Measure twice, one minute apart, and log the second reading. The pulse is optional.',
+    symQ: 'Do you have any of these right now?',
+    sym: {
+      headache: 'Severe headache',
+      vision: 'Blurred vision or flashing lights',
+      ribs: 'Pain just below the ribs',
+      swelling: 'Sudden swelling of the face, hands or feet',
+      unwell: 'Feeling very unwell or vomiting',
+      chest: 'Chest pain or trouble breathing',
+    },
+    bad: 'Check the numbers: the upper one is usually 70 to 250, the lower one 40 to 150, and the upper one is higher.',
+    pulseBad: 'The pulse should be 30 to 220, or leave it empty.',
+    resultTitle: 'Your reading',
+    repeat: 'Repeat reading',
+    levels: { severe: 'Very high', high: 'High', raised: 'Raised', highNormal: 'Near the raised level', normal: 'Normal', low: 'Low' },
+    advice: {
+      severe: ['Very high. Sit quietly for 5 minutes and measure again. If it’s still 160/110 or higher, call your maternity unit now.', 'Still very high: call your maternity unit now.'],
+      high: ['High. Sit quietly for 5 minutes and measure again.', 'Still high: contact your maternity unit today, within 4 hours. If you have a headache or tummy pain, call straight away.'],
+      raised: ['Raised. Sit quietly for 5 minutes and measure again.', 'Still raised: contact your maternity unit or midwife within 24 hours, and measure every day.'],
+      highNormal: ['Normal, but close to the raised level. Sit quietly for 5 minutes and measure again.', 'Still close to the raised level: measure every day.'],
+      normal: ['Normal. Keep measuring as agreed with your midwife or doctor.', 'Normal. Keep measuring as agreed with your midwife or doctor.'],
+      low: ['Low readings are common in pregnancy. If you feel well, you don’t need to do anything. If you feel dizzy, sit down or lie on your side.', 'Low readings are common in pregnancy. If you feel well, you don’t need to do anything. If you feel dizzy, sit down or lie on your side.'],
+      lowMeds: ['Low for someone taking blood pressure medicine. Sit quietly for 5 minutes and measure again.', 'Still low: contact your maternity unit within 24 hours, or within 4 hours if you feel dizzy or faint.'],
+    },
+    symptomsNow: 'With these symptoms, call your maternity unit now, whatever your reading.',
+    chestNow: 'Chest pain or trouble breathing: call 112 now.',
+    rest: 'Rest 5 minutes, then measure again',
+    resting: (m, s) => `Resting · ${m}:${String(s).padStart(2, '0')} left`,
+    measureNow: 'Measure again now',
+    trend: 'Your readings',
+    range: { 7: '7 days', 30: '30 days', all: 'All' },
+    rangeLabel: 'Period',
+    last: 'Last',
+    avg: 'Average',
+    over: 'At 140/90 or over',
+    overOf: (n, total) => `${n} of ${total}`,
+    legendSys: 'Upper (systolic)',
+    legendDia: 'Lower (diastolic)',
+    legendLine: '140/90 line',
+    chartLabel: (n) => `Blood pressure chart with ${n} readings. Every reading is also listed below.`,
+    empty: 'No readings yet. Log one above to see your chart.',
+    emptyRange: 'No readings in this period.',
+    pulseShort: 'pulse',
+    copy: 'Copy for my midwife or doctor',
+    copyHead: 'Blood pressure readings (Lunabump)',
+    howTitle: 'How to measure',
+    how: [
+      'Use an upper-arm monitor that’s validated for pregnancy, with the right cuff size. Wrist monitors aren’t recommended. Your midwife or doctor can check yours.',
+      'No caffeine, smoking or exercise for 30 minutes before.',
+      'Sit quietly for 5 minutes with your back supported, feet flat on the floor and your arm resting at heart level, for example on a table.',
+      'Put the cuff on your bare upper arm, 2 to 3 cm above the elbow, with the tube towards your wrist. Use the same arm each time.',
+      'Don’t talk or move while it measures.',
+      'Take two readings one minute apart and log the second.',
+    ],
+    howNote: 'Your readings here aren’t seen by your midwife or doctor. Keep going to all your appointments.',
+    oftenTitle: 'How often',
+    often: 'As agreed with your midwife or doctor. For example: on the morning of an appointment, once a week if you’re at higher risk, or 1 to 3 times a week if you have high blood pressure.',
+    who: 'Home monitoring is usually suggested if you have high blood pressure or pre-eclampsia, or a higher risk of it.',
+    target: 'At home the target is usually below 135/85, unless your doctor gives you a different one.',
+    settings: 'Settings',
+    meds: 'I take blood pressure medicine',
+    medsHint: 'It changes what a low reading means.',
+    afterBirth: 'Pre-eclampsia can also start in the days or weeks after the birth. Your team will tell you how long to keep measuring.',
+  },
+  bg: {
+    log: 'Запиши измерване',
+    sys: 'Горно (SYS)',
+    dia: 'Долно (DIA)',
+    pulse: 'Пулс',
+    unit: 'mmHg',
+    secondTip: 'Измери два пъти през една минута и запиши второто измерване. Пулсът е по желание.',
+    symQ: 'Имаш ли някое от тези в момента?',
+    sym: {
+      headache: 'Силно главоболие',
+      vision: 'Замъглено зрение или проблясъци',
+      ribs: 'Болка точно под ребрата',
+      swelling: 'Внезапен оток на лицето, ръцете или краката',
+      unwell: 'Чувстваш се много зле или повръщаш',
+      chest: 'Болка в гърдите или затруднено дишане',
+    },
+    bad: 'Провери числата: горното обикновено е от 70 до 250, долното от 40 до 150, а горното е по-голямо.',
+    pulseBad: 'Пулсът трябва да е от 30 до 220, или остави полето празно.',
+    resultTitle: 'Твоето измерване',
+    repeat: 'Повторно измерване',
+    levels: { severe: 'Много високо', high: 'Високо', raised: 'Повишено', highNormal: 'Близо до повишеното', normal: 'Нормално', low: 'Ниско' },
+    advice: {
+      severe: ['Много високо. Седни спокойно за 5 минути и измери отново. Ако пак е 160/110 или повече, обади се веднага в родилното отделение.', 'Пак е много високо: обади се веднага в родилното отделение.'],
+      high: ['Високо. Седни спокойно за 5 минути и измери отново.', 'Пак е високо: свържи се с родилното отделение още днес, до 4 часа. Ако имаш главоболие или болка в корема, обади се веднага.'],
+      raised: ['Повишено. Седни спокойно за 5 минути и измери отново.', 'Пак е повишено: свържи се с родилното отделение или с акушер-гинеколога до 24 часа и мери всеки ден.'],
+      highNormal: ['Нормално, но близо до повишеното. Седни спокойно за 5 минути и измери отново.', 'Пак е близо до повишеното: мери всеки ден.'],
+      normal: ['Нормално. Продължи да мериш, както си се разбрала с лекаря.', 'Нормално. Продължи да мериш, както си се разбрала с лекаря.'],
+      low: ['Ниското кръвно е често по време на бременност. Ако се чувстваш добре, не е нужно да правиш нищо. Ако ти се вие свят, седни или легни на една страна.', 'Ниското кръвно е често по време на бременност. Ако се чувстваш добре, не е нужно да правиш нищо. Ако ти се вие свят, седни или легни на една страна.'],
+      lowMeds: ['Ниско е за човек, който пие лекарство за кръвно. Седни спокойно за 5 минути и измери отново.', 'Пак е ниско: свържи се с родилното отделение до 24 часа или до 4 часа, ако ти се вие свят или ти прималява.'],
+    },
+    symptomsNow: 'С тези симптоми се обади веднага в родилното отделение, каквото и да е кръвното.',
+    chestNow: 'Болка в гърдите или затруднено дишане: обади се веднага на 112.',
+    rest: 'Почини 5 минути и измери отново',
+    resting: (m, s) => `Почивка · остават ${m}:${String(s).padStart(2, '0')}`,
+    measureNow: 'Измери отново сега',
+    trend: 'Твоите измервания',
+    range: { 7: '7 дни', 30: '30 дни', all: 'Всички' },
+    rangeLabel: 'Период',
+    last: 'Последно',
+    avg: 'Средно',
+    over: '140/90 или повече',
+    overOf: (n, total) => `${n} от ${total}`,
+    legendSys: 'Горно (систолно)',
+    legendDia: 'Долно (диастолно)',
+    legendLine: 'граница 140/90',
+    chartLabel: (n) => `Графика на кръвното налягане с ${n} измервания. Всички са изброени и отдолу.`,
+    empty: 'Още няма измервания. Запиши едно отгоре, за да видиш графиката.',
+    emptyRange: 'Няма измервания за този период.',
+    pulseShort: 'пулс',
+    copy: 'Копирай за акушерката или лекаря',
+    copyHead: 'Измервания на кръвното налягане (Lunabump)',
+    howTitle: 'Как да мериш',
+    how: [
+      'Използвай апарат за горната част на ръката, проверен (валидиран) за бременни, с маншет с подходящ размер. Апаратите за китка не се препоръчват. Лекарят или акушерката могат да проверят твоя.',
+      'Без кофеин, цигари и спорт 30 минути преди това.',
+      'Седни спокойно за 5 минути с опрян гръб, стъпала на пода и ръка, отпусната на нивото на сърцето, например на маса.',
+      'Сложи маншета на голата горна част на ръката, 2–3 см над лакътя, с маркуча към китката. Мери всеки път на една и съща ръка.',
+      'Не говори и не мърдай, докато апаратът мери.',
+      'Измери два пъти през една минута и запиши второто измерване.',
+    ],
+    howNote: 'Лекарят и акушерката не виждат измерванията ти тук. Ходи на всички прегледи.',
+    oftenTitle: 'Колко често',
+    often: 'Както си се разбрала с лекаря. Например: сутринта преди преглед, веднъж седмично при по-висок риск или 1 до 3 пъти седмично при високо кръвно.',
+    who: 'Мерене у дома обикновено се препоръчва при високо кръвно или прееклампсия, или при по-висок риск от тях.',
+    target: 'У дома целта обикновено е под 135/85, освен ако лекарят не ти е казал друго.',
+    settings: 'Настройки',
+    meds: 'Пия лекарство за кръвно',
+    medsHint: 'Променя какво означава ниското кръвно.',
+    afterBirth: 'Прееклампсията може да започне и в дните или седмиците след раждането. Лекарят ще ти каже колко време да продължиш да мериш.',
+  },
+};
+const B = () => BP_STR[lang];
+const BP_SYMPTOMS = ['headache', 'vision', 'ribs', 'swelling', 'unwell', 'chest'];
+const BP_TONE = { severe: ['avoid', '‼'], high: ['avoid', '!'], raised: ['care', '!'], highNormal: ['care', '↑'], normal: ['safe', '✓'], low: ['example', '↓'] };
+const bpSrc = () => ({ en: [NHS.highbp, SRC.ouhBp, SRC.uhsBp, NHS.preeclampsia], bg: [SRC.isshp, SRC.eshHome, SRC.ouhBp, SRC.uhsBp] });
+
+function bpLevel(sys, dia) {
+  if (sys >= 160 || dia >= 110) return 'severe';
+  if (sys >= 150 || dia >= 100) return 'high';
+  if (sys >= 140 || dia >= 90) return 'raised';
+  if (sys >= 135 || dia >= 85) return 'highNormal';
+  if (sys <= 109 && dia <= 69) return 'low';
+  return 'normal';
+}
+const bpPill = (level) => `<span class="pill pill-${BP_TONE[level][0]}"><span aria-hidden="true">${BP_TONE[level][1]}</span>${esc(B().levels[level])}</span>`;
+const bpMeds = () => !!(data.bpSetup && data.bpSetup.meds);
+
+// what a saved reading means and what to do next
+function bpAdvice(e) {
+  const level = bpLevel(e.sys, e.dia);
+  const key = level === 'low' && bpMeds() ? 'lowMeds' : level;
+  const urgentSym = (e.sym || []).filter((x) => x !== 'chest');
+  return {
+    level,
+    text: B().advice[key][e.repeat ? 1 : 0],
+    chest: (e.sym || []).includes('chest'),
+    symptoms: urgentSym.length > 0,
+    // the urgent screen with the maternity unit's number
+    flag: (e.sym || []).includes('chest') ? 'emergency' : urgentSym.length || level === 'severe' || (level === 'high' && e.repeat) ? 'preeclampsia' : null,
+    // with warning symptoms the advice is to call now, not to rest and measure again
+    again: !e.repeat && !(e.sym || []).length && (['severe', 'high', 'raised', 'highNormal'].includes(level) || key === 'lowMeds'),
+  };
+}
+
+function bpResultHTML(e) {
+  if (!e) return '';
+  const s = B();
+  const a = bpAdvice(e);
+  const tone = a.chest || a.symptoms || ['severe', 'high'].includes(a.level) ? 'notice-alert' : ['raised', 'highNormal'].includes(a.level) || (a.level === 'low' && bpMeds()) ? 'notice-care' : 'notice-calm';
+  return `<section class="card bp-result" aria-labelledby="bp-result-title" id="bp-result">
+    <div class="row-between"><h2 id="bp-result-title">${esc(e.repeat ? s.repeat : s.resultTitle)}</h2><button type="button" class="icon-btn" data-action="bp-result-close" aria-label="${esc(t().close)}">${TOOL_ICON.x}</button></div>
+    <div class="bp-big"><span class="num">${e.sys}/${e.dia}</span> <small>${esc(s.unit)}${e.pulse ? ` · ${esc(s.pulseShort)} ${e.pulse}` : ''}</small></div>
+    <div>${bpPill(a.level)}</div>
+    ${a.chest || a.symptoms
+    // warning symptoms come first and alone: call now, whatever the numbers say
+    ? `<div class="notice notice-alert" role="alert"><strong>${esc(a.chest ? s.chestNow : s.symptomsNow)}</strong><button type="button" class="link-btn" data-action="flag" data-flag="${a.flag}">${esc(t().whatToDo)}</button></div>`
+    : `<div class="notice ${tone}"><span>${esc(a.text)}</span>${a.flag ? `<button type="button" class="link-btn" data-action="flag" data-flag="${a.flag}">${esc(t().whatToDo)}</button>` : ''}</div>`}
+    ${a.again ? `<button type="button" class="btn btn-quiet btn-block" id="bp-again" data-action="bp-again">${esc(bpRestLabel())}</button>` : ''}
+  </section>`;
+}
+
+function bpRestLabel() {
+  const left = ui.bpRest ? Math.max(0, ui.bpRest - Date.now()) : null;
+  if (left === null) return B().rest;
+  if (left === 0) return B().measureNow;
+  const sec = Math.ceil(left / 1000);
+  return B().resting(Math.floor(sec / 60), sec % 60);
+}
+let bpTimer = 0;
+function bpTick() {
+  const btn = $('bp-again');
+  if (!btn || ui.tool !== 'bp' || !ui.bpRest) { clearInterval(bpTimer); bpTimer = 0; return; }
+  btn.textContent = bpRestLabel();
+  if (Date.now() >= ui.bpRest) { clearInterval(bpTimer); bpTimer = 0; }
+}
+
+function bpInRange() {
+  const days = ui.bpRange === 'all' ? null : Number(ui.bpRange);
+  const from = days ? Date.now() - days * 86400000 : -Infinity;
+  return data.bp.filter((e) => e.at >= from).sort((a, b) => a.at - b.at);
+}
+const bpWeek = (ms) => (journey() === 'pregnant' && data.profile ? Math.floor(gaOn(isoOf(new Date(ms))) / 7) : null);
+
+function renderBp() {
+  const s = B();
+  const f = ui.bpForm;
+  if (!f.date) f.date = todayISO();
+  if (!f.time) f.time = nowHM();
+  const list = bpInRange();
+  const last = list[list.length - 1];
+  const avg = (k) => Math.round(list.reduce((n, e) => n + e[k], 0) / list.length);
+  const over = list.filter((e) => e.sys >= 140 || e.dia >= 90).length;
+  const logged = ui.bpLogged ? data.bp.find((e) => e.id === ui.bpLogged) : null;
+  const chip = (id) => `<button type="button" class="chip" aria-pressed="${f.sym.has(id)}" data-action="bp-sym" data-sym="${id}">${esc(s.sym[id])}</button>`;
+  const seg = (k) => `<button type="button" role="radio" aria-checked="${ui.bpRange === k}" data-action="bp-range" data-range="${k}">${esc(s.range[k])}</button>`;
+  $('tool-body').innerHTML = `
+    ${bpResultHTML(logged)}
+    <section class="card" aria-labelledby="bp-log">
+      <h2 id="bp-log">${esc(s.log)}</h2>
+      <div class="row" style="align-items:flex-end">
+        <label class="field" style="flex:1 1 150px"><span>${esc(t().symDate)}</span><input class="input" type="date" id="bp-date" value="${esc(f.date)}" max="${todayISO()}"></label>
+        <label class="field" style="flex:1 1 110px"><span>${esc(t().symTime)}</span><input class="input" type="time" id="bp-time" value="${esc(f.time)}"></label>
+      </div>
+      <div class="bp-inputs">
+        <label class="field"><span>${esc(s.sys)}</span><input class="input num" id="bp-sys" type="number" inputmode="numeric" min="70" max="250" value="${esc(f.sys)}" autocomplete="off"></label>
+        <label class="field"><span>${esc(s.dia)}</span><input class="input num" id="bp-dia" type="number" inputmode="numeric" min="40" max="150" value="${esc(f.dia)}" autocomplete="off"></label>
+        <label class="field"><span>${esc(s.pulse)}</span><input class="input num" id="bp-pulse" type="number" inputmode="numeric" min="30" max="220" value="${esc(f.pulse)}" autocomplete="off"></label>
+      </div>
+      <p class="fine">${esc(s.secondTip)}</p>
+      <h3 id="bp-sym-q">${esc(s.symQ)}</h3>
+      <div class="chips" role="group" aria-labelledby="bp-sym-q">${BP_SYMPTOMS.map(chip).join('')}</div>
+      <label class="field"><span>${esc(t().note)}</span><textarea class="input" id="bp-note" placeholder="${esc(t().notePh)}">${esc(f.note)}</textarea></label>
+      <p class="ob-error" id="bp-error" role="alert" ${ui.bpError ? '' : 'hidden'}>${esc(ui.bpError || '')}</p>
+      <button type="button" class="btn btn-block" data-action="bp-save">${esc(t().save)}</button>
+    </section>
+    <section class="card" aria-labelledby="bp-trend">
+      <h2 id="bp-trend">${esc(s.trend)}</h2>
+      <div class="seg" role="radiogroup" aria-label="${esc(s.rangeLabel)}">${seg('7')}${seg('30')}${seg('all')}</div>
+      ${list.length ? `
+        <div class="stats">
+          <div class="stat"><span>${esc(s.last)}</span><b>${last.sys}/${last.dia}</b></div>
+          <div class="stat"><span>${esc(s.avg)}</span><b>${avg('sys')}/${avg('dia')}</b></div>
+          <div class="stat"><span>${esc(s.over)}</span><b>${esc(s.overOf(over, list.length))}</b></div>
+        </div>
+        <ul class="chart-legend">
+          <li><span class="key key-sys" aria-hidden="true"></span>${esc(s.legendSys)}</li>
+          <li><span class="key key-dia" aria-hidden="true"></span>${esc(s.legendDia)}</li>
+          <li><span class="key key-line" aria-hidden="true"></span>${esc(s.legendLine)}</li>
+        </ul>
+        ${bpChart(list)}
+        <ul class="entries">${[...list].reverse().slice(0, 30).map(bpEntryHTML).join('')}</ul>
+        <button type="button" class="btn btn-quiet" data-action="bp-copy">${ICON.copy}<span>${esc(s.copy)}</span></button>`
+      : `<p class="muted">${esc(data.bp.length ? s.emptyRange : s.empty)}</p>`}
+    </section>
+    <details class="card bp-how">
+      <summary><h2>${esc(s.howTitle)}</h2></summary>
+      <ol class="bp-steps">${s.how.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+      <p class="small">${esc(s.target)}</p>
+      <h3>${esc(s.oftenTitle)}</h3>
+      <p class="small">${esc(s.often)} ${esc(s.who)}</p>
+      ${journey() === 'born' ? `<div class="notice notice-calm">${esc(s.afterBirth)}</div>` : ''}
+      <p class="fine">${esc(s.howNote)}</p>
+    </details>
+    <section class="card" aria-labelledby="bp-settings">
+      <h2 id="bp-settings">${esc(s.settings)}</h2>
+      <div class="switch-row"><label for="bp-meds">${esc(s.meds)}<small>${esc(s.medsHint)}</small></label><span class="switch"><input type="checkbox" role="switch" id="bp-meds" ${bpMeds() ? 'checked' : ''}><span></span></span></div>
+    </section>
+    <div class="notice notice-alert"><strong>${esc(t().somethingWrong)}</strong><button type="button" class="link-btn" data-action="urgent">${esc(t().seeUrgent)}</button></div>
+    ${sourceLine(bpSrc())}`;
+  bpHover(list);
+  if (ui.bpRest && !bpTimer && Date.now() < ui.bpRest) bpTimer = setInterval(bpTick, 1000);
+}
+
+function bpEntryHTML(e) {
+  const s = B();
+  const w = bpWeek(e.at);
+  const sym = (e.sym || []).map((x) => s.sym[x]).join(', ');
+  return `<li class="entry"><div class="entry-head"><span>${esc(fmtDay(e.at))} · ${esc(fmtTime(e.at))}${w !== null ? ` · ${esc(t().weekDay(w, 0).split(' · ')[0])}` : ''}${e.repeat ? ` · ${esc(s.repeat)}` : ''}</span>${e.example ? `<span class="pill pill-example">${esc(t().example)}</span>` : `<button type="button" class="link-btn small" data-action="bp-del" data-id="${e.id}">${esc(T().remove)}</button>`}</div>
+    <div class="row-between"><div class="entry-main num">${e.sys}/${e.dia} <small class="muted">${esc(s.unit)}</small></div>${bpPill(bpLevel(e.sys, e.dia))}</div>
+    ${e.pulse ? `<p class="small muted" style="margin:0">${esc(s.pulse)}: ${e.pulse}</p>` : ''}${sym ? `<p class="small" style="margin:0">${esc(sym)}</p>` : ''}${e.note ? `<p class="small muted" style="margin:0">${esc(e.note)}</p>` : ''}</li>`;
+}
+
+// two lines on one mmHg axis, the 140/90 lines dashed, a crosshair and tooltip on hover, touch and keys
+let bpPts = [];
+function bpChart(list) {
+  const W = 320, H = 200, Lm = 30, Rm = 30, Tp = 12, Bm = 24;
+  const DAY = 86400000;
+  let t0 = list[0].at, t1 = list[list.length - 1].at;
+  if (t1 - t0 < DAY) { t0 -= DAY / 2; t1 += DAY / 2; }
+  const lo = Math.min(...list.map((e) => e.dia)), hi = Math.max(...list.map((e) => e.sys));
+  const y0 = Math.min(50, Math.floor((lo - 10) / 10) * 10), y1 = Math.max(170, Math.ceil((hi + 10) / 10) * 10);
+  const X = (v) => Lm + ((v - t0) / (t1 - t0)) * (W - Lm - Rm);
+  const Y = (v) => Tp + (1 - (v - y0) / (y1 - y0)) * (H - Tp - Bm);
+  bpPts = list.map((e) => ({ e, x: X(e.at), ys: Y(e.sys), yd: Y(e.dia) }));
+  const f = (v) => v.toFixed(1);
+  const grid = [];
+  for (let v = Math.ceil(y0 / 20) * 20; v <= y1; v += 20) {
+    if (Math.abs(v - 140) < 8 || Math.abs(v - 90) < 8) continue;
+    grid.push(`<line x1="${Lm}" x2="${W - Rm}" y1="${f(Y(v))}" y2="${f(Y(v))}" stroke="var(--line)"/><text x="${Lm - 6}" y="${f(Y(v) + 4)}" text-anchor="end">${v}</text>`);
+  }
+  const limits = [140, 90].map((v) => `<line x1="${Lm}" x2="${W - Rm}" y1="${f(Y(v))}" y2="${f(Y(v))}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/><text class="t-strong" x="${Lm - 6}" y="${f(Y(v) + 4)}" text-anchor="end">${v}</text>`);
+  const day = (ms) => new Date(ms).toLocaleDateString(t().locale, { day: 'numeric', month: 'short' }).replace(' г.', '');
+  const ticks = [...new Set([list[0].at, (list[0].at + list[list.length - 1].at) / 2, list[list.length - 1].at].map((ms) => day(ms)))];
+  const tickAt = [list[0].at, (list[0].at + list[list.length - 1].at) / 2, list[list.length - 1].at];
+  const xt = ticks.length === 1 ? `<text x="${f(X(tickAt[0]))}" y="${H - 6}" text-anchor="middle">${esc(ticks[0])}</text>`
+    : tickAt.map((ms, i) => `<text x="${f(X(ms))}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}">${esc(day(ms))}</text>`).filter((_, i) => i !== 1 || ticks.length === 3).join('');
+  const line = (k, color) => `<polyline points="${bpPts.map((p) => `${f(p.x)},${f(p[k])}`).join(' ')}" fill="none" stroke="var(${color})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const dots = (k, color) => (bpPts.length <= 40 ? bpPts.map((p) => `<circle cx="${f(p.x)}" cy="${f(p[k])}" r="4" fill="var(${color})" stroke="var(--card)" stroke-width="2"/>`).join('') : '');
+  const end = bpPts[bpPts.length - 1];
+  return `<div class="chart bp-chart" id="bp-chart" tabindex="0" aria-label="${esc(B().chartLabel(list.length))}">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true">
+      ${grid.join('')}${limits.join('')}${xt}
+      <line class="bp-cross" x1="0" x2="0" y1="${Tp}" y2="${H - Bm}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>
+      ${line('ys', '--bp-sys')}${line('yd', '--bp-dia')}${dots('ys', '--bp-sys')}${dots('yd', '--bp-dia')}
+      <circle class="bp-hl bp-hl-s" r="5.5" fill="var(--bp-sys)" stroke="var(--card)" stroke-width="2" visibility="hidden"/>
+      <circle class="bp-hl bp-hl-d" r="5.5" fill="var(--bp-dia)" stroke="var(--card)" stroke-width="2" visibility="hidden"/>
+      <text class="t-strong" x="${f(end.x + 7)}" y="${f(end.ys + 4)}">${end.e.sys}</text>
+      <text class="t-strong" x="${f(end.x + 7)}" y="${f(end.yd + 4)}">${end.e.dia}</text>
+      <rect class="bp-hit" x="${Lm - 10}" y="0" width="${W - Lm - Rm + 20}" height="${H}" fill="transparent"/>
+    </svg>
+    <div class="chart-tip" id="bp-tip" hidden></div>
+  </div>`;
+}
+
+function bpHover() {
+  const box = $('bp-chart');
+  if (!box || !bpPts.length) return;
+  const svg = box.querySelector('svg');
+  const tip = $('bp-tip');
+  const cross = svg.querySelector('.bp-cross');
+  const hs = svg.querySelector('.bp-hl-s'), hd = svg.querySelector('.bp-hl-d');
+  let idx = -1;
+  const row = (cls, value, label) => {
+    const r = document.createElement('div');
+    r.className = 'tip-row';
+    if (cls) { const k = document.createElement('span'); k.className = `key ${cls}`; k.setAttribute('aria-hidden', 'true'); r.append(k); }
+    const b = document.createElement('strong'); b.textContent = value; r.append(b);
+    if (label) r.append(document.createTextNode(` ${label}`));
+    return r;
+  };
+  const show = (i) => {
+    idx = Math.max(0, Math.min(bpPts.length - 1, i));
+    const p = bpPts[idx];
+    const s = B();
+    for (const [el, cy] of [[hs, p.ys], [hd, p.yd]]) { el.setAttribute('cx', p.x); el.setAttribute('cy', cy); el.setAttribute('visibility', 'visible'); }
+    cross.setAttribute('x1', p.x); cross.setAttribute('x2', p.x); cross.setAttribute('visibility', 'visible');
+    const head = document.createElement('div');
+    head.className = 'tip-head';
+    head.textContent = `${fmtDay(p.e.at)} · ${fmtTime(p.e.at)}`;
+    const level = document.createElement('div');
+    level.className = 'tip-head';
+    level.textContent = s.levels[bpLevel(p.e.sys, p.e.dia)];
+    tip.replaceChildren(head, row('key-sys', String(p.e.sys), s.legendSys), row('key-dia', String(p.e.dia), s.legendDia), ...(p.e.pulse ? [row('', String(p.e.pulse), s.pulseShort)] : []), level);
+    tip.hidden = false;
+    const scale = svg.getBoundingClientRect().width / 320;
+    const left = p.x * scale - tip.offsetWidth / 2;
+    tip.style.left = `${Math.max(0, Math.min(box.clientWidth - tip.offsetWidth, left))}px`;
+  };
+  const hide = () => { idx = -1; tip.hidden = true; for (const el of [hs, hd, cross]) el.setAttribute('visibility', 'hidden'); };
+  const nearest = (clientX) => {
+    const r = svg.getBoundingClientRect();
+    const x = ((clientX - r.left) / r.width) * 320;
+    let best = 0;
+    bpPts.forEach((p, i) => { if (Math.abs(p.x - x) < Math.abs(bpPts[best].x - x)) best = i; });
+    return best;
+  };
+  svg.addEventListener('pointermove', (e) => show(nearest(e.clientX)));
+  svg.addEventListener('pointerdown', (e) => show(nearest(e.clientX)));
+  svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
+  box.addEventListener('focus', () => show(bpPts.length - 1));
+  box.addEventListener('blur', hide);
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); show((idx < 0 ? bpPts.length - 1 : idx) + (e.key === 'ArrowLeft' ? -1 : 1)); }
+    else if (e.key === 'Home') { e.preventDefault(); show(0); }
+    else if (e.key === 'End') { e.preventDefault(); show(bpPts.length - 1); }
+    else if (e.key === 'Escape') hide();
+  });
+}
+
+function bpCopyText() {
+  const s = B();
+  const lines = [...data.bp].sort((a, b) => b.at - a.at).slice(0, 60).map((e) => {
+    const w = bpWeek(e.at);
+    const sym = (e.sym || []).map((x) => s.sym[x]).join(', ');
+    return `${fmtDate(isoOf(new Date(e.at)))} ${fmtTime(e.at)}${w !== null ? ` (${t().weekDay(w, 0).split(' · ')[0]})` : ''}: ${e.sys}/${e.dia} ${s.unit}${e.pulse ? `, ${s.pulseShort} ${e.pulse}` : ''}${e.repeat ? `, ${s.repeat.toLowerCase()}` : ''}${sym ? ` · ${sym}` : ''}${e.note ? ` · ${e.note}` : ''}`;
+  });
+  return [s.copyHead, ...lines].join('\n');
 }
 
 /* ---------- Bump photos (IndexedDB, or memory when saving is off) ---------- */
@@ -4937,7 +5408,7 @@ function startNewPregnancy() {
     data.memories = [...(data.memories || []), { kind: loss.kind, date: loss.date, name: loss.name, note: loss.note || '', photos: loss.kept ? data.photoIndex : [] }];
   }
   // a fresh start: logs from the last pregnancy don't belong to this one
-  Object.assign(data, { photoIndex: [], symptoms: [], kickSessions: [], kickTaps: [], contractions: [], weights: [], checklist: {}, plan: {}, activeKicks: null, activeContraction: null, loss: null, birth: null, status: 'pregnant' });
+  Object.assign(data, { photoIndex: [], symptoms: [], kickSessions: [], kickTaps: [], contractions: [], weights: [], bp: [], checklist: {}, plan: {}, activeKicks: null, activeContraction: null, loss: null, birth: null, status: 'pregnant' });
   data.profile.due = due;
   save();
   closeSheet();
@@ -5239,7 +5710,7 @@ function renderMePartner() {
 function toolIds() {
   const st = journey();
   if (st === 'loss') return ['mood', 'appointments', 'questions'];
-  if (st === 'born') return ['checks', 'mood', 'appointments', 'questions', 'bump', 'zodiac'];
+  if (st === 'born') return ['checks', 'bp', 'mood', 'appointments', 'questions', 'bump', 'zodiac'];
   if (isPartner()) return ['partnerlist', 'contractions', 'weeks', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'mood', 'duedate'];
   return TOOL_IDS;
 }
@@ -5348,10 +5819,11 @@ function renderMe() {
     kicks: data.kickSessions.length + data.kickTaps.length,
     contractions: data.contractions.length,
     weights: data.weights.length,
+    bp: data.bp.length,
     appointments: data.appointments.length,
     photos: data.photoIndex.length,
   };
-  const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions, ...data.weights, ...data.appointments].some((e) => e.example);
+  const hasExamples = Object.values(data.moods).some((m) => m.example) || [...data.symptoms, ...data.kickSessions, ...data.contractions, ...data.weights, ...data.bp, ...data.appointments].some((e) => e.example);
   $('me-privacy').innerHTML = `
     <h2 id="me-privacy-title">${esc(t().privacy)}</h2>
     ${['device', 'luna', 'stats', 'ads', ...(p.account ? ['backup'] : [])].map((k) => `<div class="switch-row"><label for="consent-${k}">${esc(t().consent[k][0])}<small>${esc(t().consent[k][1])}</small></label><span class="switch"><input type="checkbox" role="switch" id="consent-${k}" data-consent="${k}" ${c[k] ? 'checked' : ''}><span></span></span></div>`).join('')}
@@ -6295,6 +6767,9 @@ function seedExamples(partner) {
     { id: uid(), at: at(addDays(today, -6), 19, 5), items: ['cramps'], level: 4, note: '', example: true },
   );
   data.weightSetup = { height: 166, pre: 62, example: true };
+  [[12, 118, 74, 78], [10, 121, 77, 80], [8, 116, 72, 76], [6, 124, 79, 82], [4, 119, 76, 79], [2, 126, 81, 84], [1, 122, 78, 80]].forEach(([d, sys, dia, pulse]) => {
+    data.bp.push({ id: uid(), at: at(addDays(today, -d), 8, 15), sys, dia, pulse, sym: [], note: '', example: true });
+  });
   for (const [w, kg] of [[12, 62.8], [16, 64.1], [20, 65.9], [23, 67.4]]) {
     data.weights.push({ id: uid(), date: addDays(data.profile.due, w * 7 - 280), kg, example: true });
   }
@@ -6494,6 +6969,39 @@ const ACTIONS = {
     renderWeight();
     toast(t().saved);
   },
+  'bp-sym': (el) => { const f = ui.bpForm; const id = el.dataset.sym; if (f.sym.has(id)) f.sym.delete(id); else f.sym.add(id); el.setAttribute('aria-pressed', f.sym.has(id)); },
+  'bp-range': (el) => { ui.bpRange = el.dataset.range; renderBp(); },
+  'bp-result-close': () => { ui.bpLogged = null; renderBp(); },
+  'bp-del': (el) => { data.bp = data.bp.filter((e) => e.id !== el.dataset.id); if (ui.bpLogged === el.dataset.id) ui.bpLogged = null; save(); renderBp(); },
+  'bp-copy': () => copyText(bpCopyText()),
+  'bp-again': () => {
+    if (!ui.bpRest) { ui.bpRest = Date.now() + 5 * 60000; $('bp-again').textContent = bpRestLabel(); clearInterval(bpTimer); bpTimer = setInterval(bpTick, 1000); return; }
+    // still resting or done: either way, go to the form with the time set to now
+    Object.assign(ui.bpForm, { date: todayISO(), time: nowHM() });
+    $('bp-date').value = ui.bpForm.date;
+    $('bp-time').value = ui.bpForm.time;
+    $('bp-sys').focus();
+  },
+  'bp-save': () => {
+    const f = ui.bpForm;
+    const sys = Number(f.sys), dia = Number(f.dia), pulse = f.pulse === '' ? null : Number(f.pulse);
+    const err = !(sys >= 70 && sys <= 250 && dia >= 40 && dia <= 150 && sys > dia) ? B().bad : pulse !== null && !(pulse >= 30 && pulse <= 220) ? B().pulseBad : '';
+    if (err) { ui.bpError = err; $('bp-error').textContent = err; $('bp-error').hidden = false; return; }
+    const [h, m] = String(f.time || '').split(':').map(Number);
+    const when = validISO(f.date) ? at(f.date, Number.isFinite(h) ? h : 12, Number.isFinite(m) ? m : 0) : Date.now();
+    // a reading up to 30 minutes after the last one is the repeat that decides what to do
+    const repeat = data.bp.some((e) => !e.example && when >= e.at && when - e.at <= 30 * 60000);
+    const entry = { id: uid(), at: when, sys: Math.round(sys), dia: Math.round(dia), pulse: pulse === null ? null : Math.round(pulse), sym: BP_SYMPTOMS.filter((x) => f.sym.has(x)), note: String(f.note || '').trim().slice(0, 500), repeat };
+    data.bp.push(entry);
+    save();
+    ui.bpLogged = entry.id;
+    ui.bpError = '';
+    ui.bpRest = 0;
+    ui.bpForm = { date: todayISO(), time: nowHM(), sys: '', dia: '', pulse: '', note: '', sym: new Set() };
+    renderBp();
+    window.scrollTo({ top: 0, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    toast(t().saved);
+  },
   'w-del': (el) => { data.weights = data.weights.filter((e) => e.id !== el.dataset.id); save(); renderWeight(); },
   'w-setup': () => {
     const height = Number($('w-height').value);
@@ -6603,6 +7111,7 @@ const ACTIONS = {
     data.kickSessions = data.kickSessions.filter((e) => !e.example);
     data.contractions = data.contractions.filter((e) => !e.example);
     data.weights = data.weights.filter((e) => !e.example);
+    data.bp = data.bp.filter((e) => !e.example);
     data.appointments = data.appointments.filter((e) => !e.example);
     if (data.weightSetup && data.weightSetup.example) data.weightSetup = null;
     save();
@@ -6829,6 +7338,8 @@ document.addEventListener('input', (e) => {
     const pos = e.target.value;
     renderDueCalc();
     $('calc-date').value = pos;
+  } else if (['bp-date', 'bp-time', 'bp-sys', 'bp-dia', 'bp-pulse', 'bp-note'].includes(e.target.id)) {
+    ui.bpForm[e.target.id.slice(3)] = e.target.value;
   } else if (e.target.id === 'sym-date') {
     ui.symDate = e.target.value;
   } else if (e.target.id === 'sym-time') {
@@ -6855,7 +7366,11 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   const el = e.target;
-  if (el.dataset.todo) {
+  if (el.id === 'bp-meds') {
+    data.bpSetup = { ...(data.bpSetup || {}), meds: el.checked };
+    save();
+    renderBp();
+  } else if (el.dataset.todo) {
     data.checklist[el.dataset.todo] = el.checked;
     save();
   } else if (el.dataset.check) {
