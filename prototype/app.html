@@ -207,7 +207,6 @@
   .acct-btn::after { content: ''; } /* balances the logo, so the label sits in the middle */
   .acct-btn svg { width: 22px; height: 22px; }
   .acct-btn span { text-align: center; }
-  .acct-apple { background: #000000; color: #FFFFFF; border-color: #000000; }
   .acct-facebook { background: #1877F2; color: #FFFFFF; border-color: #1877F2; }
   .acct-mail { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .acct-switch, .acct-legal { text-align: center; }
@@ -217,10 +216,8 @@
   .code-input { font: 600 26px/1.2 var(--body); letter-spacing: 0.4em; text-align: center; font-variant-numeric: tabular-nums; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .acct-google { background: #131314; color: #E3E3E3; border-color: #8E918F; }
-    :root:not([data-theme="light"]) .acct-apple { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
   }
   :root[data-theme="dark"] .acct-google { background: #131314; color: #E3E3E3; border-color: #8E918F; }
-  :root[data-theme="dark"] .acct-apple { background: #FFFFFF; color: #000000; border-color: #FFFFFF; }
   .ad-card { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--radius); border: 1px dashed var(--line); background: var(--card); min-width: 0; }
   .ad-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .ad-body { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; }
@@ -5066,12 +5063,12 @@ const ACCOUNT_STR = {
     loginText: 'Log in with the same option you used before.',
     continueWith: (name) => `Continue with ${name}`,
     withEmail: 'Continue with email',
-    noAccount: 'Continue without an account',
+    noAccount: 'Continue without signing up',
     haveAccount: 'Already have an account?',
     logIn: 'Log in',
     noAccountYet: 'No account yet?',
     signUp: 'Create one',
-    providerProto: 'Prototype: these buttons don’t contact Google, Apple or Facebook. You’re signed in straight away.',
+    providerProto: 'Prototype: these buttons don’t contact Google or Facebook. You’re signed in straight away.',
     legalPre: 'By continuing you agree to the',
     terms: 'Terms of Use',
     and: 'and the',
@@ -5144,12 +5141,12 @@ const ACCOUNT_STR = {
     loginText: 'Влез по същия начин като преди.',
     continueWith: (name) => `Продължи с ${name}`,
     withEmail: 'Продължи с имейл',
-    noAccount: 'Продължи без профил',
+    noAccount: 'Продължи без регистрация',
     haveAccount: 'Вече имаш профил?',
     logIn: 'Влез',
     noAccountYet: 'Нямаш профил?',
     signUp: 'Създай',
-    providerProto: 'Прототип: бутоните не се свързват с Google, Apple или Facebook. Влизаш веднага.',
+    providerProto: 'Прототип: бутоните не се свързват с Google или Facebook. Влизаш веднага.',
     legalPre: 'Продължавайки, приемаш',
     terms: 'Условията за ползване',
     and: 'и',
@@ -5215,18 +5212,16 @@ const ACCOUNT_STR = {
 };
 const A = () => ACCOUNT_STR[lang];
 
-const PROVIDERS = ['google', 'apple', 'facebook'];
-const PROVIDER_NAME = { google: 'Google', apple: 'Apple', facebook: 'Facebook' };
+const PROVIDERS = ['google', 'facebook'];
+const PROVIDER_NAME = { google: 'Google', facebook: 'Facebook' };
 const BRAND = {
   google: '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
-  // Apple logo path from Font Awesome Free (CC BY 4.0)
-  apple: '<svg viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>',
   facebook: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H8v3h2.5V21z"/></svg>',
   email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>',
 };
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 
-const providerLabel = (acc) => (acc.provider === 'email' ? acc.email : PROVIDER_NAME[acc.provider]);
+const providerLabel = (acc) => (acc.provider === 'email' ? acc.email : PROVIDER_NAME[acc.provider] || acc.provider);
 
 /* ---------- Sign up and log in (in onboarding, or in a sheet from Me) ---------- */
 function newAcctState(ctx) {
@@ -5260,7 +5255,7 @@ function accountBody() {
     <div class="acct-buttons">
       ${PROVIDERS.map((p) => `<button type="button" class="acct-btn acct-${p}" data-action="acct-provider" data-provider="${p}">${BRAND[p]}<span>${esc(s.continueWith(PROVIDER_NAME[p]))}</span></button>`).join('')}
       <button type="button" class="acct-btn acct-mail" data-action="acct-email">${BRAND.email}<span>${esc(s.withEmail)}</span></button>
-      ${st.ctx === 'ob' ? `<button type="button" class="btn btn-quiet btn-block" data-action="acct-skip">${esc(s.noAccount)}</button>` : ''}
+      <button type="button" class="btn btn-quiet btn-block" data-action="acct-skip">${esc(s.noAccount)}</button>
     </div>
     <p class="fine">${esc(s.providerProto)}</p>
     <p class="small acct-switch">${esc(login ? s.noAccountYet : s.haveAccount)} <button type="button" class="link-btn" data-action="acct-mode">${esc(login ? s.signUp : s.logIn)}</button></p>
@@ -5282,7 +5277,7 @@ function completeAccount(acc) {
   if (st.ctx === 'ob') {
     ui.ob.account = account;
     ui.ob.loginNote = st.mode === 'login';
-    ui.ob.step = 'stage';
+    ui.ob.step = 'welcome';
     renderOnboarding();
   } else {
     data.profile.account = account;
@@ -5467,10 +5462,10 @@ function openLangSheet() {
    Onboarding
    ========================================================================= */
 
-const OB_STEPS = ['account', 'stage', 'date', 'name', 'privacy'];
+const OB_STEPS = ['stage', 'date', 'name', 'privacy'];
 
 function startOnboarding() {
-  ui.ob = { step: 'lang', langReturn: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false, ads: false, backup: false }, account: null, loginNote: false };
+  ui.ob = { step: 'lang', langReturn: 'account', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false, ads: false, backup: false }, account: null, loginNote: false };
   $('onboarding').hidden = false;
   tweenFrom = 150;
   showTab('today');
@@ -5514,22 +5509,21 @@ function renderOnboarding() {
       <div class="ob-foot"><p class="fine">${esc(s.langHint)}</p><button type="button" class="btn btn-block" data-action="ob-lang-next">${esc(s.next)}</button></div>`;
   } else if (o.step === 'welcome') {
     body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span>${langSwitch}</div>
+      ${o.loginNote ? `<div class="notice notice-calm">${esc(A().loginRestore)}</div>` : ''}
       <h1 id="ob-title">${esc(s.welcomeTitle)}</h1>
       <p class="muted">${esc(s.welcomeText)}</p>
       <div class="ob-actions"><button type="button" class="btn btn-block" data-action="ob-start">${esc(s.start)}</button><button type="button" class="btn btn-quiet btn-block" data-action="ob-demo">${esc(s.demo)}</button><button type="button" class="link-btn small" style="justify-self:center" data-action="ob-demo-partner">${esc(J().partnerDemo)}</button></div>
       <p class="fine">${esc(t().disclaimer)}</p>`;
   } else if (o.step === 'account') {
     if (!ui.acct) ui.acct = newAcctState('ob');
-    body = `<div class="ob-top">${dots}${langSwitch}</div>
+    body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span>${langSwitch}</div>
       <h1 id="ob-title">${esc(accountTitle())}</h1>
-      ${accountBody()}
-      ${ui.acct.step === 'choose' ? `<button type="button" class="btn btn-line" data-action="ob-back" data-to="welcome">${esc(s.back)}</button>` : ''}`;
+      ${accountBody()}`;
   } else if (o.step === 'stage') {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
-      ${o.loginNote ? `<div class="notice notice-calm">${esc(A().loginRestore)}</div>` : ''}
       <h1 id="ob-title">${esc(s.stageTitle)}</h1>
       <div class="ob-options">${['pregnant', 'partner', 'ttc'].map((k) => `<button type="button" class="ob-option" data-action="ob-stage" data-stage="${k}">${esc(s.stages[k])}</button>`).join('')}</div>
-      <button type="button" class="btn btn-line" data-action="ob-back" data-to="account">${esc(s.back)}</button>`;
+      <button type="button" class="btn btn-line" data-action="ob-back" data-to="welcome">${esc(s.back)}</button>`;
   } else if (o.step === 'ttc') {
     body = `<h1 id="ob-title">${esc(s.ttcTitle)}</h1><p class="muted">${esc(s.ttcText)}</p>
       <button type="button" class="btn btn-line" data-action="ob-back" data-to="stage">${esc(s.back)}</button>`;
@@ -5985,7 +5979,7 @@ const ACTIONS = {
     toast(t().deleted);
     startOnboarding();
   },
-  'ob-start': () => { ui.acct = newAcctState('ob'); ui.ob.step = 'account'; renderOnboarding(); },
+  'ob-start': () => { ui.ob.step = 'stage'; renderOnboarding(); },
   'ob-lang': (el) => setLang(el.dataset.lang),
   'ob-lang-next': () => { ui.ob.step = ui.ob.langReturn || 'welcome'; renderOnboarding(); },
   'ob-to-lang': () => {
@@ -6014,7 +6008,15 @@ const ACTIONS = {
   },
   'acct-back': () => { ui.acct.step = ui.acct.step === 'code' ? 'email' : 'choose'; ui.acct.error = ''; renderAccount(); },
   'acct-mode': () => { ui.acct.mode = ui.acct.mode === 'login' ? 'signup' : 'login'; ui.acct.step = 'choose'; renderAccount(); },
-  'acct-skip': () => { ui.acct = null; ui.ob.account = null; ui.ob.loginNote = false; ui.ob.step = 'stage'; renderOnboarding(); },
+  'acct-skip': () => {
+    const ctx = ui.acct && ui.acct.ctx;
+    ui.acct = null;
+    if (ctx !== 'ob') { closeSheet(); return; }
+    ui.ob.account = null;
+    ui.ob.loginNote = false;
+    ui.ob.step = 'welcome';
+    renderOnboarding();
+  },
   'acct-open': () => { ui.acct = newAcctState('me'); renderAccount(); },
   'acct-signout': () => {
     data.profile.account = null;
@@ -6051,11 +6053,11 @@ const ACTIONS = {
   'plus-restore': () => toast(data.plus ? A().plusOn : A().restoreNone),
   'ob-demo': () => {
     const due = addDays(todayISO(), 109);
-    finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false, ads: false } }, true);
+    finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', account: ui.ob.account, consents: { device: true, luna: false, stats: false, ads: false } }, true);
   },
   'ob-demo-partner': () => {
     const due = addDays(todayISO(), 109);
-    finishOnboarding({ stage: 'partner', name: J().demoPartner, partnerName: J().demoHer, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false, ads: false } }, true);
+    finishOnboarding({ stage: 'partner', name: J().demoPartner, partnerName: J().demoHer, due, method: 'due', mode: 'dreamy', sex: 'unknown', account: ui.ob.account, consents: { device: true, luna: false, stats: false, ads: false } }, true);
   },
   'ob-code': () => {
     const res = readCode($('ob-code').value);
