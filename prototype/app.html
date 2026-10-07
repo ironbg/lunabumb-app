@@ -711,6 +711,29 @@
   .suggest { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; max-width: 100%; }
   .suggest .chip { flex: none; font-size: 14px; }
   .ask { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  /* Luna thinking and typing */
+  .msg.is-new { animation: msg-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .msg-me.is-new { transform-origin: 100% 100%; }
+  .msg-luna.is-new { transform-origin: 0 100%; }
+  @keyframes msg-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+  .msg-thinking { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
+  .dots { display: inline-flex; gap: 4px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: 0.35; animation: think-dot 1.2s ease-in-out infinite; }
+  .dots i:nth-child(2) { animation-delay: 0.15s; }
+  .dots i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes think-dot { 0%, 60%, 100% { transform: none; opacity: 0.35; } 30% { transform: translateY(-4px); opacity: 1; } }
+  .think-label::after { content: '…'; }
+  .msg-luna.is-typing { cursor: pointer; }
+  .msg-luna.is-typing .type-hold { display: none; }
+  .msg-luna.typed .type-hold { animation: fade-in 420ms ease both; }
+  .caret { display: inline-block; width: 2px; height: 1.05em; margin-left: 2px; vertical-align: text-bottom; border-radius: 1px; background: var(--accent); animation: caret-blink 900ms steps(1) infinite; }
+  @keyframes caret-blink { 50% { opacity: 0; } }
+  .luna-badge { position: relative; }
+  .luna-badge svg { transition: transform 300ms ease; }
+  .luna-badge.busy svg { animation: moon-think 1.8s ease-in-out infinite; }
+  .luna-badge.busy::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--lavender); animation: moon-ring 1.6s ease-out infinite; pointer-events: none; }
+  @keyframes moon-think { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(12deg) scale(1.06); } }
+  @keyframes moon-ring { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(1.4); } }
   .ask .btn { padding: 10px 14px; }
 
   /* ---------- Onboarding ---------- */
@@ -1220,6 +1243,8 @@ const STR = {
     source: 'Source',
     lunaUnknown: 'I don’t have a checked source for that in this prototype, so I won’t guess. In the full app I answer from NHS, WHO, ACOG and NICE guidance and always show the source. Try one of the questions below, or ask your midwife or doctor.',
     lunaTriageOnly: 'I’ve put the most important thing first. When you’ve called, I’m here if you have other questions.',
+    lunaThinking: 'Luna is thinking',
+    lunaChecking: 'Checking the NHS guidance',
     suggestLabel: 'Suggested questions',
 
     readThisWeek: 'Read this week',
@@ -1451,6 +1476,8 @@ const STR = {
     source: 'Източник',
     lunaUnknown: 'В този прототип нямам проверен източник за това, затова няма да гадая. В пълното приложение отговарям по насоките на NHS, WHO, ACOG и NICE и винаги показвам източника. Пробвай някой от въпросите отдолу или питай акушерката или лекаря.',
     lunaTriageOnly: 'Сложих най-важното най-отгоре. След като се обадиш, тук съм, ако имаш още въпроси.',
+    lunaThinking: 'Luna мисли',
+    lunaChecking: 'Проверява насоките на NHS',
     suggestLabel: 'Предложени въпроси',
 
     readThisWeek: 'За четене тази седмица',
@@ -4973,25 +5000,39 @@ function suggestions() {
   return ids.map((id) => topicById[id]);
 }
 
+// Luna "thinks" for a moment, then types her answer word by word. Urgent warnings never wait:
+// they appear at once, before any thinking or typing. Reduced motion shows answers straight away.
+const lunaAnim = { thinkTimer: 0, labelTimer: 0, typeTimer: 0, pending: null };
+
 function lunaMessageHTML(msg) {
-  if (msg.from === 'me') return `<div class="msg msg-me">${esc(msg.text)}</div>`;
+  const isNew = !msg.seen;
+  if (msg.from === 'me') return `<div class="msg msg-me${isNew ? ' is-new' : ''}">${esc(msg.text)}</div>`;
   const parts = [];
   for (const f of msg.flags || []) {
     parts.push(`<div class="notice notice-alert"><strong>${esc(STR[msg.lang].levelTitle[f.level])}</strong><span>${esc(STR[msg.lang].levelText[f.level])}</span><button type="button" class="link-btn" data-action="flag" data-flag="${f.id}">${esc(STR[msg.lang].whatToDo)}</button></div>`);
   }
-  if (msg.topic) {
-    const tp = topicById[msg.topic];
-    for (const p of tp.a[msg.lang]) parts.push(`<p>${esc(p)}</p>`);
-    parts.push(sourceLine(tp.src, msg.lang));
-  } else if (msg.text) {
-    parts.push(`<p>${esc(msg.text)}</p>`);
-  }
-  return `<div class="msg msg-luna">${parts.join('')}</div>`;
+  const paras = msg.topic ? topicById[msg.topic].a[msg.lang] : msg.text ? [msg.text] : [];
+  for (const p of paras) parts.push(msg.typing ? `<p data-full="${esc(p)}"></p>` : `<p>${esc(p)}</p>`);
+  if (msg.topic) parts.push(`<div class="type-hold">${sourceLine(topicById[msg.topic].src, msg.lang)}</div>`);
+  // while typing, a tap on the bubble shows the whole answer
+  return `<div class="msg msg-luna${isNew ? ' is-new' : ''}${msg.typing ? ' is-typing' : ''}"${msg.typing ? ' data-typing="1" data-action="luna-skip"' : ''}>${parts.join('')}</div>`;
+}
+
+function thinkingHTML() {
+  return `<div class="msg msg-luna msg-thinking is-new"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="think-label">${esc(t().lunaThinking)}</span></div>`;
+}
+
+function setLunaBusy(busy) {
+  const badge = $('luna-badge');
+  if (badge) badge.classList.toggle('busy', busy);
+  if ($('chat')) $('chat').setAttribute('aria-busy', String(busy));
 }
 
 function renderLuna() {
   const w = weekNow();
-  $('sheet-body').innerHTML = `<p class="fine">${esc(t().lunaProto)}</p><div class="chat" id="chat" aria-live="polite">${ui.chat.map(lunaMessageHTML).join('')}</div>`;
+  const busy = !!lunaAnim.pending || ui.chat.some((m) => m.typing);
+  $('sheet-body').innerHTML = `<p class="fine">${esc(t().lunaProto)}</p><div class="chat" id="chat" aria-live="polite" aria-busy="${busy}">${ui.chat.map(lunaMessageHTML).join('')}${lunaAnim.pending ? thinkingHTML() : ''}</div>`;
+  for (const m of ui.chat) m.seen = true;
   $('sheet-foot').hidden = false;
   $('sheet-foot').innerHTML = `
     <div class="suggest" role="group" aria-label="${esc(t().suggestLabel)}">${suggestions().map((tp) => `<button type="button" class="chip" data-action="luna-ask" data-topic="${tp.id}">${esc(L(tp.q))}</button>`).join('')}</div>
@@ -5004,18 +5045,97 @@ function renderLuna() {
   });
   const body = $('sheet-body');
   body.scrollTop = body.scrollHeight;
+  setLunaBusy(busy);
+  clearTimeout(lunaAnim.labelTimer);
+  if (lunaAnim.pending) {
+    // after a moment the label says where the answer comes from
+    lunaAnim.labelTimer = setTimeout(() => {
+      const label = document.querySelector('.think-label');
+      if (label) label.textContent = t().lunaChecking;
+    }, 750);
+  }
+  if (ui.chat.some((m) => m.typing)) startTyping();
+}
+
+function startTyping() {
+  clearInterval(lunaAnim.typeTimer);
+  const msg = ui.chat.find((m) => m.typing);
+  const el = $('chat') && $('chat').querySelector('[data-typing]');
+  if (!msg || !el) return;
+  const paras = [...el.querySelectorAll('p[data-full]')];
+  const tokens = paras.map((p) => p.dataset.full.split(/(\s+)/)); // words and the spaces between them
+  const total = tokens.reduce((n, list) => n + list.length, 0);
+  const caret = document.createElement('span');
+  caret.className = 'caret';
+  caret.setAttribute('aria-hidden', 'true');
+  const paint = () => {
+    let left = msg.shown || 0;
+    let current = paras[0];
+    paras.forEach((p, i) => {
+      const n = Math.min(tokens[i].length, Math.max(0, left));
+      p.textContent = tokens[i].slice(0, n).join('');
+      if (n > 0) current = p;
+      left -= tokens[i].length;
+    });
+    if (current) current.appendChild(caret);
+  };
+  const body = $('sheet-body');
+  paint();
+  lunaAnim.typeTimer = setInterval(() => {
+    if (sheetKind !== 'luna' || !document.contains(el)) { finishTyping(); return; }
+    // follow the text down, unless she scrolled up to read something
+    const follow = body.scrollHeight - body.scrollTop - body.clientHeight < 48;
+    msg.shown = Math.min(total, (msg.shown || 0) + 2);
+    paint();
+    if (follow) body.scrollTop = body.scrollHeight;
+    if (msg.shown >= total) finishTyping();
+  }, 38);
+}
+
+function finishTyping() {
+  clearInterval(lunaAnim.typeTimer);
+  const msg = ui.chat.find((m) => m.typing);
+  if (msg) {
+    msg.typing = false;
+    delete msg.shown;
+  }
+  const el = $('chat') && $('chat').querySelector('[data-typing]');
+  if (el) {
+    for (const p of el.querySelectorAll('p[data-full]')) {
+      p.textContent = p.dataset.full;
+      p.removeAttribute('data-full');
+    }
+    el.removeAttribute('data-typing');
+    el.removeAttribute('data-action');
+    el.classList.remove('is-typing');
+    el.classList.add('typed');
+  }
+  if (!lunaAnim.pending) setLunaBusy(false);
+}
+
+// a new question while Luna is still answering: the old answer is shown in full first
+function flushLuna() {
+  clearTimeout(lunaAnim.thinkTimer);
+  clearTimeout(lunaAnim.labelTimer);
+  if (lunaAnim.pending) {
+    ui.chat.push(lunaAnim.pending);
+    lunaAnim.pending = null;
+  }
+  finishTyping();
+  for (const m of ui.chat) if (m.typing) { m.typing = false; delete m.shown; }
 }
 
 function openLuna(topicId) {
   if (!data.profile) return;
   if (journey() !== 'pregnant') return;
-  if (!ui.chat.length) ui.chat.push({ from: 'luna', lang, text: isPartner() ? J().lunaHelloPartner(data.profile.name, weekNow()) : t().lunaHello(data.profile.name, weekNow()) });
-  openSheet('luna', { html: `<div class="luna-head"><span class="luna-badge">${ICON.moon}</span><div><h2 id="sheet-title">${esc(t().lunaTitle)}</h2><p class="fine">${esc(t().lunaSub)}</p></div></div>` }, '');
+  if (!ui.chat.length) ui.chat.push({ from: 'luna', lang, text: isPartner() ? J().lunaHelloPartner(data.profile.name, weekNow()) : t().lunaHello(data.profile.name, weekNow()), typing: !reduceMotion.matches, shown: 0 });
+  openSheet('luna', { html: `<div class="luna-head"><span class="luna-badge" id="luna-badge">${ICON.moon}</span><div><h2 id="sheet-title">${esc(t().lunaTitle)}</h2><p class="fine">${esc(t().lunaSub)}</p></div></div>` }, '');
   renderLuna();
   if (topicId) askLuna(L(topicById[topicId].q), topicId);
 }
 
 function askLuna(text, topicId) {
+  flushLuna();
   const qLang = /[а-яё]/i.test(text) ? 'bg' : topicId ? lang : 'en';
   const low = ` ${text.toLowerCase()} `;
   const w = weekNow();
@@ -5029,11 +5149,33 @@ function askLuna(text, topicId) {
       if (score > best) { best = score; topic = tp.id; }
     }
   }
-  if (topic) ui.chat.push({ from: 'luna', lang: qLang, flags, topic });
-  else ui.chat.push({ from: 'luna', lang: qLang, flags, text: flags.length ? STR[qLang].lunaTriageOnly : STR[qLang].lunaUnknown });
-  renderLuna();
+  const answer = topic
+    ? { from: 'luna', lang: qLang, flags, topic }
+    : { from: 'luna', lang: qLang, flags, text: flags.length ? STR[qLang].lunaTriageOnly : STR[qLang].lunaUnknown };
   const input = $('ask-input');
   if (input) input.value = '';
+  if (reduceMotion.matches) {
+    ui.chat.push(answer);
+    renderLuna();
+    return;
+  }
+  answer.typing = true;
+  answer.shown = 0;
+  if (flags.length) {
+    // safety first: the warning appears at once, the rest types out under it
+    ui.chat.push(answer);
+    renderLuna();
+    return;
+  }
+  lunaAnim.pending = answer;
+  renderLuna();
+  const length = (topic ? topicById[topic].a[qLang].join(' ') : answer.text).length;
+  lunaAnim.thinkTimer = setTimeout(() => {
+    lunaAnim.pending = null;
+    ui.chat.push(answer);
+    if (sheetKind === 'luna') renderLuna();
+    else { answer.typing = false; delete answer.shown; }
+  }, 900 + Math.min(900, length * 2));
 }
 
 /* ---------- Export ---------- */
@@ -5835,6 +5977,7 @@ const ACTIONS = {
     renderContractions();
   },
   'con-clear': () => { data.contractions = []; data.activeContraction = null; save(); renderContractions(); toast(t().conCleared); },
+  'luna-skip': () => finishTyping(),
   'luna-ask': (el) => { if (sheetKind === 'luna') askLuna(L(topicById[el.dataset.topic].q), el.dataset.topic); else openLuna(el.dataset.topic); },
   lang: (el) => setLang(el.dataset.lang),
   tool: (el) => { closeSheet(); openTool(el.dataset.tool); },
