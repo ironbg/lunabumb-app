@@ -862,9 +862,9 @@ const LAST_DAY = 280;   // 40 weeks + 0 days (due date)
 
 // week, EN size, BG size, length in cm (crown–rump until week 19, crown–heel from week 20), weight in g
 const WEEKS = [
-  // Until week 19 by length (crown–rump), from week 20 by weight: the baby is long and thin by
-  // then, so a produce item of the same weight is the honest comparison. Lengths and weights are
-  // the usual BabyCenter/Hadlock averages; produce weights from the Food Bank of CNY conversion chart.
+  // The fruit and vegetables the app compares with; lengths (crown–rump until week 19, then
+  // crown–heel) and weights are the usual BabyCenter/Hadlock averages. In the app the names
+  // follow the chosen comparison (luna:set sizeNames).
   [8, 'a raspberry', 'малина', 1.6, 1],
   [9, 'a cherry', 'череша', 2.3, 2],
   [10, 'a strawberry', 'ягода', 3.1, 4],
@@ -874,30 +874,30 @@ const WEEKS = [
   [14, 'a peach', 'праскова', 8.7, 43],
   [15, 'an apple', 'ябълка', 10.1, 70],
   [16, 'an avocado', 'авокадо', 11.6, 100],
-  [17, 'a pear', 'круша', 13.0, 140],
+  [17, 'a pomegranate', 'нар', 13.0, 140],
   [18, 'a bell pepper', 'чушка', 14.2, 190],
   [19, 'a mango', 'манго', 15.3, 240],
-  [20, 'a pomegranate', 'нар', 25.6, 300],
-  [21, 'a zucchini', 'тиквичка', 26.7, 360],
-  [22, 'a grapefruit', 'грейпфрут', 27.8, 430],
-  [23, 'a head of broccoli', 'глава броколи', 28.9, 501],
-  [24, 'a head of cauliflower', 'глава карфиол', 30.0, 600],
-  [25, 'a large zucchini', 'голяма тиквичка', 32.0, 660],
-  [26, 'a large cauliflower', 'голям карфиол', 33.9, 760],
-  [27, 'a small cabbage', 'малка зелка', 35.8, 875],
-  [28, 'a large eggplant', 'голям патладжан', 37.6, 1005],
+  [20, 'a banana', 'банан', 25.6, 300],
+  [21, 'a baking potato', 'едър картоф', 26.7, 360],
+  [22, 'an ear of corn', 'царевичен кочан', 27.8, 430],
+  [23, 'a grapefruit', 'грейпфрут', 28.9, 501],
+  [24, 'an eggplant', 'патладжан', 30.0, 600],
+  [25, 'a bunch of grapes', 'грозд', 32.0, 660],
+  [26, 'a turnip', 'ряпа', 33.9, 760],
+  [27, 'a cauliflower', 'карфиол', 35.8, 875],
+  [28, 'a coconut', 'кокосов орех', 37.6, 1005],
   [29, 'a butternut squash', 'мускатна тиква', 38.8, 1153],
-  [30, 'a cabbage', 'зелка', 39.9, 1319],
-  [31, 'a cantaloupe', 'пъпеш канталупа', 41.1, 1502],
-  [32, 'a large butternut squash', 'голяма мускатна тиква', 42.4, 1702],
-  [33, 'a honeydew melon', 'пъпеш „Медена роса“', 43.7, 1918],
-  [34, 'a large melon', 'голям пъпеш', 45.0, 2146],
-  [35, 'a small pumpkin', 'малка тиква', 46.2, 2383],
-  [36, 'a large cabbage', 'голяма зелка', 47.4, 2622],
-  [37, 'a pumpkin', 'тиква', 48.6, 2859],
-  [38, 'a large pumpkin', 'голяма тиква', 49.8, 3083],
-  [39, 'a small watermelon', 'малка диня', 50.7, 3288],
-  [40, 'a watermelon', 'диня', 51.2, 3462],
+  [30, 'a sweetheart cabbage', 'остроглаво зеле', 39.9, 1319],
+  [31, 'a zucchini', 'тиквичка', 41.1, 1502],
+  [32, 'a bunch of celery', 'връзка целина', 42.4, 1702],
+  [33, 'a pineapple', 'ананас', 43.7, 1918],
+  [34, 'a cantaloupe melon', 'пъпеш канталупа', 45.0, 2146],
+  [35, 'a honeydew melon', 'медена роса (пъпеш)', 46.2, 2383],
+  [36, 'a savoy cabbage', 'савойско зеле', 47.4, 2622],
+  [37, 'a leek', 'стрък праз', 48.6, 2859],
+  [38, 'a papaya', 'папая', 49.8, 3083],
+  [39, 'a summer squash', 'голяма тиквичка', 50.7, 3288],
+  [40, 'a pumpkin', 'тиква', 51.2, 3462],
 ];
 
 // Typical embryonic/fetal heart rate by gestational week (beats per minute).
@@ -932,8 +932,7 @@ const STR = {
     trimester: (t) => `${['1st', '2nd', '3rd'][t - 1]} trimester`,
     triShort: ['1st', '2nd', '3rd'],
     bpm: (n) => `~${n} bpm`,
-    sizeOf: (f) => `Size of ${f}`,
-    weighsAs: (f) => `Weighs about as much as ${f}`,
+    sizeOf: (f) => `About the size of ${f}`,
     cm: 'cm', g: 'g', kg: 'kg',
     crownRump: 'crown–rump',
     crownHeel: 'crown–heel',
@@ -1042,7 +1041,6 @@ const STR = {
     triShort: ['I', 'II', 'III'],
     bpm: (n) => `~${n} уд/мин`,
     sizeOf: (f) => `Голямо колкото ${f}`,
-    weighsAs: (f) => `Тежи колкото ${f}`,
     cm: 'см', g: 'г', kg: 'кг',
     crownRump: 'теме–седалище',
     crownHeel: 'теме–пета',
@@ -3055,7 +3053,7 @@ function sizeNumbers(week) {
   // in the app the names follow what the parents chose to compare with
   const names = (sizeNameOverride && sizeNameOverride[week]) || [row[1], row[2]];
   const fruit = state.lang === 'bg' ? names[1] : names[0];
-  return { len, wt, fruit, compare: week < 20 ? s.sizeOf(fruit) : s.weighsAs(fruit), kind: week < 20 ? s.crownRump : s.crownHeel };
+  return { len, wt, fruit, compare: s.sizeOf(fruit), kind: week < 20 ? s.crownRump : s.crownHeel };
 }
 
 function updateLabels() {
