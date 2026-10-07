@@ -1248,6 +1248,7 @@ const appParams = new URLSearchParams(location.search);
 const appMode = appParams.has('app') || location.hash === '#app';
 let appView = appParams.get('view') === 'full' ? 'full' : 'hero';
 const appInset = { top: 0, bottom: 0 };
+let sizeNameOverride = null;
 if (appMode) {
   if (appParams.get('lang') in STR) state.lang = appParams.get('lang');
   if (appParams.get('mode') in MODES) state.mode = appParams.get('mode');
@@ -3051,7 +3052,9 @@ function sizeNumbers(week) {
   const s = t();
   const len = row[3] < 10 ? `${formatNumber(row[3], 1)} ${s.cm}` : `${formatNumber(Math.round(row[3]), 0)} ${s.cm}`;
   const wt = row[4] >= 1000 ? `${formatNumber(row[4] / 1000, 1)} ${s.kg}` : `${formatNumber(row[4], 0)} ${s.g}`;
-  const fruit = state.lang === 'bg' ? row[2] : row[1];
+  // in the app the names follow what the parents chose to compare with
+  const names = (sizeNameOverride && sizeNameOverride[week]) || [row[1], row[2]];
+  const fruit = state.lang === 'bg' ? names[1] : names[0];
   return { len, wt, fruit, compare: week < 20 ? s.sizeOf(fruit) : s.weighsAs(fruit), kind: week < 20 ? s.crownRump : s.crownHeel };
 }
 
@@ -3845,6 +3848,10 @@ if (appMode) {
         state.sex = m.sex;
         renderSex();
         updateLabels();
+      }
+      if (m.sizeNames && typeof m.sizeNames === 'object') {
+        const ok = Object.entries(m.sizeNames).every(([w, v]) => Number(w) >= 8 && Number(w) <= 40 && Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'string' && x.length < 80));
+        if (ok) { sizeNameOverride = m.sizeNames; updateLabels(); }
       }
       if ([1, 2, 3, 4].includes(m.skin) && m.skin !== state.skin) {
         state.skin = m.skin;
