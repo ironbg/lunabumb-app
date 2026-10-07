@@ -196,6 +196,21 @@
     font-size: 14px;
   }
   .seg button[aria-pressed="true"], .seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--card); color: var(--fg); box-shadow: var(--shadow); }
+  /* four ways to date a pregnancy: two rows, so the Bulgarian labels fit on a phone */
+  .seg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 20px; }
+  .seg-grid button { border-radius: 16px; }
+
+  /* ---------- Languages ---------- */
+  .lang-chip { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 38px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--fg); font-weight: 700; font-size: 14px; }
+  .lang-chip svg { width: 18px; height: 18px; color: var(--accent); }
+  .lang-list { display: grid; gap: 6px; }
+  .lang-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; min-height: 54px; padding: 8px 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); text-align: left; color: var(--fg); }
+  .lang-row strong { display: block; font-size: 16px; }
+  .lang-row small { display: block; font-size: 13px; color: var(--muted); }
+  .lang-row[aria-checked="true"] { border-color: var(--accent); background: var(--tint); }
+  .lang-row:disabled { opacity: 0.55; cursor: default; }
+  .lang-row .tick { width: 22px; height: 22px; color: var(--accent); }
+  .lang-group { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   /* ---------- Tools ---------- */
@@ -690,6 +705,11 @@
   .ob-result { font-weight: 700; color: var(--accent); }
   .ob-error { color: var(--alert-fg); font-weight: 600; font-size: 14px; }
   .ob-actions { display: grid; gap: 10px; }
+  /* the language step: the list scrolls, the button stays */
+  .ob-card.ob-lang { display: flex; flex-direction: column; overflow: hidden; }
+  .ob-card.ob-lang > * { flex: none; }
+  .ob-scroll { flex: 1 1 auto !important; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 12px; align-content: start; margin: 0 -20px; padding: 2px 20px 8px; }
+  .ob-foot { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); margin: 0 -20px; padding-inline: 20px; }
   .ob-brand { display: flex; align-items: center; gap: 8px; font: 600 18px/1 var(--display); }
   .ob-brand svg { width: 26px; height: 26px; }
   .reveal {
@@ -902,11 +922,7 @@
       <p class="fine" data-t="skinHint"></p>
     </section>
     <section class="card" aria-labelledby="me-lang-title">
-      <h2 id="me-lang-title" data-t="language"></h2>
-      <div class="seg" role="group" aria-labelledby="me-lang-title">
-        <button type="button" data-action="lang" data-lang="en" lang="en">English</button>
-        <button type="button" data-action="lang" data-lang="bg" lang="bg">Български</button>
-      </div>
+      <div class="row-between"><div class="kv"><span id="me-lang-title" data-t="language"></span><strong id="me-lang-name"></strong></div><button type="button" class="btn btn-quiet" data-action="lang-open" data-t="change"></button></div>
     </section>
     <section class="card" aria-labelledby="me-care-title">
       <h2 id="me-care-title" data-t="care"></h2>
@@ -1138,6 +1154,7 @@ const STR = {
       moon: ['Moon', 'A growing moon instead of the baby, if pictures of the baby feel like too much right now'],
     },
     language: 'Language',
+    change: 'Change',
     care: 'Care team',
     unitPhone: 'Maternity unit phone',
     doctorPhone: 'Doctor or midwife phone',
@@ -1197,8 +1214,17 @@ const STR = {
       back: 'Back',
       next: 'Continue',
       dateTitle: 'When is your baby due?',
-      methods: { due: 'Due date', lmp: 'Last period', ivf: 'IVF transfer' },
-      dateLabel: { due: 'Due date', lmp: 'First day of your last period', ivf: 'Embryo transfer date' },
+      methods: { due: 'Due date', lmp: 'Last period', conception: 'Conception', ivf: 'IVF transfer' },
+      dateLabel: { due: 'Due date', lmp: 'First day of your last period', conception: 'Date of conception', ivf: 'Embryo transfer date' },
+      langTitle: 'Choose your language',
+      langSearch: 'Search languages',
+      langReady: 'Available now',
+      langSoon: 'Coming soon',
+      soon: 'Soon',
+      langSuggested: 'Suggested for this phone',
+      langNotYet: (name) => `Lunabump isn’t available in ${name} yet. For now, choose a language you read comfortably.`,
+      langHint: 'You can change it any time in Me.',
+      langNone: 'No language matches your search.',
       ivfDay: 'Embryo age at transfer',
       ivfDays: { 3: 'Day 3', 5: 'Day 5' },
       result: (w, d, due) => `Week ${w}, day ${d} today · due ${due}`,
@@ -1357,6 +1383,7 @@ const STR = {
       moon: ['Луна', 'Растяща луна вместо бебето, ако образите на бебето ти идват в повече сега'],
     },
     language: 'Език',
+    change: 'Смени',
     care: 'Медицински екип',
     unitPhone: 'Телефон на родилното отделение',
     doctorPhone: 'Телефон на лекаря или акушерката',
@@ -1416,8 +1443,17 @@ const STR = {
       back: 'Назад',
       next: 'Напред',
       dateTitle: 'Кога е терминът?',
-      methods: { due: 'Термин', lmp: 'Последен цикъл', ivf: 'Ин витро' },
-      dateLabel: { due: 'Термин', lmp: 'Първи ден на последния цикъл', ivf: 'Дата на ембриотрансфера' },
+      methods: { due: 'Термин', lmp: 'Последен цикъл', conception: 'Зачеване', ivf: 'Ин витро' },
+      dateLabel: { due: 'Термин', lmp: 'Първи ден на последния цикъл', conception: 'Дата на зачеването', ivf: 'Дата на ембриотрансфера' },
+      langTitle: 'Избери език',
+      langSearch: 'Търси език',
+      langReady: 'Налични сега',
+      langSoon: 'Скоро',
+      soon: 'Скоро',
+      langSuggested: 'Предложен за този телефон',
+      langNotYet: (name) => `Lunabump още не е на ${name}. Засега избери език, който четеш свободно.`,
+      langHint: 'Можеш да го смениш по всяко време в „Аз“.',
+      langNone: 'Няма език, който да отговаря на търсенето.',
       ivfDay: 'Възраст на ембриона при трансфера',
       ivfDays: { 3: 'Ден 3', 5: 'Ден 5' },
       result: (w, d, due) => `Днес: седмица ${w}, ден ${d} · термин ${due}`,
@@ -2120,7 +2156,6 @@ function renderStatic() {
   $('care-unit').placeholder = lang === 'bg' ? 'Добави номер' : 'Add a number';
   $('care-doctor').placeholder = $('care-unit').placeholder;
   $('tools-intro').textContent = T().intro;
-  for (const btn of document.querySelectorAll('[data-action="lang"]')) btn.setAttribute('aria-pressed', String(btn.dataset.lang === lang));
 }
 
 /* =========================================================================
@@ -3267,7 +3302,7 @@ function renderDueCalc() {
   $('tool-body').innerHTML = `
     <section class="card">
       <p class="muted">${esc(s.calcIntro)}</p>
-      <div class="seg" role="radiogroup" aria-label="${esc(t().ob.dateTitle)}">${['due', 'lmp', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${c.method === m}" data-action="calc-method" data-method="${m}">${esc(t().ob.methods[m])}</button>`).join('')}</div>
+      <div class="seg seg-grid" role="radiogroup" aria-label="${esc(t().ob.dateTitle)}">${['due', 'lmp', 'conception', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${c.method === m}" data-action="calc-method" data-method="${m}">${esc(t().ob.methods[m])}</button>`).join('')}</div>
       ${c.method === 'ivf' ? `<div class="seg" role="radiogroup" aria-label="${esc(t().ob.ivfDay)}">${[3, 5].map((d) => `<button type="button" role="radio" aria-checked="${c.ivfDay === d}" data-action="calc-ivf" data-day="${d}">${esc(t().ob.ivfDays[d])}</button>`).join('')}</div>` : ''}
       <label class="field"><span>${esc(t().ob.dateLabel[c.method])}</span><input class="input" type="date" id="calc-date" value="${esc(c.date)}"></label>
       ${due ? `<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
@@ -3282,6 +3317,7 @@ function calcDue(c) {
   if (!validISO(c.date)) return null;
   if (c.method === 'due') return c.date;
   if (c.method === 'lmp') return addDays(c.date, 280);
+  if (c.method === 'conception') return addDays(c.date, 266);
   return addDays(c.date, c.ivfDay === 3 ? 263 : 261);
 }
 
@@ -4663,6 +4699,7 @@ function renderMe() {
   $('me-modes').innerHTML = modeCards(p.mode, 'mode');
   const swatches = ['#F3C9B4', '#DDAA8C', '#B07A59', '#7B5240'];
   $('me-skin').innerHTML = swatches.map((c, i) => `<button type="button" role="radio" aria-checked="${(p.skin || 1) === i + 1}" aria-label="${esc(t().skins[i])}" data-action="skin" data-skin="${i + 1}"><span style="--sw:${c}"></span></button>`).join('');
+  $('me-lang-name').textContent = langNative(lang);
   $('care-unit').value = data.care.unit || '';
   $('care-doctor').value = data.care.doctor || '';
 
@@ -4867,13 +4904,106 @@ async function copyText(text, selectEl) {
 }
 
 /* =========================================================================
+   Languages: English is the source and each new language is one more
+   dictionary in STR (and in Luna View). The others are listed as coming soon.
+   ========================================================================= */
+
+const LANGS = [
+  { code: 'en', native: 'English', en: 'English', ready: true },
+  { code: 'bg', native: 'Български', en: 'Bulgarian', ready: true },
+  { code: 'de', native: 'Deutsch', en: 'German' },
+  { code: 'es', native: 'Español', en: 'Spanish' },
+  { code: 'fr', native: 'Français', en: 'French' },
+  { code: 'it', native: 'Italiano', en: 'Italian' },
+  { code: 'nl', native: 'Nederlands', en: 'Dutch' },
+  { code: 'pl', native: 'Polski', en: 'Polish' },
+  { code: 'pt', native: 'Português', en: 'Portuguese' },
+  { code: 'ro', native: 'Română', en: 'Romanian' },
+  { code: 'el', native: 'Ελληνικά', en: 'Greek' },
+  { code: 'tr', native: 'Türkçe', en: 'Turkish' },
+  { code: 'sr', native: 'Српски', en: 'Serbian' },
+  { code: 'hr', native: 'Hrvatski', en: 'Croatian' },
+  { code: 'cs', native: 'Čeština', en: 'Czech' },
+  { code: 'hu', native: 'Magyar', en: 'Hungarian' },
+  { code: 'uk', native: 'Українська', en: 'Ukrainian' },
+  { code: 'ru', native: 'Русский', en: 'Russian' },
+];
+const langReady = (code) => LANGS.some((l) => l.code === code && l.ready) && !!STR[code];
+const langNative = (code) => (LANGS.find((l) => l.code === code) || {}).native || code;
+
+// a language's name in the interface language, e.g. "немски" in Bulgarian
+function langLocal(code) {
+  try {
+    const name = new Intl.DisplayNames([lang], { type: 'language' }).of(code);
+    if (name && name !== code) return name;
+  } catch (err) { /* older browsers */ }
+  return (LANGS.find((l) => l.code === code) || {}).en || code;
+}
+const capFirst = (str) => str.charAt(0).toLocaleUpperCase(lang) + str.slice(1);
+
+// the first of the phone's languages that Lunabump knows about, ready or not
+function deviceLang() {
+  const list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+  for (const tag of list) {
+    const code = String(tag).toLowerCase().split('-')[0];
+    if (LANGS.some((l) => l.code === code)) return code;
+  }
+  return null;
+}
+
+const TICK = '<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z"/></svg>';
+
+function langRow(l, action, suggested) {
+  const local = capFirst(langLocal(l.code));
+  const sub = [local === l.native ? '' : local, suggested ? t().ob.langSuggested : ''].filter(Boolean).join(' · ');
+  const search = `${l.code} ${l.native} ${l.en} ${local}`.toLowerCase();
+  return `<button type="button" class="lang-row" role="radio" aria-checked="${l.code === lang}" data-action="${action}" data-lang="${l.code}" data-search="${esc(search)}" ${l.ready ? '' : 'disabled'}>
+    <span><strong lang="${l.code}">${esc(l.native)}</strong>${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+    ${l.ready ? (l.code === lang ? TICK : '') : `<span class="pill pill-example">${esc(t().ob.soon)}</span>`}
+  </button>`;
+}
+
+function langPickerHTML(action) {
+  const s = t().ob;
+  const dev = deviceLang();
+  // the phone's own language goes first in its group
+  const order = (list) => [...list.filter((l) => l.code === dev), ...list.filter((l) => l.code !== dev)];
+  return `${dev && !langReady(dev) ? `<div class="notice notice-care">${esc(s.langNotYet(langLocal(dev)))}</div>` : ''}
+    <label class="visually-hidden" for="lang-q">${esc(s.langSearch)}</label>
+    <input class="input" type="search" id="lang-q" placeholder="${esc(s.langSearch)}" autocomplete="off">
+    <div class="lang-list" role="radiogroup" aria-label="${esc(s.langTitle)}">
+      <p class="lang-group">${esc(s.langReady)}</p>
+      ${order(LANGS.filter((l) => l.ready)).map((l) => langRow(l, action, l.code === dev)).join('')}
+      <p class="lang-group">${esc(s.langSoon)}</p>
+      ${order(LANGS.filter((l) => !l.ready)).map((l) => langRow(l, action, l.code === dev)).join('')}
+      <p class="muted small" id="lang-none" hidden>${esc(s.langNone)}</p>
+    </div>`;
+}
+
+function filterLangs(q) {
+  const query = q.trim().toLowerCase();
+  let shown = 0;
+  for (const row of document.querySelectorAll('.lang-row')) {
+    row.hidden = !!query && !row.dataset.search.includes(query);
+    if (!row.hidden) shown += 1;
+  }
+  for (const g of document.querySelectorAll('.lang-group')) g.hidden = !!query;
+  if ($('lang-none')) $('lang-none').hidden = shown > 0;
+}
+
+function openLangSheet() {
+  openSheet('lang', t().ob.langTitle, `${langPickerHTML('lang')}<p class="fine">${esc(t().ob.langHint)}</p>`);
+}
+
+/* =========================================================================
    Onboarding
    ========================================================================= */
 
 const OB_STEPS = ['stage', 'date', 'name', 'privacy'];
 
 function startOnboarding() {
-  ui.ob = { step: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
+  ui.ob = { step: 'lang', langReturn: 'welcome', stage: 'pregnant', method: 'due', ivfDay: 5, date: '', name: '', partnerName: '', sex: 'unknown', code: '', codeMsg: '', mode: 'dreamy', consents: { device: false, luna: false, stats: false } };
   $('onboarding').hidden = false;
   tweenFrom = 150;
   showTab('today');
@@ -4887,6 +5017,7 @@ function obDue() {
   if (!validISO(o.date)) return null;
   if (o.method === 'due') return o.date;
   if (o.method === 'lmp') return addDays(o.date, 280);
+  if (o.method === 'conception') return addDays(o.date, 266);
   return addDays(o.date, o.ivfDay === 3 ? 263 : 261);
 }
 
@@ -4898,7 +5029,7 @@ function obGa() {
 function obBounds() {
   const today = todayISO();
   const o = ui.ob;
-  const offset = o.method === 'due' ? 0 : o.method === 'lmp' ? -280 : o.ivfDay === 3 ? -263 : -261;
+  const offset = o.method === 'due' ? 0 : o.method === 'lmp' ? -280 : o.method === 'conception' ? -266 : o.ivfDay === 3 ? -263 : -261;
   return { min: addDays(today, -14 + offset), max: addDays(today, 252 + offset) };
 }
 
@@ -4907,9 +5038,14 @@ function renderOnboarding() {
   const s = t().ob;
   const i = OB_STEPS.indexOf(o.step);
   const dots = i >= 0 ? `<div class="ob-dots" role="img" aria-label="${esc(s.step(i + 1, OB_STEPS.length))}">${OB_STEPS.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>` : '<span></span>';
-  const langSwitch = `<div class="seg" role="group" aria-label="${esc(t().language)}" style="flex:none"><button type="button" data-action="lang" data-lang="en" aria-pressed="${lang === 'en'}" lang="en">EN</button><button type="button" data-action="lang" data-lang="bg" aria-pressed="${lang === 'bg'}" lang="bg">BG</button></div>`;
+  const langSwitch = `<button type="button" class="lang-chip" data-action="ob-to-lang" aria-label="${esc(`${t().language}: ${langNative(lang)}`)}">${GLOBE}<span>${esc(lang.toUpperCase())}</span></button>`;
   let body = '';
-  if (o.step === 'welcome') {
+  if (o.step === 'lang') {
+    body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span></div>
+      <h1 id="ob-title">${esc(s.langTitle)}</h1>
+      <div class="ob-scroll">${langPickerHTML('ob-lang')}</div>
+      <div class="ob-foot"><p class="fine">${esc(s.langHint)}</p><button type="button" class="btn btn-block" data-action="ob-lang-next">${esc(s.next)}</button></div>`;
+  } else if (o.step === 'welcome') {
     body = `<div class="ob-top"><span class="ob-brand">${ICON.moon}Lunabump</span>${langSwitch}</div>
       <h1 id="ob-title">${esc(s.welcomeTitle)}</h1>
       <p class="muted">${esc(s.welcomeText)}</p>
@@ -4938,7 +5074,7 @@ function renderOnboarding() {
     body = `<div class="ob-top">${dots}${langSwitch}</div>
       <h1 id="ob-title">${esc(s.dateTitle)}</h1>
       ${codeBlock}
-      <div class="seg" role="radiogroup" aria-label="${esc(s.dateTitle)}">${['due', 'lmp', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${o.method === m}" data-action="ob-method" data-method="${m}">${esc(s.methods[m])}</button>`).join('')}</div>
+      <div class="seg seg-grid" role="radiogroup" aria-label="${esc(s.dateTitle)}">${['due', 'lmp', 'conception', 'ivf'].map((m) => `<button type="button" role="radio" aria-checked="${o.method === m}" data-action="ob-method" data-method="${m}">${esc(s.methods[m])}</button>`).join('')}</div>
       ${o.method === 'ivf' ? `<div class="field"><span class="small" style="font-weight:600">${esc(s.ivfDay)}</span><div class="seg" role="radiogroup" aria-label="${esc(s.ivfDay)}">${[3, 5].map((d) => `<button type="button" role="radio" aria-checked="${o.ivfDay === d}" data-action="ob-ivfday" data-day="${d}">${esc(s.ivfDays[d])}</button>`).join('')}</div></div>` : ''}
       <label class="field"><span>${esc(partner && o.method === 'lmp' ? J().lmpPartner : s.dateLabel[o.method])}</span><input class="input" type="date" id="ob-date" value="${esc(o.date)}" min="${b.min}" max="${b.max}"></label>
       <div id="ob-date-result">${result}</div>
@@ -4961,6 +5097,7 @@ function renderOnboarding() {
       <div class="row"><button type="button" class="btn btn-line" data-action="ob-back" data-to="name">${esc(s.back)}</button><button type="button" class="btn" style="flex:1" data-action="ob-finish">${esc(o.mode === 'moon' ? s.finishMoon : s.finish)}</button></div>`;
   }
   $('ob-card').innerHTML = body;
+  $('ob-card').classList.toggle('ob-lang', o.step === 'lang');
   $('ob-card').hidden = o.step === 'reveal';
   if (ui.lunaView === 'stage') postLuna({ inset: { top: 0, bottom: o.step === 'reveal' ? 0 : $('ob-card').offsetHeight } });
   const focusable = $('ob-card').querySelector('h1');
@@ -5345,6 +5482,16 @@ const ACTIONS = {
     startOnboarding();
   },
   'ob-start': () => { ui.ob.step = 'stage'; renderOnboarding(); },
+  'ob-lang': (el) => setLang(el.dataset.lang),
+  'ob-lang-next': () => { ui.ob.step = ui.ob.langReturn || 'welcome'; renderOnboarding(); },
+  'ob-to-lang': () => {
+    if ($('ob-name')) ui.ob.name = $('ob-name').value.trim().slice(0, 40);
+    if ($('ob-pname')) ui.ob.partnerName = $('ob-pname').value.trim().slice(0, 40);
+    ui.ob.langReturn = ui.ob.step;
+    ui.ob.step = 'lang';
+    renderOnboarding();
+  },
+  'lang-open': () => openLangSheet(),
   'ob-demo': () => {
     const due = addDays(todayISO(), 109);
     finishOnboarding({ stage: 'pregnant', name: t().ob.demoName, due, method: 'due', mode: 'dreamy', sex: 'unknown', consents: { device: true, luna: false, stats: false } }, true);
@@ -5467,7 +5614,9 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('input', (e) => {
-  if (e.target.dataset && e.target.dataset.memNote) {
+  if (e.target.id === 'lang-q') {
+    filterLangs(e.target.value);
+  } else if (e.target.dataset && e.target.dataset.memNote) {
     const key = e.target.dataset.memNote;
     const note = e.target.value.slice(0, 1000);
     if (key === 'current') { if (data.loss) data.loss.note = note; } else if (data.memories[Number(key)]) data.memories[Number(key)].note = note;
