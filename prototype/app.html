@@ -1259,7 +1259,7 @@ const STR = {
     lunaTitle: 'Luna',
     lunaSub: 'AI assistant, not a doctor',
     lunaHello: (name, w) => `Hi${name ? ` ${name}` : ''}. You’re in week ${w}. Ask me about this week, or pick a question below.`,
-    lunaProto: 'Prototype: Luna answers a set of prepared questions from NHS guidance. It isn’t live AI yet.',
+    lunaProto: 'Prototype: Luna answers a set of prepared questions from NHS, WHO and other health guidance. It isn’t live AI yet.',
     askPh: (w) => `Ask about week ${w}…`,
     askLabel: 'Your question',
     send: 'Send',
@@ -1327,7 +1327,7 @@ const STR = {
     partner: 'Partner Mode',
     partnerSoon: 'Invite your partner with a code. They get their own view of each week. Coming in the full app.',
     about: 'About this prototype',
-    aboutText: 'A clickable prototype of Lunabump. Answers and articles are prepared examples based on NHS guidance and haven’t been reviewed by a medical board yet.',
+    aboutText: 'A clickable prototype of Lunabump. Answers and articles are prepared examples based on NHS, WHO and other health guidance and haven’t been reviewed by a medical board yet.',
     restartHint: 'To see the welcome screen again, delete your data under Privacy.',
     dataTitle: 'Your data',
     copy: 'Copy',
@@ -1493,7 +1493,7 @@ const STR = {
     lunaTitle: 'Luna',
     lunaSub: 'AI асистент, а не лекар',
     lunaHello: (name, w) => `Здравей${name ? `, ${name}` : ''}. Сега си в ${w}${ordBg(w)} седмица. Питай ме за тази седмица или избери въпрос отдолу.`,
-    lunaProto: 'Прототип: Luna отговаря на подготвени въпроси по насоките на NHS. Все още не е истински AI.',
+    lunaProto: 'Прототип: Luna отговаря на подготвени въпроси по насоките на NHS, СЗО и други здравни институции. Все още не е истински AI.',
     askPh: (w) => `Питай за ${w}${ordBg(w)} седмица…`,
     askLabel: 'Твоят въпрос',
     send: 'Изпрати',
@@ -1561,7 +1561,7 @@ const STR = {
     partner: 'Режим за партньора',
     partnerSoon: 'Покани партньора си с код. Той получава свой изглед на всяка седмица. Идва в пълното приложение.',
     about: 'За този прототип',
-    aboutText: 'Кликаем прототип на Lunabump. Отговорите и статиите са подготвени примери по насоките на NHS и още не са прегледани от медицински съвет.',
+    aboutText: 'Кликаем прототип на Lunabump. Отговорите и статиите са подготвени примери по насоките на NHS, СЗО и българските институции и още не са прегледани от медицински съвет.',
     restartHint: 'За да видиш отново началния екран, изтрий данните си в „Поверителност“.',
     dataTitle: 'Твоите данни',
     copy: 'Копирай',
@@ -1674,9 +1674,17 @@ const SRC = {
   cdcToxo: ['CDC · Toxoplasmosis prevention', 'https://www.cdc.gov/toxoplasmosis/prevention/index.html'],
   iron: ['NHS · Low iron levels in pregnancy (United Lincolnshire Hospitals)', 'https://www.ulh.nhs.uk/patients/patient-information-library/low-iron-levels-in-your-blood-during-pregnancy/'],
   nzok: ['НЗОК · Майчино здравеопазване', 'https://www.nhif.bg/bg/nzok-za-teb/useful/573'],
+  nhsAntenatal: ['NHS · Your antenatal appointments', 'https://www.nhs.uk/pregnancy/your-pregnancy-care/your-antenatal-appointments/'],
+  mhPertussis: ['МЗ · Национален експертен съвет по имунизации: коклюш при бременни (2025)', 'https://mh.government.bg/upload/15184/%D0%9A%D0%BE%D0%BA%D0%BB%D1%8E%D1%88-%D0%9D%D0%95%D0%A1%D0%98-12.02.2025-1.pdf'],
+  mhImmun2025: ['МЗ · Мотиви към промените в Наредба № 15 за имунизациите (2025)', 'https://www.mh.government.bg/upload/13974/motivi_nar_imunizacii_8_04_25.pdf'],
+  mhImmun: ['МЗ · Наредба № 15 за имунизациите', 'https://www.mh.government.bg/upload/4363/naredba15-ot-12-05-2005g-imunizatsiite-v-republika-bulgaria.pdf'],
+  mhScreening: ['МЗ · Неонатален скрининг: информация за родители', 'https://www.mh.government.bg/upload/14516/Broshura.pdf'],
+  mhChildChecks: ['МЗ · Наредба № 8: профилактични прегледи на децата', 'https://www.mh.government.bg/upload/4246/naredba-profpregled-dispanserizaciq-prilo1-22.pdf'],
+  bgHearing: ['Михайлова, Руев · Неонатален слухов скрининг в България', 'https://journals.mu-varna.bg/index.php/orl/article/view/8479'],
 };
-// a topic or a symptom can cite one source or several
-const srcList = (src) => (Array.isArray(src[0]) ? src : [src]);
+// a topic or a symptom cites one source or several; { en, bg } when each language follows its own country
+const srcFor = (src, lng = lang) => (src && !Array.isArray(src) ? src[lng] || src.en : src);
+const srcList = (src, lng = lang) => { const x = srcFor(src, lng); return Array.isArray(x[0]) ? x : [x]; };
 const srcOrgs = (src) => [...new Set(srcList(src).map((x) => x[0].split(' · ')[0]))].join(' · ');
 
 const WEEKS = [
@@ -2019,7 +2027,7 @@ const TOPICS = [
     },
   },
   {
-    id: 'vaccines', group: 'safe', min: 2, src: [NHS.vaccines, SRC.acogVaccines],
+    id: 'vaccines', group: 'safe', min: 2, src: { en: [NHS.vaccines, SRC.acogVaccines], bg: [SRC.mhPertussis, SRC.mhImmun2025] },
     title: { en: 'Vaccines in pregnancy', bg: 'Ваксини по време на бременност' },
     q: { en: 'Which vaccines should I have?', bg: 'Какви ваксини да си направя?' },
     kw: ['vaccin', 'jab', 'whooping', 'pertussis', 'tdap', 'rsv', 'flu ', 'immunis', 'ваксин', 'имуниз', 'коклюш', 'магарешка', 'грип', 'rsv'],
@@ -2030,8 +2038,10 @@ const TOPICS = [
         'Live vaccines, such as MMR, are usually left until after the birth.',
       ],
       bg: [
-        'Ваксините пазят теб и дават на бебето антитела за първите месеци. Във Великобритания NHS предлага ваксина срещу магарешка кашлица от 16-а седмица (най-добре до 32-ра), срещу RSV около 28-а седмица и срещу грип при всяка бременност.',
-        'В САЩ ACOG препоръчва ваксина срещу магарешка кашлица между 27-а и 36-а седмица, срещу RSV между 32-ра и 36-а седмица в сезона, както и срещу грип и COVID-19. Графиците са различни в различните държави, затова попитай лекаря какво се предлага при теб.',
+        'Ваксините пазят теб и дават на бебето антитела за първите месеци, докато стане достатъчно голямо за своите ваксини.',
+        'Магарешка кашлица (коклюш): Националният експертен съвет по имунизации препоръчва една доза ваксина (Tdap) между 27-ата и 36-ата седмица при всяка бременност. От 2024 г. Министерството на здравеопазването я осигурява безплатно по желание, също и за неосигурени жени, в имунизационните кабинети на РЗИ и в определени болници. Попитай акушер-гинеколога или РЗИ къде можеш да я направиш.',
+        'Грип: ваксината се препоръчва и може да се постави по всяко време на бременността. RSV: има ваксина за бременни, която се купува от аптека. Тези две ваксини са срещу заплащане.',
+        'Ако си ваксинирана срещу коклюш по време на бременността, първата 6-компонентна ваксина на бебето е на 2 месеца вместо на 6 седмици. Кажи го на личния лекар на бебето.',
         'Живите ваксини, като MMR (морбили, паротит, рубеола), обикновено се отлагат за след раждането.',
       ],
     },
@@ -2091,20 +2101,19 @@ const TOPICS = [
     },
   },
   {
-    id: 'checkups', group: 'baby', min: 2, src: [SRC.whoAnc, SRC.nzok],
+    id: 'checkups', group: 'baby', min: 2, src: { en: [SRC.whoAnc, SRC.nhsAntenatal], bg: [SRC.whoAnc, SRC.nzok] },
     title: { en: 'Your check-ups', bg: 'Прегледите по време на бременността' },
     q: { en: 'How many check-ups will I have?', bg: 'Колко прегледа ще имам?' },
     kw: ['check-up', 'checkup', 'how many appointments', 'antenatal appointment', 'ultrasound', 'how many scans', 'преглед', 'ехограф', 'нзок', 'направление', 'консултац'],
     a: {
       en: [
         'The WHO recommends at least 8 contacts with a health worker during pregnancy, with an ultrasound scan before 24 weeks.',
-        'In Bulgaria, the health insurance programme “Maternal health care” (НЗОК) gives insured women a check-up every month with an obstetrician, with a referral from your GP, 4 ultrasound scans, blood and urine tests, and care up to 42 days after the birth. Women without health insurance have the right to one check-up and some tests.',
-        'In other countries the schedule is different; your midwife or doctor will tell you what to expect.',
+        'With the NHS, your first appointment with a midwife (the booking appointment) is usually at 8 to 12 weeks. You’ll be offered at least 10 appointments if this is your first baby, or at least 7 if you’ve given birth before.',
+        'You’ll also be offered 2 ultrasound scans: one at 11 to 14 weeks to check when your baby is due, and the 20-week screening scan at 18 to 21 weeks.',
       ],
       bg: [
         'Световната здравна организация препоръчва поне 8 срещи с медицинско лице по време на бременността и ехография преди 24-та седмица.',
         'В България програмата на НЗОК „Майчино здравеопазване“ дава на осигурените жени преглед всеки месец при акушер-гинеколог с направление от личния лекар, 4 ехографии, изследвания на кръв и урина и наблюдение до 42-ия ден след раждането. Неосигурените имат право на един преглед и определени изследвания.',
-        'В другите държави графикът е различен; акушерката или лекарят ще ти кажат какво предстои.',
       ],
     },
   },
@@ -2255,7 +2264,7 @@ const SYM_ICON = {
   smell: '<path d="M9.5 3.5c-.4 3.5-2.2 6.6-3.9 9.2-.7 1 0 2.3 1.2 2.3h2.6M8.6 15c.3 1 1 1.6 2 1.6"/><path d="M14 8.5c1-.9 2-.9 3 0s2 .9 3 0M14 12.5c1-.9 2-.9 3 0s2 .9 3 0M14 16.5c1-.9 2-.9 3 0s2 .9 3 0"/>',
   nose: '<path d="M4 11.5h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM8.5 15h7"/><path d="M9 11.5C8.5 9 9.5 6.5 11 5c1 1 2.5 1.2 3.8.8-.8 1.8-.9 3.8.2 5.7"/>',
   sweating: '<path d="M8 13.9V5.5a2 2 0 0 1 4 0v8.4a4 4 0 1 1-4 0z"/><path d="M10 9v7.5"/><path d="M16 6.5c.8.8.8 1.7 0 2.5s-.8 1.7 0 2.5M19 6.5c.8.8.8 1.7 0 2.5s-.8 1.7 0 2.5"/>',
-  swelling: '<path d="M12 9.8c3 0 4.5 2.5 4.2 5.5-.3 3.4-2.4 5.2-4.7 5.2S8 18.8 8 16.6c0-2 1.2-3 1.2-4.6 0-1.4 1.1-2.2 2.8-2.2z"/><g fill="currentColor" stroke="none"><circle cx="9" cy="6.6" r="1.5"/><circle cx="12.1" cy="5.1" r="1.15"/><circle cx="14.8" cy="5.5" r="1"/><circle cx="16.9" cy="6.8" r=".9"/><circle cx="18.3" cy="8.7" r=".8"/></g>',
+  swelling: '<path d="M12 9.8c3 0 4.5 2.5 4.2 5.5-.3 3.4-2.4 5.2-4.7 5.2S8 18.8 8 16.6c0-2 1.2-3 1.2-4.6 0-1.4 1.1-2.2 2.8-2.2z"/><path d="M5.4 13.4c-.9 1.3-.9 3 0 4.3M18.8 13.4c.9 1.3.9 3 0 4.3"/><g fill="currentColor" stroke="none"><circle cx="9" cy="6.6" r="1.5"/><circle cx="12.1" cy="5.1" r="1.15"/><circle cx="14.8" cy="5.5" r="1"/><circle cx="16.9" cy="6.8" r=".9"/><circle cx="18.3" cy="8.7" r=".8"/></g>',
   discharge: '<path d="M3.5 6h17v2.6c-3.6.4-6.3 3.8-7 8.9h-3c-.7-5.1-3.4-8.5-7-8.9z"/><path d="M12 9.4c.8 1 1.3 1.7 1.3 2.4a1.3 1.3 0 0 1-2.6 0c0-.7.5-1.4 1.3-2.4z"/>',
   vomiting: '<circle cx="12" cy="12" r="8.5"/><path d="m8.2 8.6 2 1.3-2 1.3M15.8 8.6l-2 1.3 2 1.3"/><ellipse cx="12" cy="15.4" rx="2" ry="1.6"/>',
   other: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8.2v7.6M8.2 12h7.6"/>',
@@ -2381,6 +2390,8 @@ let lang = (() => {
 })();
 const t = () => STR[lang];
 const L = (obj) => (obj && (obj[lang] ?? obj.en)) || '';
+// example prices, written the way the language writes money (29,99 € or €29.99)
+const money = (x) => new Intl.NumberFormat(t().locale, { style: 'currency', currency: 'EUR' }).format(x);
 
 function save() {
   if (!data.profile || !data.profile.consents || !data.profile.consents.device) return;
@@ -2394,7 +2405,7 @@ const ui = {
   tab: 'today',
   tool: null,
   returnTool: null,
-  names: { list: 'F', lang: null, query: '' },
+  names: { list: 'F', query: '' },
   calc: { method: 'due', ivfDay: 5, date: '' },
   symPicked: new Set(),
   symLevel: 3,
@@ -2462,9 +2473,6 @@ const ICON = {
   chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
   chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5c2.5-1 5-1 7.5.5v13c-2.5-1.5-5-1.5-7.5-.5zM19.5 5.5c-2.5-1-5-1-7.5.5v13c2.5-1.5 5-1.5 7.5-.5z"/></svg>',
-  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M12 8.5v7M8.5 12h7"/></svg>',
-  kick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 14 9l5.5.4-4.2 3.6 1.3 5.5L12 15.6l-4.6 2.9 1.3-5.5L4.5 9.4 10 9z"/></svg>',
-  wave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13h3l2-5 3.5 9 2.5-6 1.5 2h6.5"/></svg>',
   chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 16.5h-8.5L6 20v-3.5H5A1.5 1.5 0 0 1 3.5 15V6.5A1.5 1.5 0 0 1 5 5z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5v-.5a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.5"/></svg>',
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z"/></svg>',
@@ -2678,7 +2686,7 @@ function renderToday() {
   const order = partner
     ? (w >= 37 ? ['contractions', 'partnerlist', 'luna'] : ['partnerlist', 'appointments', 'luna'])
     : w >= 37 ? ['kicks', 'contractions', 'luna'] : w >= 28 ? ['kicks', 'symptom', 'luna'] : ['symptom', 'kicks', 'luna'];
-  const icons = { symptom: ICON.note, kicks: ICON.kick, contractions: ICON.wave, luna: ICON.chat, partnerlist: TOOL_ICON.partnerlist, appointments: TOOL_ICON.appointments };
+  const icons = { symptom: TOOL_ICON.symptoms, kicks: TOOL_ICON.kicks, contractions: TOOL_ICON.contractions, luna: ICON.chat, partnerlist: TOOL_ICON.partnerlist, appointments: TOOL_ICON.appointments };
   const next = nextAppointment();
   $('today-next').innerHTML = next ? `<button type="button" class="next-appt" data-action="tool" data-tool="appointments"><span class="icon">${TOOL_ICON.appointments}</span><span><span class="eyebrow">${esc(T().nextAppointment)}</span><strong style="display:block">${esc(apptTitle(next))}</strong><span class="small muted">${esc(fmtDate(next.date))}${next.time ? ` · ${esc(next.time)}` : ''}${next.place ? ` · ${esc(next.place)}` : ''}</span></span><span class="chev">${ICON.chev}</span></button>` : '';
   $('quick').innerHTML = order.map((k) => `<button type="button" data-action="quick" data-go="${k}"><span class="icon">${icons[k]}</span><span>${esc(t().quick[k])}</span></button>`).join('');
@@ -3056,8 +3064,7 @@ const TOOL_STR = {
     girls: 'Girls',
     boys: 'Boys',
     favourites: 'Favourites',
-    namesBg: 'Bulgarian names',
-    namesEn: 'English names',
+    namesFrom: 'Popular names in England and Wales. The list follows the app language.',
     searchNames: 'Search names',
     noFavourites: 'Tap the heart next to a name to save it.',
     copyFavourites: 'Copy favourites',
@@ -3152,8 +3159,7 @@ const TOOL_STR = {
     girls: 'Момичета',
     boys: 'Момчета',
     favourites: 'Любими',
-    namesBg: 'Български имена',
-    namesEn: 'Английски имена',
+    namesFrom: 'Популярни имена в България. Списъкът следва езика на приложението.',
     searchNames: 'Търси име',
     noFavourites: 'Докосни сърцето до името, за да го запазиш.',
     copyFavourites: 'Копирай любимите',
@@ -3311,6 +3317,7 @@ const QUESTIONS = [
   ],
 ];
 
+// popular names where each language's content is set (see NEWBORN_CHECKS); a new language adds its own list
 const NAMES = {
   bg: {
     F: ['Мария', 'Виктория', 'Александра', 'Никол', 'Габриела', 'Йоана', 'Елена', 'Симона', 'Калина', 'Рая', 'Магдалена', 'Анна', 'Божидара', 'Кристина', 'Теодора', 'Михаела', 'Ема', 'Мила', 'Ния', 'Яна', 'Дария', 'Сияна', 'Радина', 'Слава', 'Лилия', 'Десислава', 'Ивана', 'Боряна', 'Светла', 'Невена', 'Яница', 'Вяра', 'Надежда', 'Любов', 'Румяна', 'Зорница', 'Цветелина', 'Деница', 'Стефани', 'Вероника'],
@@ -3324,23 +3331,23 @@ const NAMES = {
 
 const TOOL_IDS = ['kicks', 'contractions', 'symptoms', 'mood', 'weeks', 'weight', 'bump', 'appointments', 'questions', 'bag', 'plan', 'names', 'zodiac', 'shopping', 'duedate'];
 const TOOL_ICON = {
-  kicks: ICON.kick,
-  contractions: ICON.wave,
-  symptoms: ICON.note,
-  mood: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1.9 2 5.1 2 7 0M9.2 9.8h.01M14.8 9.8h.01"/></svg>',
-  weeks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17.5 17.5 4l2.5 2.5L6.5 20z"/><path d="m8 15.5 1.5 1.5M10.5 13l1.5 1.5M13 10.5l1.5 1.5M15.5 8 17 9.5"/></svg>',
-  weight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9.5a4.2 4.2 0 0 1 6 0M12 9.5l1.4-1.6"/></svg>',
-  bump: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/></svg>',
-  appointments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M12 13.5v3M10.5 15h3"/></svg>',
-  questions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.6v.2"/></svg>',
-  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7.5" width="16" height="12.5" rx="3"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5M12 11.5v4.5M9.8 13.7h4.4"/></svg>',
-  plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>',
-  names: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
-  shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>',
-  duedate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M8.5 7.5h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/></svg>',
+  kicks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g fill="currentColor" stroke-width="1"><path d="M7.4 11.64C5.29 11.64 4.23 13.49 4.5 15.86C4.76 18.5 6.08 20.22 7.66 20.22C9.25 20.22 10.3 18.9 10.3 17.18C10.3 15.86 9.64 15.07 9.64 13.88C9.64 12.56 8.85 11.64 7.4 11.64zM16.6 5.24C18.71 5.24 19.77 7.09 19.5 9.46C19.24 12.1 17.92 13.82 16.34 13.82C14.75 13.82 13.7 12.5 13.7 10.78C13.7 9.46 14.36 8.67 14.36 7.48C14.36 6.16 15.15 5.24 16.6 5.24z"/><circle cx="9.51" cy="9.13" r="1.12"/><circle cx="7.27" cy="8.34" r="0.95"/><circle cx="5.29" cy="8.87" r="0.82"/><circle cx="14.49" cy="2.73" r="1.12"/><circle cx="16.73" cy="1.94" r="0.95"/><circle cx="18.71" cy="2.47" r="0.82"/></g></svg>',
+  contractions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M10 2.8h4M12 2.8V6M18.3 6.8l1.3-1.3"/><path d="M7 13.5h2l1.2-2.6 2.2 5.2 1.4-3.2.9.6H17"/></svg>',
+  symptoms: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 4.5V4a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4v.5"/><path d="M12 16.8s-3.3-2-4-4c-.5-1.5.4-3 1.9-3 1 0 1.6.5 2.1 1.2.5-.7 1.1-1.2 2.1-1.2 1.5 0 2.4 1.5 1.9 3-.7 2-4 4-4 4z"/></svg>',
+  mood: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1.9 2 5.1 2 7 0M9.2 9.8h.01M14.8 9.8h.01"/></svg>',
+  weeks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5c-1.7 0-2.6 1.3-2.8 3-.2 1.6-1.3 2.5-2.4 3.7A5.5 5.5 0 0 0 12 21a5.5 5.5 0 0 0 5.2-7.8c-1.1-1.2-2.2-2.1-2.4-3.7-.2-1.7-1.1-3-2.8-3z"/><path d="M12 6.5c0-1.4.5-2.6 1.4-3.5M13.4 4.3c1.4-.9 3-.9 4.3 0-1.3 1.1-2.9 1.2-4.3 0z"/></svg>',
+  weight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M7.5 11.5a4.5 4.5 0 0 1 9 0z"/><path d="m12 11.5 1.4-2.2"/></svg>',
+  bump: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><path d="M12 15.6s-2.6-1.5-3.1-3.1c-.4-1.2.3-2.4 1.5-2.4.8 0 1.2.4 1.6.9.4-.5.8-.9 1.6-.9 1.2 0 1.9 1.2 1.5 2.4-.5 1.6-3.1 3.1-3.1 3.1z"/></svg>',
+  appointments: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M12 12.8v4.4M9.8 15h4.4"/></svg>',
+  questions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 4.5h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H11l-4.5 3.5v-3.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M10 9.2a2.1 2.1 0 1 1 2.9 1.9c-.5.2-.9.6-.9 1.2v.3M12 14.8v.1"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7.5" width="16" height="12.5" rx="3"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5M12 11.2v5M9.5 13.7h5"/></svg>',
+  plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20.5H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h8.5l3.5 3.5v5"/><path d="M8.5 8.5h5M8.5 12h6.5M8.5 15.5h3"/><path d="m14.8 19.6 4.8-4.8a1.3 1.3 0 0 1 1.8 1.8l-4.8 4.8-2.4.6z"/></svg>',
+  names: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="12" width="8" height="8" rx="1.8"/><rect x="12.5" y="12" width="8" height="8" rx="1.8"/><rect x="8" y="3.5" width="8" height="8" rx="1.8"/><path d="m5.8 18 1.7-4.3 1.7 4.3M6.4 16.6h2.2M15 13.8v4.4h1.6a1.1 1.1 0 0 0 0-2.2H15h1.3a1.1 1.1 0 0 0 0-2.2z"/><path d="M12 9.5s-1.9-1.1-2.3-2.3c-.3-.9.2-1.8 1.1-1.8.6 0 .9.3 1.2.7.3-.4.6-.7 1.2-.7.9 0 1.4.9 1.1 1.8-.4 1.2-2.3 2.3-2.3 2.3z"/></svg>',
+  shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11h14a6.5 6.5 0 0 1-6.5 6.5h-1A6.5 6.5 0 0 1 4.5 11z"/><path d="M11.5 11V4.5A6.5 6.5 0 0 0 5 11"/><path d="m18.5 11 1.2-3.6h1.6"/><circle cx="8" cy="19.8" r="1.3"/><circle cx="15" cy="19.8" r="1.3"/></svg>',
+  duedate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M8.5 7.5h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/></svg>',
   partnerlist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17" rx="3"/><path d="m8 9 1.5 1.5L12 8M8 15l1.5 1.5L12 14M14.5 9.5H17M14.5 15.5H17"/></svg>',
   checks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5v5a4 4 0 0 0 8 0v-5"/><path d="M10 12.5v2a5 5 0 0 0 10 0V12"/><circle cx="20" cy="10" r="2"/></svg>',
-  zodiac: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 13.6 8l4.7.2-3.7 2.9 1.3 4.6-3.9-2.7-3.9 2.7 1.3-4.6L5.7 8.2 10.4 8z"/><path d="M5 19.5h14M8 21.5h8"/></svg>',
+  zodiac: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 17.5 9 11.5l5 2 5-7.5M14 13.5l3.5 5"/><g fill="currentColor" stroke="none"><circle cx="4.5" cy="17.5" r="1.7"/><circle cx="9" cy="11.5" r="1.7"/><circle cx="14" cy="13.5" r="1.7"/><circle cx="19" cy="6" r="1.7"/><circle cx="17.5" cy="18.5" r="1.7"/></g><path d="M6.5 3.5v3M5 5h3"/></svg>',
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   heartLine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-8.6-8.6C2.2 8 4.3 4.8 7.6 4.8c1.9 0 3.4 1 4.4 2.4 1-1.4 2.5-2.4 4.4-2.4 3.3 0 5.4 3.2 4.2 6.6C19 15.6 12 20 12 20z"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>',
@@ -3357,7 +3364,7 @@ function toolMeta(id) {
   if (id === 'names') return data.names.favs.length ? `${data.names.favs.length} ♥` : '';
   if (id === 'zodiac' && data.profile) return L(signOf(journey() === 'born' && data.birth ? data.birth.date : data.profile.due));
   if (id === 'partnerlist') { const done = PARTNER_TODO.filter((i) => data.checklist[i.id]).length; return done ? J().partnerListDone(done, PARTNER_TODO.length) : ''; }
-  if (id === 'checks' && data.birth) { const next = NEWBORN_CHECKS.find((c) => !data.newborn.checked[c.id]); return next ? L(next)[0] : ''; }
+  if (id === 'checks' && data.birth) { const next = newbornChecks().find((c) => !data.newborn.checked[c.id]); return next ? L(next)[0] : ''; }
   return '';
 }
 
@@ -3876,15 +3883,14 @@ function renderPlan() {
 function renderNames() {
   const s = T();
   const n = ui.names;
-  if (!n.lang) n.lang = lang;
   const favs = data.names.favs;
   const q = n.query.trim().toLowerCase();
-  const pool = n.list === 'fav' ? favs : NAMES[n.lang][n.list];
+  const pool = n.list === 'fav' ? favs : (NAMES[lang] || NAMES.en)[n.list];
   const shown = pool.filter((x) => !q || x.toLowerCase().includes(q));
   const tab = (id, label) => `<button type="button" role="radio" aria-checked="${n.list === id}" data-action="names-list" data-list="${id}">${esc(label)}</button>`;
   $('tool-body').innerHTML = `
     <div class="seg" role="radiogroup" aria-label="${esc(s.names.names[0])}">${tab('F', s.girls)}${tab('M', s.boys)}${tab('fav', `${s.favourites}${favs.length ? ` · ${favs.length}` : ''}`)}</div>
-    ${n.list === 'fav' ? '' : `<div class="seg" role="radiogroup" aria-label="${esc(t().language)}"><button type="button" role="radio" aria-checked="${n.lang === 'bg'}" data-action="names-lang" data-lang2="bg">${esc(s.namesBg)}</button><button type="button" role="radio" aria-checked="${n.lang === 'en'}" data-action="names-lang" data-lang2="en">${esc(s.namesEn)}</button></div>`}
+    ${n.list === 'fav' ? '' : `<p class="fine">${esc(s.namesFrom)}</p>`}
     <label class="visually-hidden" for="names-q">${esc(s.searchNames)}</label>
     <input class="input" type="search" id="names-q" placeholder="${esc(s.searchNames)}" value="${esc(n.query)}" autocomplete="off">
     <section class="card">
@@ -4209,7 +4215,7 @@ const JOURNEY_STR = {
     share: 'Сподели',
     shareFailed: 'Споделянето не е налично тук. Запази картичката.',
     checksTitle: 'Първите седмици',
-    checksIntro: 'Прегледи и изследвания през първите 8 седмици, както ги предлага NHS в Англия. В България част от тях се правят още в родилния дом. Акушерката или личният лекар ще ти кажат какво предстои.',
+    checksIntro: 'Прегледи, ваксини и изследвания през първите седмици по правилата в България. Личният лекар на бебето ще ти каже точните дати.',
     checksAll: 'Всички прегледи',
     checksDone: 'Всичко е отметнато. Браво и на двама ви.',
     byDate: (d) => `До ${d}`,
@@ -4300,7 +4306,7 @@ const NHS_MORE = {
   birthPartner: ['NHS · Tips for birth partners', 'https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/tips-for-your-birthing-partner-or-partners/'],
 };
 
-// Support after a loss. Bulgarian users see the Bulgarian service first and the UK charities as links.
+// Support after a loss, by language. Bulgarian has few services, so the UK charities follow as English links.
 const SUPPORT = [
   { id: 'nndd', home: 'bg', kinds: 'all', name: { en: '“Our Premature Children” Foundation', bg: 'Фондация „Нашите недоносени деца“' }, desc: { en: 'Free psychological support in Bulgaria for parents who have lost a baby, in pregnancy or after birth.', bg: 'Безплатна психологическа подкрепа за родители, загубили бебе по време на бременността или след раждането.' }, phone: '0882 952 316', url: 'https://premature-bg.com/podkrepa-za-roditeli-prezhiveli-zaguba/' },
   { id: 'muk', home: 'en', kinds: ['miscarriage', 'ectopic', 'skip'], name: { en: 'Miscarriage UK', bg: 'Miscarriage UK' }, desc: { en: 'Support and information after miscarriage, ectopic and molar pregnancy.', bg: 'Подкрепа след спонтанен аборт, извънматочна и мехурна бременност.' }, phone: '0303 003 6464', url: 'https://www.miscarriageuk.org/' },
@@ -4365,15 +4371,33 @@ const HELP = {
 };
 
 // days after the birth: `at` is when it usually happens, `by` the latest
-const NEWBORN_CHECKS = [
-  { id: 'nb_exam', at: 0, by: 3, en: ['Newborn physical examination', 'Within 72 hours of birth: eyes, heart, hips and, in boys, the testicles.'], bg: ['Физически преглед на новороденото', 'До 72 часа след раждането: очи, сърце, тазобедрени стави, а при момчетата и тестиси.'] },
-  { id: 'nb_blood', at: 5, en: ['Blood spot (heel prick) test', 'Usually at 5 days old. It screens for 10 rare but serious conditions.'], bg: ['Кръвна капка от петата', 'Обикновено на 5-ия ден. Проверява за 10 редки, но сериозни заболявания.'] },
-  { id: 'nb_hearing', at: 0, by: 28, en: ['Hearing test', 'Usually before 4 weeks, sometimes before you leave hospital.'], bg: ['Тест на слуха', 'Обикновено до 4 седмици, понякога още преди изписването.'] },
-  { id: 'nb_register', at: 0, by: 42, en: ['Register the birth', 'In England and Wales, within 42 days. Elsewhere the rules differ: ask the hospital or your local council.'], bg: ['Регистрирай раждането', 'Редът и сроковете са различни в различните държави. Попитай в болницата или в общината.'] },
-  { id: 'nb_68', at: 42, by: 56, en: ['Baby’s 6 to 8 week check', 'The physical examination is repeated, usually by a GP.'], bg: ['Преглед на бебето на 6–8 седмици', 'Физическият преглед се повтаря, обикновено при личния лекар.'] },
-  { id: 'mum_68', at: 42, by: 56, en: ['Postnatal check', '6 to 8 weeks after the birth, usually with a GP: wellbeing, recovery and contraception.'], bg: ['Следродилен преглед', '6–8 седмици след раждането, обикновено при личния лекар: самочувствие, възстановяване и контрацепция.'] },
-  { id: 'nb_vacc', at: 56, en: ['First routine vaccines', 'In the UK at 8 weeks. Schedules differ between countries, so ask your GP.'], bg: ['Ваксини', 'Графикът е различен в различните държави. В България първите ваксини (срещу хепатит B и туберкулоза) се правят още в родилния дом. Попитай личния лекар за следващите.'] },
-];
+// Checks in the first weeks: each language follows its own country's schedule
+// (English: the NHS in England; Bulgarian: Наредба № 8, Наредба № 15 and НЗОК)
+const NEWBORN_CHECKS = {
+  en: [
+    { id: 'nb_exam', at: 0, by: 3, en: ['Newborn physical examination', 'Within 72 hours of birth: eyes, heart, hips and, in boys, the testicles.'] },
+    { id: 'nb_blood', at: 5, en: ['Blood spot (heel prick) test', 'Usually at 5 days old. It screens for 10 rare but serious conditions.'] },
+    { id: 'nb_hearing', at: 0, by: 28, en: ['Hearing test', 'Usually before 4 weeks, sometimes before you leave hospital.'] },
+    { id: 'nb_register', at: 0, by: 42, en: ['Register the birth', 'In England and Wales, within 42 days. Elsewhere the rules differ: ask the hospital or your local council.'] },
+    { id: 'nb_68', at: 42, by: 56, en: ['Baby’s 6 to 8 week check', 'The physical examination is repeated, usually by a GP.'] },
+    { id: 'mum_68', at: 42, by: 56, en: ['Postnatal check', '6 to 8 weeks after the birth, usually with a GP: wellbeing, recovery and contraception.'] },
+    { id: 'nb_vacc', at: 56, en: ['First routine vaccines', 'In the UK at 8 weeks. Schedules differ between countries, so ask your GP.'] },
+  ],
+  bg: [
+    { id: 'bg_exam', at: 0, by: 3, bg: ['Прегледи в родилното отделение', 'Неонатолог преглежда бебето всеки ден, докато сте в болницата.'] },
+    { id: 'bg_hepb', at: 0, by: 1, bg: ['Ваксина срещу хепатит Б', 'В първите 24 часа след раждането, в родилния дом.'] },
+    { id: 'bg_bcg', at: 2, by: 4, bg: ['Ваксина срещу туберкулоза (БЦЖ)', 'След 48-ия час от раждането, в родилния дом.'] },
+    { id: 'bg_blood', at: 2, by: 5, bg: ['Кръв от петата (неонатален скрининг)', 'Между 48-ия и 120-ия час в неонатологичното отделение. Проверява за вроден хипотиреоидизъм, вродена надбъбречна хиперплазия и фенилкетонурия.'] },
+    { id: 'bg_hearing', at: 0, by: 5, bg: ['Тест на слуха', 'От 2015 г. в България има програма за слухов скрининг на всички новородени. Попитай в родилния дом дали тестът е направен.'] },
+    { id: 'bg_gp', at: 0, by: 5, bg: ['Личен лекар на бебето', 'Избери общопрактикуващ лекар или педиатър. Първият преглед е вкъщи до 24 часа след изписването, а ако още нямаш избран лекар, до 24 часа след избора.'] },
+    { id: 'bg_register', at: 3, bg: ['Удостоверение за раждане', 'Болницата съобщава за раждането в общината, където се съставя актът за раждане. Удостоверението вземате от общината; попитай в родилния дом какво е нужно.'] },
+    { id: 'bg_home2', at: 7, by: 28, bg: ['Втори преглед вкъщи', 'До навършване на 1 месец личният лекар преглежда бебето вкъщи до 2 пъти, през 7 до 14 дни.'] },
+    { id: 'bg_mum', at: 28, by: 42, bg: ['Твоят следродилен преглед', 'По програмата на НЗОК „Майчино здравеопазване“ акушер-гинекологът те наблюдава до 42-рия ден след раждането. Запиши си час.'] },
+    { id: 'bg_monthly', at: 30, bg: ['Преглед всеки месец', 'От 1 месец до 1 година личният лекар преглежда бебето веднъж месечно: ръст, тегло, обиколка на главата и развитие.'] },
+    { id: 'bg_vacc', at: 42, bg: ['Първи ваксини при личния лекар', 'От 6-седмична възраст: 6-компонентна ваксина и ваксина срещу пневмококи. Ако си ваксинирана срещу коклюш по време на бременността, започват на 2 месеца.'] },
+  ],
+};
+const newbornChecks = () => NEWBORN_CHECKS[lang] || NEWBORN_CHECKS.en;
 
 // trimester index 0, 1, 2 (NHS advice for partners and tips for birth partners)
 const PARTNER_TODO = [
@@ -4509,7 +4533,7 @@ TOPICS.push(
       bg: [
         'Гърдите може да започнат да произвеждат мляко. Има лекарство, което го спира, но не е подходящо за всички (например при прееклампсия или високо кръвно налягане). Млякото може и да спре от само себе си.',
         'След няколко седмици ще ти предложат контролен преглед, за да видите как се чувстваш и да обсъдите резултатите от изследванията.',
-        'В Англия и Уелс мъртвото раждане се регистрира до 42 дни. В другите държави правилата са различни и от болницата ще ти кажат какво да направиш.',
+        'Редът за регистриране на мъртво раждане е различен в различните държави. В болницата ще ти кажат какво трябва да направите.',
         'Много родители изпитват вина, тревожност или депресия след това. Личният лекар или акушерката могат да помогнат, както и други родители, преживели загуба.',
       ],
     },
@@ -4534,7 +4558,7 @@ TOPICS.push(
     },
   },
   {
-    id: 'nbchecks', group: 'born', min: 2, src: NHS_MORE.screening,
+    id: 'nbchecks', group: 'born', min: 2, src: { en: NHS_MORE.screening, bg: [SRC.mhScreening, SRC.mhImmun, SRC.mhChildChecks, SRC.bgHearing] },
     title: { en: 'Your baby’s first checks', bg: 'Първите прегледи на бебето' },
     q: { en: '', bg: '' }, kw: [],
     a: {
@@ -4545,10 +4569,10 @@ TOPICS.push(
         'This is the schedule in England. Other countries have their own, and your midwife or doctor will tell you about yours.',
       ],
       bg: [
-        'До 72 часа след раждането на бебето се прави физически преглед на очите, сърцето, тазобедрените стави, а при момчетата и на тестисите. Прегледът се повтаря на 6–8 седмици.',
-        'Около 5-ия ден се взема кръвна капка от петата. Тя проверява за 10 редки, но сериозни заболявания.',
-        'Тестът на слуха обикновено е до 4 седмици, понякога още преди изписването.',
-        'Това е графикът в Англия. В България част от изследванията се правят още в родилния дом; акушерката или личният лекар ще ти кажат какво предстои.',
+        'Докато сте в родилното отделение, неонатолог преглежда бебето. В първите 24 часа то получава ваксина срещу хепатит Б, а след 48-ия час и срещу туберкулоза (БЦЖ).',
+        'Между 48-ия и 120-ия час се взема кръв от петата за скрининг на вроден хипотиреоидизъм, вродена надбъбречна хиперплазия и фенилкетонурия. Слухът на новородените също се проверява по национална програма.',
+        'Личният лекар (общопрактикуващ или педиатър) идва вкъщи до 24 часа след изписването и още веднъж до 1 месец. После преглежда бебето всеки месец до 1 година. Първите задължителни ваксини при него са от 6-седмична възраст.',
+        'Това е редът в България. Личният лекар на бебето ще ти каже точните дати.',
       ],
     },
   },
@@ -4721,7 +4745,7 @@ function renderCalmToday() {
     $('today-togo').textContent = s.bornSub;
     $('calm-top').innerHTML = bornHeroHTML();
     setBornPhoto($('calm-top').querySelector('[data-born-photo]'));
-    const open = NEWBORN_CHECKS.filter((c) => !data.newborn.checked[c.id]).slice(0, 3);
+    const open = newbornChecks().filter((c) => !data.newborn.checked[c.id]).slice(0, 3);
     $('calm-rest').innerHTML = `
       <section class="card" aria-labelledby="checks-title">
         <div class="row-between"><h2 id="checks-title">${esc(s.checksTitle)}</h2><button type="button" class="link-btn small" data-action="tool" data-tool="checks">${esc(s.checksAll)}</button></div>
@@ -5237,8 +5261,8 @@ function renderPartnerList() {
 
 function renderChecks() {
   $('tool-body').innerHTML = `<p class="muted small">${esc(J().checksIntro)}</p>
-    <section class="card"><ul class="checklist">${NEWBORN_CHECKS.map(checkRow).join('')}</ul></section>
-    ${sourceLine(NHS_MORE.screening)}`;
+    <section class="card"><ul class="checklist">${newbornChecks().map(checkRow).join('')}</ul></section>
+    ${sourceLine(topicById.nbchecks.src)}`;
 }
 
 /* =========================================================================
@@ -5405,7 +5429,7 @@ function closeSheet() {
 }
 
 function sourceLine(src, lng = lang) {
-  const list = srcList(src);
+  const list = srcList(src, lng);
   return `<p class="source">${esc(list.length > 1 ? STR[lng].sources : STR[lng].source)}: ${list.map((x) => `<a href="${x[1]}" target="_blank" rel="noopener">${esc(x[0])}</a>`).join(' · ')}</p>`;
 }
 
@@ -5722,10 +5746,10 @@ const ACCOUNT_STR = {
     plusFeatures: ['No ads', 'Live sync with your partner', 'Unlimited questions to Luna (AI)', '4K moon portraits and birth card designs', 'Your bump time-lapse as a video'],
     freeTitle: 'Always free',
     freeFeatures: ['Kick counter, contraction timer and urgent symptoms', 'Support after a loss', 'Week by week and the 3D baby', 'Every tracker and checklist'],
-    plans: {
-      year: ['Yearly', '29,99 € a year', 'About 2,50 € a month · 7 days free'],
-      month: ['Monthly', '4,99 € a month', 'Cancel any time'],
-    },
+    get plans() { return {
+      year: ['Yearly', `${money(29.99)} a year`, `About ${money(2.5)} a month · 7 days free`],
+      month: ['Monthly', `${money(4.99)} a month`, 'Cancel any time'],
+    }; },
     examplePrices: 'Example prices for the prototype.',
     tryFree: 'Try 7 days free',
     subscribe: 'Subscribe',
@@ -5797,10 +5821,10 @@ const ACCOUNT_STR = {
     plusFeatures: ['Без реклами', 'Синхронизиране с партньора на живо', 'Неограничени въпроси към Luna (AI)', '4K лунни портрети и дизайни на картичката за раждане', 'Таймлапсът на коремчето като видео'],
     freeTitle: 'Винаги безплатно',
     freeFeatures: ['Брояч на ритници, таймер за контракции и спешни симптоми', 'Подкрепа след загуба', 'Седмица по седмица и 3D бебето', 'Всички записи и списъци'],
-    plans: {
-      year: ['Годишен', '29,99 € на година', '≈ 2,50 € на месец · 7 дни безплатно'],
-      month: ['Месечен', '4,99 € на месец', 'Спираш по всяко време'],
-    },
+    get plans() { return {
+      year: ['Годишен', `${money(29.99)} на година`, `≈ ${money(2.5)} на месец · 7 дни безплатно`],
+      month: ['Месечен', `${money(4.99)} на месец`, 'Спираш по всяко време'],
+    }; },
     examplePrices: 'Примерни цени за прототипа.',
     tryFree: 'Пробвай 7 дни безплатно',
     subscribe: 'Абонирай се',
@@ -6530,7 +6554,6 @@ const ACTIONS = {
   },
   'plan-copy': () => copyText(planSummaryLines().map(([q, a]) => `${q}: ${a}`).join('\n')),
   'names-list': (el) => { ui.names.list = el.dataset.list; renderNames(); },
-  'names-lang': (el) => { ui.names.lang = el.dataset.lang2; renderNames(); },
   'names-fav': (el) => {
     const name = el.dataset.name;
     const favs = data.names.favs;

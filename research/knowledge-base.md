@@ -63,7 +63,25 @@
 | COVID-19 | – | препоръчва се |
 | Живи ваксини (MMR, БЦЖ, жълта треска, орален тиф) | обикновено се отлагат след раждането | – |
 
-Графиците се различават между държавите. Приложението дава британския ориентир и съветва да се попита лекарят какво се предлага в България.
+Графиците се различават между държавите, затова приложението показва графика според езика: на английски британския (и американския за сравнение), на български българския.
+
+**В България** (Министерство на здравеопазването):
+- **Коклюш (Tdap):** от май 2024 г. МЗ осигурява безплатна ваксина по желание за бременни между **27-ата и 36-ата** седмица, също и за неосигурени жени, в имунизационните кабинети на РЗИ и определени болници. През февруари 2025 г. Националният експертен съвет по имунизации препоръчва това да продължи и да влезе в Наредба № 15 като целева имунизация. Да се провери дали все още е безплатна, преди приложението да излезе.
+- **Грип:** препоръчителна ваксина, може по всяко време на бременността; срещу заплащане.
+- **RSV:** препоръчителна ваксина за бременни, в аптеките от есента на 2024 г.; срещу заплащане.
+- **Бебето:** хепатит Б в първите 24 часа, БЦЖ от 48-ия час (в родилния дом). Първата 6-компонентна ваксина е на **6 седмици**, а ако майката е ваксинирана срещу коклюш по време на бременността, на **2 месеца**.
+
+## 6а. Първите седмици на бебето в България
+
+| Какво | Кога | Източник |
+|---|---|---|
+| Неонатален скрининг (кръв от петата): вроден хипотиреоидизъм, вродена надбъбречна хиперплазия, фенилкетонурия | между 48-ия и 120-ия час, в неонатологичното отделение | МЗ, брошура за родители |
+| Слухов скрининг на всички новородени | национална програма от есента на 2015 г. | Михайлова, Руев, МУ-Варна |
+| Преглед от личния лекар (ОПЛ или педиатър) вкъщи | до 24 часа след изписването (или след избора на лекар), общо до 2 прегледа до 1 месец, през 7–14 дни | Наредба № 8, Приложение 1 |
+| Профилактичен преглед | веднъж месечно от 1 месец до 1 година | Наредба № 8, Приложение 1 |
+| Следродилно наблюдение на майката | до 42-рия ден след раждането | НЗОК, „Майчино здравеопазване“ |
+
+Не е проверено: точният срок за акта за раждане. Приложението казва само, че болницата съобщава в общината и удостоверението се взема оттам.
 
 ## 7. Движение
 
@@ -102,4 +120,8 @@
 - CDC. [Toxoplasmosis prevention](https://www.cdc.gov/toxoplasmosis/prevention/index.html)
 - NHS: [Foods to avoid](https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/), [Vitamins](https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/), [Vaccinations](https://www.nhs.uk/pregnancy/keeping-well/vaccinations/), [Medicines](https://www.nhs.uk/pregnancy/keeping-well/medicines/), [Alcohol](https://www.nhs.uk/pregnancy/keeping-well/drinking-alcohol-while-pregnant/), [Stop smoking](https://www.nhs.uk/pregnancy/keeping-well/stop-smoking/), [Travelling](https://www.nhs.uk/pregnancy/keeping-well/travelling/), [Mental health](https://www.nhs.uk/pregnancy/keeping-well/mental-health/), [Symptoms you need to get help for](https://www.nhs.uk/pregnancy/common-symptoms/pregnancy-symptoms-you-need-to-get-help-for/), [Common health problems](https://www.nhs.uk/pregnancy/common-symptoms/common-health-problems/), [Headaches](https://www.nhs.uk/pregnancy/common-symptoms/headaches/), [Pelvic pain](https://www.nhs.uk/pregnancy/common-symptoms/pelvic-pain/), [Stomach pain](https://www.nhs.uk/pregnancy/common-symptoms/stomach-pain/), [Vaginal discharge](https://www.nhs.uk/pregnancy/common-symptoms/vaginal-discharge/), [Itching and cholestasis](https://www.nhs.uk/pregnancy/complications/itching-and-intrahepatic-cholestasis/)
 - NHS trust leaflet: [Low iron levels in pregnancy (United Lincolnshire)](https://www.ulh.nhs.uk/patients/patient-information-library/low-iron-levels-in-your-blood-during-pregnancy/)
+- МЗ. [Национален експертен съвет по имунизации: коклюш при бременни (12.02.2025)](https://mh.government.bg/upload/15184/%D0%9A%D0%BE%D0%BA%D0%BB%D1%8E%D1%88-%D0%9D%D0%95%D0%A1%D0%98-12.02.2025-1.pdf); [Мотиви към промените в Наредба № 15 (2025)](https://www.mh.government.bg/upload/13974/motivi_nar_imunizacii_8_04_25.pdf); [Наредба № 15 за имунизациите](https://www.mh.government.bg/upload/4363/naredba15-ot-12-05-2005g-imunizatsiite-v-republika-bulgaria.pdf)
+- МЗ. [Неонатален скрининг: информация за родители](https://www.mh.government.bg/upload/14516/Broshura.pdf); [Наредба № 8, Приложение 1: профилактични прегледи на децата](https://www.mh.government.bg/upload/4246/naredba-profpregled-dispanserizaciq-prilo1-22.pdf)
+- Михайлова Ф., Руев П. [Neonatal hearing screening in Bulgaria 2016–2019](https://journals.mu-varna.bg/index.php/orl/article/view/8479)
+- NHS. [Your antenatal appointments](https://www.nhs.uk/pregnancy/your-pregnancy-care/your-antenatal-appointments/)
 - НЗОК. [Програма „Майчино здравеопазване“](https://www.nhif.bg/bg/nzok-za-teb/useful/573); Министерство на здравеопазването, Наредба № 26 от 2007 г. (за неосигурените)
