@@ -391,16 +391,14 @@
   .luna-caption p + p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
   .luna-expand {
     flex: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background: rgba(243, 240, 255, 0.16);
-    font-size: 13px;
-    font-weight: 700;
   }
-  .luna-expand svg { width: 16px; height: 16px; }
+  .luna-expand svg { width: 22px; height: 22px; }
   .luna-close {
     position: absolute;
     top: 12px;
@@ -426,13 +424,15 @@
     transition: opacity 500ms ease;
   }
   .luna-flash.on { opacity: 1; }
+  /* centred with margins, not a transform: the open/close animation animates transform */
   .luna-slot.is-full, .luna-slot.is-stage {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: 50%;
+    left: 0;
+    right: 0;
+    margin-inline: auto;
     width: min(100%, var(--col));
-    transform: translateX(-50%);
     border-radius: 0;
   }
   .luna-slot.is-full { z-index: 40; top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); }
@@ -996,7 +996,7 @@
         <div class="luna-flash" id="luna-flash"></div>
         <div class="luna-caption" aria-hidden="true">
           <div><p id="hero-compare"></p><p id="hero-numbers"></p></div>
-          <span class="luna-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg><span data-t="heroExpand"></span></span>
+          <span class="luna-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></span>
         </div>
         <button type="button" class="luna-hit" id="luna-open" data-action="luna-open"></button>
         <button type="button" class="luna-close" id="luna-close" data-action="luna-close" hidden>
@@ -1203,7 +1203,6 @@ const STR = {
     urgent: 'Urgent',
     heroLoading: 'Loading your baby’s week…',
     heroOpen: 'Open Luna View full screen',
-    heroExpand: 'Full screen',
     heroEarly: 'The 3D view starts at week 8. This is week 8.',
     close: 'Close',
     feeling: 'How are you feeling today?',
@@ -1437,7 +1436,6 @@ const STR = {
     urgent: 'Спешно',
     heroLoading: 'Зареждаме седмицата на бебето…',
     heroOpen: 'Отвори Luna View на цял екран',
-    heroExpand: 'Цял екран',
     heroEarly: '3D изгледът започва от 8-а седмица. Това е 8-а седмица.',
     close: 'Затвори',
     feeling: 'Как се чувстваш днес?',

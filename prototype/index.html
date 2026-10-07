@@ -254,6 +254,8 @@
   .tool[aria-pressed="true"] .tool-label { color: var(--text); }
   .tool:focus-visible { outline: none; }
   .tool:focus-visible .tool-icon { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .rail-tools { display: flex; flex-direction: column; gap: inherit; }
+  .rail-toggle { display: none; }
 
   /* ---------- Dock ---------- */
   .dock {
@@ -582,6 +584,49 @@
   .app-mode .topbar { justify-content: flex-end; }
   .app-hero .topbar, .app-hero .hero, .app-hero .rail, .app-hero .dock, .app-hero .scrim,
   .app-hero .hotspots, .app-hero .info, .app-hero .toast, .app-hero .modal { display: none !important; }
+  /* in the app the tools fold into one button at the bottom right and open upwards */
+  .app-full .rail { align-items: center; pointer-events: none; }
+  .app-full .rail-toggle, .app-full .rail.open .rail-tools .tool { pointer-events: auto; }
+  .app-full .rail-toggle {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text);
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+  .app-full .rail-toggle:active { transform: scale(0.94); }
+  .app-full .rail-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .app-full .rail-toggle svg { width: 24px; height: 24px; }
+  .app-full .rail-toggle .rail-close-icon, .app-full .rail.open .rail-toggle .rail-open-icon { display: none; }
+  .app-full .rail.open .rail-toggle .rail-close-icon { display: block; }
+  .app-full .rail.open .rail-toggle { background: rgba(185, 174, 240, 0.3); border-color: var(--violet); }
+  .app-full .rail-dot { position: absolute; top: 7px; right: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--peach); box-shadow: 0 0 0 2px rgba(14, 13, 31, 0.8); }
+  .app-full .rail-tools .tool {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 180ms ease, visibility 0s linear 180ms;
+  }
+  .app-full .rail.open .rail-tools .tool {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 200ms ease calc(var(--i) * 40ms), transform 320ms cubic-bezier(0.34, 1.4, 0.64, 1) calc(var(--i) * 40ms), visibility 0s;
+  }
+  /* the sex is set in the app's Me screen; here it is only shown */
+  .sex-chip.static { pointer-events: none; border-color: transparent; background: rgba(14, 13, 31, 0.35); }
+  @media (prefers-reduced-motion: reduce) {
+    .app-full .rail-tools .tool, .app-full .rail.open .rail-tools .tool { transform: none; transition: none; }
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -701,25 +746,32 @@
 </aside>
 
 <nav class="rail" aria-label="Scene tools">
-  <button type="button" class="tool" id="tool-explore" aria-pressed="true">
+  <div class="rail-tools" id="rail-tools">
+  <button type="button" class="tool" id="tool-explore" aria-pressed="true" style="--i:4">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg></span>
     <span class="tool-label" id="label-explore">Explore</span>
   </button>
-  <button type="button" class="tool" id="tool-view">
+  <button type="button" class="tool" id="tool-view" style="--i:3">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3M15.5 4h3A1.5 1.5 0 0 1 20 5.5v3M20 15.5v3a1.5 1.5 0 0 1-1.5 1.5h-3M8.5 20h-3A1.5 1.5 0 0 1 4 18.5v-3"/><circle cx="12" cy="12" r="3.2"/></svg></span>
     <span class="tool-label" id="label-view">Whole baby</span>
   </button>
-  <button type="button" class="tool" id="tool-listen" aria-pressed="false">
+  <button type="button" class="tool" id="tool-listen" aria-pressed="false" style="--i:2">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12h4l2-5 3.5 10 2.5-7 1.5 2h5.5"/></svg></span>
     <span class="tool-label" id="label-listen">Listen</span>
   </button>
-  <button type="button" class="tool" id="tool-portrait">
+  <button type="button" class="tool" id="tool-portrait" style="--i:1">
     <span class="tool-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M8.5 16.5c1-2 2.2-3 3.5-3s2.5 1 3.5 3" stroke-linecap="round"/><circle cx="12" cy="9.5" r="2"/></svg></span>
     <span class="tool-label" id="label-portrait">Portrait</span>
   </button>
-  <button type="button" class="tool" id="tool-play" aria-pressed="false">
+  <button type="button" class="tool" id="tool-play" aria-pressed="false" style="--i:0">
     <span class="tool-icon" id="play-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5z"/></svg></span>
     <span class="tool-label" id="label-play">Time-lapse</span>
+  </button>
+  </div>
+  <button type="button" class="rail-toggle" id="rail-toggle" aria-expanded="false" aria-controls="rail-tools" aria-label="Scene tools">
+    <svg class="rail-open-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/><circle cx="9" cy="7" r="1.8" fill="currentColor"/><circle cx="15" cy="12" r="1.8" fill="currentColor"/><circle cx="10" cy="17" r="1.8" fill="currentColor"/></svg>
+    <svg class="rail-close-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    <span class="rail-dot" id="rail-dot" hidden></span>
   </button>
 </nav>
 
@@ -3054,6 +3106,7 @@ function updateStaticCopy() {
   $('label-portrait').textContent = s.tools.portrait;
   $('label-play').textContent = state.playing ? s.tools.pause : s.tools.play;
   document.querySelector('.rail').setAttribute('aria-label', s.toolGroup);
+  $('rail-toggle').setAttribute('aria-label', s.toolGroup);
   $('modes').setAttribute('aria-label', s.modeGroup);
   for (const btn of document.querySelectorAll('#modes button')) btn.textContent = s.modes[btn.dataset.mode];
   $('tri-1').textContent = s.triShort[0];
@@ -3196,7 +3249,7 @@ function renderSex() {
   const s = t().sex;
   const chip = $('sex-chip');
   chip.dataset.sex = state.sex;
-  chip.setAttribute('aria-label', `${s.title}: ${s.options[state.sex]}`);
+  if (chip.tagName === 'BUTTON') chip.setAttribute('aria-label', `${s.title}: ${s.options[state.sex]}`);
   $('sex-chip-text').textContent = s.chip[state.sex];
   $('sex-title').textContent = s.title;
   for (const btn of document.querySelectorAll('#sex-options button')) {
@@ -3249,6 +3302,15 @@ function setSex(sex) {
 }
 
 $('sex-chip').addEventListener('click', () => ($('sex-panel').hidden ? openSexPanel() : closeSexPanel(false)));
+// In the app the baby's sex is chosen in Me, so here it is shown, not picked
+if (appMode) {
+  const old = $('sex-chip');
+  const tag = document.createElement('span');
+  tag.className = 'sex-chip static';
+  tag.id = 'sex-chip';
+  tag.innerHTML = old.innerHTML;
+  old.replaceWith(tag);
+}
 $('sex-close').addEventListener('click', () => closeSexPanel(true));
 for (const btn of document.querySelectorAll('#sex-options button')) btn.addEventListener('click', () => setSex(btn.dataset.sex));
 function setSkin(skin) {
@@ -3550,12 +3612,26 @@ function closeModal() {
 }
 
 $('tool-portrait').addEventListener('click', () => { capturePortrait(); });
+
+// App full view: the tools open upwards from one button, so they don't cover the scene all the time
+let railOpen = false;
+function setRail(open) {
+  railOpen = open;
+  document.querySelector('.rail').classList.toggle('open', open);
+  $('rail-toggle').setAttribute('aria-expanded', String(open));
+}
+$('rail-toggle').addEventListener('click', () => setRail(!railOpen));
+canvas.addEventListener('pointerdown', () => { if (railOpen) setRail(false); });
+// a small dot on the closed button while listening or the time-lapse is on
+const railDot = () => { $('rail-dot').hidden = !(state.listening || state.playing); };
+for (const id of ['tool-listen', 'tool-play']) new MutationObserver(railDot).observe($(id), { attributes: true, attributeFilter: ['aria-pressed'] });
 $('modal-close').addEventListener('click', closeModal);
 $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (!$('modal').hidden) closeModal();
   else if (!$('sex-panel').hidden) closeSexPanel(true);
+  else if (railOpen) { setRail(false); $('rail-toggle').focus(); }
   else if (state.activeHotspot) closeInfo();
 });
 
@@ -3749,6 +3825,7 @@ function applyAppView(view) {
   if (view === 'hero') {
     closeInfo();
     closeSexPanel(false);
+    setRail(false);
     if (state.playing) togglePlay(false);
     if (state.view !== 'whole') setView('whole');
   }
