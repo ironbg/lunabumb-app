@@ -42,8 +42,8 @@
 ```bash
 # от корена на репото
 python3 -m http.server 8000
-# после отвори http://localhost:8000/lunabump/prototype/          (Luna View)
-#      или http://localhost:8000/lunabump/prototype/app.html  (цялото приложение)
+# после отвори http://localhost:8000/prototype/          (Luna View)
+#      или http://localhost:8000/prototype/app.html  (цялото приложение)
 ```
 
 Работи с всеки статичен сървър (`npx serve`, nginx и др.). Изисква браузър с WebGL2: актуален Chrome, Safari, Edge или Firefox, на телефон или компютър.
