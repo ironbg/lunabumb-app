@@ -512,12 +512,13 @@
   .sym-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   /* icon above the label gives the whole tile width to the text, so long Bulgarian words stay whole */
   .sym-tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 6px; min-height: 86px; padding: 10px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); color: var(--fg); text-align: left; font-weight: 700; font-size: 14px; line-height: 1.2; overflow-wrap: break-word; }
-  .sym-ico { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--tint); font-size: 17px; line-height: 1; }
+  .sym-ico { width: 36px; height: 36px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--tint); color: var(--accent); transition: background-color 200ms, color 200ms; }
+  .sym-ico svg { width: 22px; height: 22px; }
   .sym-tile[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); }
-  .sym-tile[aria-pressed="true"] .sym-ico { background: var(--card); box-shadow: 0 0 0 2px var(--accent); }
+  .sym-tile[aria-pressed="true"] .sym-ico { background: var(--accent); color: var(--on-accent); }
   .sym-info { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
   .sym-info:first-of-type { border-top: 0; padding-top: 0; }
-  .sym-info-head { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .sym-info-head { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; align-items: center; }
   .levels { display: grid; gap: 8px; }
   .levels input[type="range"] { width: 100%; accent-color: var(--violet); }
   .levels-value { font-weight: 700; }
@@ -2140,89 +2141,126 @@ const FOODS = [
 // The symptom tracker. Every symptom has an icon; most have a tip and a line on when to get help,
 // from the NHS symptom pages (checked October 2026). `flag` opens the matching urgent screen.
 const SYMPTOMS = {
-  none: { icon: '😊', en: 'No symptoms', bg: 'Без симптоми' },
-  backpain: { icon: '🦴', en: 'Back pain', bg: 'Болки в гърба', src: [NHS.back, NHS.stomach],
+  none: { en: 'No symptoms', bg: 'Без симптоми' },
+  backpain: { en: 'Back pain', bg: 'Болки в гърба', src: [NHS.back, NHS.stomach],
     tip: { en: 'Bend your knees and keep your back straight when you lift, wear flat shoes and rest when you can.', bg: 'Свивай коленете и дръж гърба изправен, когато вдигаш нещо, носи обувки без ток и почивай, когато можеш.' },
     help: { en: 'Call your maternity unit if back pain comes with regular tightenings, bleeding or a fever.', bg: 'Обади се в родилното отделение, ако болката в кръста е заедно с редовни стягания, кървене или температура.' }, flag: 'pain' },
-  bloating: { icon: '🎈', en: 'Bloating and wind', bg: 'Подуване и газове', src: NHS.stomach,
+  bloating: { en: 'Bloating and wind', bg: 'Подуване и газове', src: NHS.stomach,
     tip: { en: 'Trapped wind is a common cause of mild tummy pain. Small, frequent meals and gentle walks can help.', bg: 'Газовете са честа причина за лека болка в корема. Малките и чести хранения и леките разходки помагат.' } },
-  leaking: { icon: '🍼', en: 'Breast leaking', bg: 'Изтичане от гърдите',
+  leaking: { en: 'Breast leaking', bg: 'Изтичане от гърдите',
     tip: { en: 'Leaking a little early milk (colostrum) is normal later in pregnancy. Breast pads help.', bg: 'Изтичането на малко коластра е нормално към края на бременността. Подплънките за гърди помагат.' } },
-  breasts: { icon: '💗', en: 'Tender breasts', bg: 'Чувствителни гърди',
+  breasts: { en: 'Tender breasts', bg: 'Чувствителни гърди',
     tip: { en: 'Common in early pregnancy. A soft, supportive bra helps, also at night.', bg: 'Често е в началото на бременността. Мек сутиен с добра опора помага, също и нощем.' } },
-  constipation: { icon: '🧻', en: 'Constipation', bg: 'Запек', src: NHS.common,
+  constipation: { en: 'Constipation', bg: 'Запек', src: NHS.common,
     tip: { en: 'Eat high-fibre foods such as wholemeal bread, fruit, vegetables and pulses, drink plenty of water and keep active.', bg: 'Яж храни с много фибри като пълнозърнест хляб, плодове, зеленчуци и бобови, пий много вода и се движи.' } },
-  braxton: { icon: '🌊', en: 'Contractions or tightenings', bg: 'Контракции или стягания', src: [NHS.stomach, NHS.labour],
+  braxton: { en: 'Contractions or tightenings', bg: 'Контракции или стягания', src: [NHS.stomach, NHS.labour],
     tip: { en: 'Practice tightenings are usually irregular and ease when you rest or change position.', bg: 'Тренировъчните стягания обикновено са нередовни и минават при почивка или смяна на позата.' },
     help: { en: 'Before 37 weeks, regular tightenings need checking straight away: call your maternity unit. From 37 weeks, call when they’re regular and every 5 minutes or more often.', bg: 'Преди 37-а седмица редовните стягания трябва да се проверят веднага: обади се в родилното отделение. След 37-а седмица се обади, когато са редовни и през 5 минути или по-често.' }, flag: 'preterm', urgent: true },
-  cramping: { icon: '🌀', en: 'Tummy cramps', bg: 'Спазми в корема', src: NHS.stomach,
+  cramping: { en: 'Tummy cramps', bg: 'Спазми в корема', src: NHS.stomach,
     tip: { en: 'Mild cramps from stretching ligaments, constipation or wind usually ease with rest, a change of position or going to the toilet.', bg: 'Леките спазми от разтягане на връзките, запек или газове обикновено минават с почивка, смяна на позата или тоалетна.' },
     help: { en: 'Call your maternity unit if cramps come with bleeding, fluid, regular tightenings or pain when you pee, or don’t ease after 30 to 60 minutes of rest. Severe pain or heavy bleeding: call 112.', bg: 'Обади се в родилното отделение, ако спазмите са с кървене, изтичане, редовни стягания или болка при уриниране, или не минават след 30–60 минути почивка. При силна болка или силно кървене: 112.' }, flag: 'pain', urgent: true },
-  dizzy: { icon: '💫', en: 'Dizzy or lightheaded', bg: 'Световъртеж или прималяване', src: NHS.common,
+  dizzy: { en: 'Dizzy or lightheaded', bg: 'Световъртеж или прималяване', src: NHS.common,
     tip: { en: 'Get up slowly after sitting or lying down. If you feel faint, sit down; if it doesn’t pass, lie on your side.', bg: 'Ставай бавно, след като си седяла или лежала. Ако ти прилошее, седни; ако не минава, легни на една страна.' },
     help: { en: 'If you faint, or have chest pain or trouble breathing, call 112.', bg: 'Ако припаднеш или имаш болка в гърдите или затруднено дишане, обади се на 112.' }, flag: 'emergency' },
-  tired: { icon: '🥱', en: 'Tiredness', bg: 'Умора', src: [NHS.tiredness, SRC.iron],
+  tired: { en: 'Tiredness', bg: 'Умора', src: [NHS.tiredness, SRC.iron],
     tip: { en: 'Very common, especially early and late in pregnancy. Rest when you can and go to bed earlier.', bg: 'Много често е, особено в началото и в края на бременността. Почивай, когато можеш, и лягай по-рано.' },
     help: { en: 'Tell your midwife or doctor if you’re always exhausted or breathless: it can be a sign of low iron.', bg: 'Кажи на лекаря или акушерката, ако постоянно си изтощена или задъхана: може да е от ниско желязо.' } },
-  aversions: { icon: '🙅', en: 'Food aversions', bg: 'Отвращение към храни',
+  aversions: { en: 'Food aversions', bg: 'Отвращение към храни',
     tip: { en: 'Common in early pregnancy. Plain, cold foods are often easier.', bg: 'Често е в началото на бременността. Леките и студени храни често се понасят по-лесно.' } },
-  cravings: { icon: '🍩', en: 'Food cravings', bg: 'Желание за определени храни',
+  cravings: { en: 'Food cravings', bg: 'Желание за определени храни',
     tip: { en: 'Fine in moderation as part of a balanced diet.', bg: 'Наред е в умерени количества, като част от разнообразното хранене.' },
     help: { en: 'Tell your midwife if you crave things that aren’t food, such as soil, chalk or ice.', bg: 'Кажи на акушерката, ако ти се яде нещо, което не е храна, например пръст, тебешир или лед.' } },
-  urination: { icon: '🚻', en: 'Peeing a lot', bg: 'Често уриниране', src: NHS.common,
+  urination: { en: 'Peeing a lot', bg: 'Често уриниране', src: NHS.common,
     tip: { en: 'Common in pregnancy. Cutting down on drinks late in the evening can help at night.', bg: 'Често е по време на бременност. По-малко течности късно вечер помагат през нощта.' },
     help: { en: 'If it hurts or burns when you pee, or there’s blood in your pee, see your doctor: it may be a urine infection.', bg: 'Ако те боли или пари при уриниране или има кръв в урината, иди на лекар: може да е инфекция.' } },
-  headache: { icon: '🤕', en: 'Headache', bg: 'Главоболие', src: [NHS.headaches, NHS.preeclampsia],
+  headache: { en: 'Headache', bg: 'Главоболие', src: [NHS.headaches, NHS.preeclampsia],
     tip: { en: 'Drink plenty of fluids and rest. Paracetamol is the first choice of painkiller.', bg: 'Пий много течности и почивай. Парацетамолът е първият избор срещу болка.' },
     help: { en: 'Call your maternity unit now if the headache is severe or comes with blurred vision or flashing lights, pain just below the ribs, vomiting or sudden swelling.', bg: 'Обади се веднага в родилното отделение, ако главоболието е силно или е със замъглено зрение или проблясъци, болка под ребрата, повръщане или внезапен оток.' }, flag: 'preeclampsia', urgent: true },
-  heartburn: { icon: '🔥', en: 'Heartburn and indigestion', bg: 'Киселини и лошо храносмилане', src: NHS.heartburn,
+  heartburn: { en: 'Heartburn and indigestion', bg: 'Киселини и лошо храносмилане', src: NHS.heartburn,
     tip: { en: 'Eat small meals often and nothing in the 3 hours before bed. Prop up your head and shoulders at night.', bg: 'Храни се често и на малки порции и не яж 3 часа преди сън. Повдигни главата и раменете си нощем.' },
     help: { en: 'Heartburn that won’t go away with medicine, together with a headache or swelling, can be pre-eclampsia: call your maternity unit.', bg: 'Киселини, които не минават с лекарства, заедно с главоболие или отоци, може да са прееклампсия: обади се в родилното отделение.' }, flag: 'preeclampsia' },
-  itching: { icon: '🖐️', en: 'Itching', bg: 'Сърбеж', src: [NHS.cholestasis, NHS.help],
+  itching: { en: 'Itching', bg: 'Сърбеж', src: [NHS.cholestasis, NHS.help],
     tip: { en: 'Mild itching from stretching skin is common. Loose cotton clothes help.', bg: 'Лекият сърбеж от разтягане на кожата е чест. Помагат свободни памучни дрехи.' },
     help: { en: 'Tell your midwife if the itching is on your palms or soles, is worse at night, or starts after 28 weeks: it can be a liver condition called cholestasis.', bg: 'Кажи на акушерката, ако сърбежът е по дланите или стъпалата, по-силен е нощем или започва след 28-а седмица: може да е чернодробно състояние, наречено холестаза.' }, flag: 'itching' },
-  moody: { icon: '🎭', en: 'Mood changes', bg: 'Промени в настроението', src: NHS.mental,
+  moody: { en: 'Mood changes', bg: 'Промени в настроението', src: NHS.mental,
     tip: { en: 'Ups and downs are common. Talk to someone you trust.', bg: 'Възходите и спадовете са чести. Сподели с човек, на когото имаш доверие.' },
     help: { en: 'If stress, worry or low mood affect your daily life, tell your midwife or doctor. If you think about harming yourself, call 112.', bg: 'Ако стресът, тревогата или тъгата пречат на деня ти, кажи на акушерката или лекаря. Ако мислиш да си навредиш, обади се на 112.' } },
-  nausea: { icon: '🤢', en: 'Nausea', bg: 'Гадене', src: NHS.nausea,
+  nausea: { en: 'Nausea', bg: 'Гадене', src: NHS.nausea,
     tip: { en: 'Small, frequent meals of plain food, sips of water and rest. Ginger may help some people.', bg: 'Малки и чести хранения с лека храна, глътки вода и почивка. На някои хора помага джинджифилът.' },
     help: { en: 'Contact your doctor the same day if you can’t keep food or fluids down for 24 hours.', bg: 'Свържи се с лекаря още същия ден, ако 24 часа не задържаш храна и течности.' }, flag: 'vomiting' },
-  pelvic: { icon: '💥', en: 'Pelvic pain', bg: 'Болка в таза', src: NHS.pelvic,
+  pelvic: { en: 'Pelvic pain', bg: 'Болка в таза', src: NHS.pelvic,
     tip: { en: 'Keep your knees together when you get in and out of the car, sleep with a pillow between your legs and avoid heavy lifting.', bg: 'Дръж коленете заедно, когато влизаш и излизаш от колата, спи с възглавница между краката и не вдигай тежко.' },
     help: { en: 'Tell your midwife if it makes walking, stairs or turning over in bed hard: a physiotherapist can help.', bg: 'Кажи на акушерката, ако ти е трудно да ходиш, да се качваш по стълби или да се обръщаш в леглото: физиотерапевт може да помогне.' } },
-  ligament: { icon: '🤰', en: 'Pulling pain low in the bump', bg: 'Дърпаща болка ниско в корема', src: NHS.stomach,
+  ligament: { en: 'Pulling pain low in the bump', bg: 'Дърпаща болка ниско в корема', src: NHS.stomach,
     tip: { en: 'A sharp, one-sided pain low in the bump is often the ligaments stretching. It usually eases with rest or a change of position.', bg: 'Острата болка от едната страна ниско в корема често е от разтягане на връзките. Обикновено минава с почивка или смяна на позата.' },
     help: { en: 'Call your maternity unit if the pain is severe or doesn’t ease after 30 to 60 minutes of rest.', bg: 'Обади се в родилното отделение, ако болката е силна или не минава след 30–60 минути почивка.' }, flag: 'pain' },
-  cramps: { icon: '🦵', en: 'Leg cramps', bg: 'Крампи в краката', src: NHS.common,
+  cramps: { en: 'Leg cramps', bg: 'Крампи в краката', src: NHS.common,
     tip: { en: 'Pull your toes hard up towards your ankle or rub the muscle hard. Gentle ankle and leg exercises help.', bg: 'Издърпай силно пръстите към глезена или разтрий силно мускула. Леките упражнения за глезените и краката помагат.' },
     help: { en: 'Pain, redness or swelling in one calf needs a doctor the same day: it can be a blood clot.', bg: 'Болка, зачервяване или подуване на единия прасец трябва да се види от лекар още същия ден: може да е тромб.' } },
-  breathless: { icon: '🌬️', en: 'Breathlessness', bg: 'Задух', src: NHS.help,
+  breathless: { en: 'Breathlessness', bg: 'Задух', src: NHS.help,
     tip: { en: 'Mild breathlessness is common as the bump grows.', bg: 'Лекият задух е чест, докато коремът расте.' },
     help: { en: 'Call 112 if it comes on suddenly, you’re breathless lying down, or you have chest pain.', bg: 'Обади се на 112, ако задухът започне внезапно, ако се задъхваш в легнало положение или имаш болка в гърдите.' }, flag: 'emergency', urgent: true },
-  skin: { icon: '💅', en: 'Skin, hair and nail changes', bg: 'Промени в кожата, косата и ноктите', src: NHS.common,
+  skin: { en: 'Skin, hair and nail changes', bg: 'Промени в кожата, косата и ноктите', src: NHS.common,
     tip: { en: 'Darker patches and a dark line down the bump are common. Your skin burns more easily, so use high-factor sunscreen.', bg: 'Потъмнелите петна и тъмната линия по корема са чести. Кожата изгаря по-лесно, затова ползвай слънцезащита с висок фактор.' } },
-  sleep: { icon: '🌙', en: 'Trouble sleeping', bg: 'Лош сън', src: NHS.sleep,
+  sleep: { en: 'Trouble sleeping', bg: 'Лош сън', src: NHS.sleep,
     tip: { en: 'From 28 weeks, go to sleep on your side. A pillow under the bump or between your knees can help.', bg: 'От 28-а седмица заспивай на една страна. Възглавница под корема или между коленете помага.' } },
-  spotting: { icon: '🩸', en: 'Spotting or bleeding', bg: 'Зацапване или кървене', src: [NHS.bleeding, NHS.help],
+  spotting: { en: 'Spotting or bleeding', bg: 'Зацапване или кървене', src: [NHS.bleeding, NHS.help],
     help: { en: 'Any bleeding in pregnancy needs advice the same day: call your maternity unit or doctor. If it’s heavy, or you have severe pain or feel faint, call 112.', bg: 'Всяко кървене по време на бременност трябва да се провери още същия ден: обади се в родилното отделение или на лекаря. Ако е силно или имаш силна болка или ти прилошава, обади се на 112.' }, flag: 'bleeding', urgent: true },
-  smell: { icon: '👃', en: 'Strong sense of smell', bg: 'Силно обоняние',
+  smell: { en: 'Strong sense of smell', bg: 'Силно обоняние',
     tip: { en: 'Common in early pregnancy. Fresh air and cold food with less smell can help.', bg: 'Често е в началото на бременността. Помагат чистият въздух и студената храна с по-слаба миризма.' } },
-  nose: { icon: '🤧', en: 'Blocked nose', bg: 'Запушен нос',
+  nose: { en: 'Blocked nose', bg: 'Запушен нос',
     tip: { en: 'A blocked nose is common in pregnancy. Steam or salt-water drops may help; ask a pharmacist before using any decongestant.', bg: 'Запушеният нос е чест по време на бременност. Парата или солените капки помагат; питай фармацевт, преди да ползваш капки срещу хрема.' } },
-  sweating: { icon: '💦', en: 'Feeling hot or sweaty', bg: 'Горещини и потене', src: NHS.common,
+  sweating: { en: 'Feeling hot or sweaty', bg: 'Горещини и потене', src: NHS.common,
     tip: { en: 'Wear loose clothes made of natural fibres and keep your room cool.', bg: 'Носи свободни дрехи от естествени материи и дръж стаята хладна.' },
     help: { en: 'A temperature of 38°C or more needs advice the same day.', bg: 'Температура 38 °C или повече трябва да се провери още същия ден.' }, flag: 'fever' },
-  swelling: { icon: '🦶', en: 'Swelling', bg: 'Отоци', src: [NHS.swelling, NHS.help],
+  swelling: { en: 'Swelling', bg: 'Отоци', src: [NHS.swelling, NHS.help],
     tip: { en: 'Mild swelling of the feet and ankles is common, especially late in the day. Rest with your feet up.', bg: 'Лекият оток на стъпалата и глезените е чест, особено вечер. Почивай с вдигнати крака.' },
     help: { en: 'Sudden swelling of the face, hands or feet can be pre-eclampsia: call your maternity unit now.', bg: 'Внезапният оток на лицето, ръцете или краката може да е прееклампсия: обади се веднага в родилното отделение.' }, flag: 'preeclampsia', urgent: true },
-  discharge: { icon: '💧', en: 'Vaginal discharge', bg: 'Вагинално течение', src: NHS.discharge,
+  discharge: { en: 'Vaginal discharge', bg: 'Вагинално течение', src: NHS.discharge,
     tip: { en: 'More discharge is normal in pregnancy. It should be thin, clear or milky white, and not smell unpleasant.', bg: 'По-обилното течение е нормално по време на бременност. То трябва да е рядко, прозрачно или млечнобяло и без неприятна миризма.' },
     help: { en: 'Tell your midwife if it smells, is green or yellow, or you feel itchy or sore. If fluid is leaking or there’s bleeding, call your maternity unit now.', bg: 'Кажи на акушерката, ако мирише, зелено или жълто е, или те сърби и боли. Ако изтича течност или има кървене, обади се веднага в родилното отделение.' }, flag: 'fluid' },
-  vomiting: { icon: '🤮', en: 'Vomiting', bg: 'Повръщане', src: [NHS.nausea, NHS.help],
+  vomiting: { en: 'Vomiting', bg: 'Повръщане', src: [NHS.nausea, NHS.help],
     tip: { en: 'Sip water little and often, and try small amounts of plain food.', bg: 'Пий вода често и на малки глътки и опитвай малки количества лека храна.' },
     help: { en: 'Contact your doctor the same day if you can’t keep food or fluids down for 24 hours, your pee is very dark, or you vomit blood.', bg: 'Свържи се с лекаря още същия ден, ако 24 часа не задържаш храна и течности, ако урината е много тъмна или повръщаш кръв.' }, flag: 'vomiting', urgent: true },
-  other: { icon: '➕', en: 'Other', bg: 'Друго' },
+  other: { en: 'Other', bg: 'Друго' },
 };
+
+// symptom icons: 24×24 line drawings with the same stroke as the tool icons
+const SYM_ICON = {
+  none: '<circle cx="12" cy="12" r="8.5"/><path d="m8.4 12.2 2.4 2.4 4.8-5"/>',
+  backpain: '<rect x="9.2" y="3.2" width="5.6" height="3.4" rx="1.5"/><rect x="8.8" y="8.4" width="6.4" height="3.4" rx="1.5"/><rect x="8.4" y="13.6" width="7.2" height="3.4" rx="1.5"/><path d="m10.6 18.8 1.4 2 1.4-2M4 13.6l1.8.8M3.6 17h2M4 20l1.8-.8"/>',
+  bloating: '<path d="M12 3.5c3.1 0 5.5 2.6 5.5 6 0 3.7-2.7 6.6-5.5 6.6s-5.5-2.9-5.5-6.6c0-3.4 2.4-6 5.5-6z"/><path d="m11 16.1-.6 1.2h3.2l-.6-1.2M12 17.3c-.9 1.1.9 2 0 3.2"/>',
+  leaking: '<path d="M10.5 5.6c0-1.3.6-2.1 1.5-2.1s1.5.8 1.5 2.1"/><rect x="8.5" y="5.6" width="7" height="2.6" rx="1"/><path d="M9.2 8.2h5.6l.4 1.5v8.8a2 2 0 0 1-2 2h-2.4a2 2 0 0 1-2-2V9.7zM11 12.5h2M11 15.5h2"/>',
+  breasts: '<path d="M7.5 3.8v5.4M16.5 3.8v5.4M3.6 16.2c0-4 1.9-7 4.4-7 2.3 0 4 1.9 4 4.3 0-2.4 1.7-4.3 4-4.3 2.5 0 4.4 3 4.4 7M3.6 16.2c2.8 1.4 5.6 1.4 8.4 0 2.8 1.4 5.6 1.4 8.4 0"/>',
+  constipation: '<circle cx="8" cy="9.5" r="4.5"/><circle cx="8" cy="9.5" r="1.3"/><path d="M8 5h8.2c1.6 0 2.8 2 2.8 4.5v11h-8.5V14"/>',
+  braxton: '<path d="M2.5 13h3l2-5 3.5 9 2.5-6 1.5 2h6.5"/>',
+  cramping: '<path d="M7 3.5c0 2.6-2.5 4.4-2.5 8.6 0 4.6 3.4 8.4 7.5 8.4s7.5-3.8 7.5-8.4c0-4.2-2.5-6-2.5-8.6"/><path d="m12.9 8.2-2.6 4h3.4l-2.6 4"/>',
+  dizzy: '<path d="M11 13a1.2 1.2 0 0 1 2.4 0 2.4 2.4 0 0 1-4.8 0 3.6 3.6 0 0 1 7.2 0 4.8 4.8 0 0 1-9.6 0"/><path d="M18.5 3.5v3M17 5h3M19.8 9.5v2M18.8 10.5h2"/>',
+  tired: '<rect x="3.5" y="8" width="15" height="8" rx="2.5"/><path d="M21 10.8v2.4M7 11v2"/>',
+  aversions: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.3"/><path d="m6 6 12 12"/>',
+  cravings: '<path d="M7 10.5a5 5 0 0 1 10 0z"/><path d="m7.8 10.5 4.2 10 4.2-10M10 14h4"/><path d="M12 5.5V3.5"/>',
+  urination: '<rect x="4.5" y="3.5" width="5" height="8" rx="1.5"/><path d="M4.5 11.5h15c0 3-2.6 5.4-6 5.6l.6 3.4H8.4l.6-3.9c-2.7-.8-4.5-2.7-4.5-5.1z"/>',
+  headache: '<path d="M7.5 20.5v-4.2A7 7 0 1 1 18.6 10l1.6 3.2a.6.6 0 0 1-.5.9h-1.2v2.4a1.8 1.8 0 0 1-1.8 1.8h-1.7v2.2"/><path d="m13.2 6.2-2.6 4h3.2l-2.6 4"/>',
+  heartburn: '<path d="M12 3.5c2.6 3.3 3.6 6.8 3.1 10 1.2-.3 2.2-1.1 2.8-2.4A6 6 0 0 1 12 20.5a6 6 0 0 1-5-9.4c1.4-2.3 4.7-4.4 5-7.6z"/><path d="M12 20.5c-1.6 0-2.8-1.2-2.8-2.8 0-1.4 1.2-2.4 2.8-4 1.6 1.6 2.8 2.6 2.8 4 0 1.6-1.2 2.8-2.8 2.8z"/>',
+  itching: '<path d="M5.5 12.5c2-3 4-5.2 7-7.2M8 16.5c2.3-3.6 5-6.4 8.5-8.7M11.5 19.5c2-3 4.3-5.4 7-7.2"/>',
+  moody: '<path d="M10.8 6.9A3.6 3.6 0 0 0 4.6 10a3.6 3.6 0 0 0 1.2 2.6M8.6 2.9v1.4M3 8.6h1.4M4.6 4.6l1 1M12.6 4.6l-1 1"/><path d="M9.5 20h8.3a3.2 3.2 0 0 0 .4-6.4 4.8 4.8 0 0 0-9.3 1.3A2.6 2.6 0 0 0 9.5 20z"/>',
+  nausea: '<circle cx="12" cy="12" r="8.5"/><path d="M9.2 9.8h.01M14.8 9.8h.01M8 15.2c.7-.8 1.3-.8 2 0s1.3.8 2 0 1.3-.8 2 0 1.3.8 2 0"/>',
+  pelvic: '<path d="M10 6h4l-.5 4.6L12 12l-1.5-1.4z"/><path d="M10 7.2C8.6 5.2 5.9 4.7 3.5 5.6c-.1 3.1.9 5.6 2.9 7.3.4 2.4 1.7 4.4 3.8 5.4M14 7.2c1.4-2 4.1-2.5 6.5-1.6.1 3.1-.9 5.6-2.9 7.3-.4 2.4-1.7 4.4-3.8 5.4M10.2 18.3h3.6"/><path d="M6.4 12.9h1.4M17.6 12.9h-1.4"/>',
+  ligament: '<circle cx="9.6" cy="4.6" r="2.1"/><path d="M8.7 7.6c-.9 2.4-1.3 4.7-.8 7l.9 5.9M10.8 8c.6 1 .9 2 1.1 3.2 2.9.6 4.6 2.6 4.6 4.6 0 1.9-1.6 3-4.3 3l-.3 1.7"/><path d="m18.6 15.6 1.7-.8M19 18.2h1.8"/>',
+  cramps: '<path d="M8.5 3.5V11c0 1.8.6 3.3 1 4.7l.6 2.6c.3 1.3 1.3 2.2 2.6 2.2H18a1.2 1.2 0 0 0 .4-2.3l-4-1.4-1.1-3.2c-.5-1.4-.7-2.9-.7-4.4V3.5"/><path d="m16 5.5 2.4 1.3L16 8.1l2.4 1.3"/>',
+  breathless: '<path d="M12 3.5v7.5M12 9.5l-2.2 1.8M12 9.5l2.2 1.8"/><path d="M9.6 7C6.6 7 4 11.4 4 16.4c0 2.1 1 3.6 2.6 3.6 2 0 3.4-1.4 3.4-3.6V8c0-.6-.1-1-.4-1zM14.4 7c3 0 5.6 4.4 5.6 9.4 0 2.1-1 3.6-2.6 3.6-2 0-3.4-1.4-3.4-3.6V8c0-.6.1-1 .4-1z"/>',
+  skin: '<path d="M10 4c.6 3.5 2.5 5.4 6 6-3.5.6-5.4 2.5-6 6-.6-3.5-2.5-5.4-6-6 3.5-.6 5.4-2.5 6-6zM17.5 14.5c.3 1.6 1.1 2.4 2.7 2.7-1.6.3-2.4 1.1-2.7 2.7-.3-1.6-1.1-2.4-2.7-2.7 1.6-.3 2.4-1.1 2.7-2.7zM18 3.5v3M16.5 5h3"/>',
+  sleep: '<path d="M18.6 15.2A7.5 7.5 0 1 1 9 5a6 6 0 0 0 9.6 10.2z"/><path d="M14.5 3.5h4l-4 4.5h4"/>',
+  spotting: '<path d="M10 4.5c2.7 3.4 4.5 6 4.5 8.5a4.5 4.5 0 0 1-9 0c0-2.5 1.8-5.1 4.5-8.5zM17.5 13c1.3 1.6 2.2 2.8 2.2 4a2.2 2.2 0 0 1-4.4 0c0-1.2.9-2.4 2.2-4z"/>',
+  smell: '<path d="M9.5 3.5c-.4 3.5-2.2 6.6-3.9 9.2-.7 1 0 2.3 1.2 2.3h2.6M8.6 15c.3 1 1 1.6 2 1.6"/><path d="M14 8.5c1-.9 2-.9 3 0s2 .9 3 0M14 12.5c1-.9 2-.9 3 0s2 .9 3 0M14 16.5c1-.9 2-.9 3 0s2 .9 3 0"/>',
+  nose: '<path d="M4 11.5h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM8.5 15h7"/><path d="M9 11.5C8.5 9 9.5 6.5 11 5c1 1 2.5 1.2 3.8.8-.8 1.8-.9 3.8.2 5.7"/>',
+  sweating: '<path d="M8 13.9V5.5a2 2 0 0 1 4 0v8.4a4 4 0 1 1-4 0z"/><path d="M10 9v7.5"/><path d="M16 6.5c.8.8.8 1.7 0 2.5s-.8 1.7 0 2.5M19 6.5c.8.8.8 1.7 0 2.5s-.8 1.7 0 2.5"/>',
+  swelling: '<path d="M12 9.8c3 0 4.5 2.5 4.2 5.5-.3 3.4-2.4 5.2-4.7 5.2S8 18.8 8 16.6c0-2 1.2-3 1.2-4.6 0-1.4 1.1-2.2 2.8-2.2z"/><g fill="currentColor" stroke="none"><circle cx="9" cy="6.6" r="1.5"/><circle cx="12.1" cy="5.1" r="1.15"/><circle cx="14.8" cy="5.5" r="1"/><circle cx="16.9" cy="6.8" r=".9"/><circle cx="18.3" cy="8.7" r=".8"/></g>',
+  discharge: '<path d="M3.5 6h17v2.6c-3.6.4-6.3 3.8-7 8.9h-3c-.7-5.1-3.4-8.5-7-8.9z"/><path d="M12 9.4c.8 1 1.3 1.7 1.3 2.4a1.3 1.3 0 0 1-2.6 0c0-.7.5-1.4 1.3-2.4z"/>',
+  vomiting: '<circle cx="12" cy="12" r="8.5"/><path d="m8.2 8.6 2 1.3-2 1.3M15.8 8.6l-2 1.3 2 1.3"/><ellipse cx="12" cy="15.4" rx="2" ry="1.6"/>',
+  other: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8.2v7.6M8.2 12h7.6"/>',
+};
+const symIcon = (id) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SYM_ICON[id] || SYM_ICON.other}</svg>`;
 
 // the tiles in alphabetical order for the current language, "no symptoms" first and "other" last
 function symptomOrder() {
@@ -2696,7 +2734,7 @@ function renderSymptoms() {
   if (!ui.symTime) ui.symTime = nowHM();
   const picked = ui.symPicked;
   const any = picked.size > 0 && !picked.has('none');
-  const tiles = symptomOrder().map((id) => `<button type="button" class="sym-tile" aria-pressed="${picked.has(id)}" data-action="sym-chip" data-sym="${id}"><span class="sym-ico" aria-hidden="true">${SYMPTOMS[id].icon}</span><span>${esc(L(SYMPTOMS[id]))}</span></button>`).join('');
+  const tiles = symptomOrder().map((id) => `<button type="button" class="sym-tile" aria-pressed="${picked.has(id)}" data-action="sym-chip" data-sym="${id}"><span class="sym-ico" aria-hidden="true">${symIcon(id)}</span><span>${esc(L(SYMPTOMS[id]))}</span></button>`).join('');
   const entries = [...data.symptoms].sort((a, b) => b.at - a.at).slice(0, 6);
   if (!ui.calMonth.symptoms) ui.calMonth.symptoms = todayISO().slice(0, 7) + '-01';
   const pickedDay = ui.calPick.symptoms;
@@ -2737,12 +2775,12 @@ function renderSymptoms() {
 
 // tips and when to get help for what was just logged, the urgent ones first
 function symInfoHTML(ids) {
-  const list = ids.map((id) => SYMPTOMS[id]).filter((x) => x && (x.tip || x.help)).sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+  const list = ids.filter((id) => SYMPTOMS[id] && (SYMPTOMS[id].tip || SYMPTOMS[id].help)).sort((a, b) => (SYMPTOMS[b].urgent ? 1 : 0) - (SYMPTOMS[a].urgent ? 1 : 0));
   if (!list.length) return '';
   return `<section class="card" aria-labelledby="sym-about" id="sym-about-card">
     <div class="row-between"><h2 id="sym-about">${esc(t().symAbout)}</h2><button type="button" class="icon-btn" data-action="sym-about-close" aria-label="${esc(t().close)}">${TOOL_ICON.x}</button></div>
-    ${list.map((x) => `<div class="sym-info">
-      <div class="sym-info-head"><span class="sym-ico" aria-hidden="true">${x.icon}</span><strong>${esc(L(x))}</strong></div>
+    ${list.map((id) => SYMPTOMS[id]).map((x, i) => `<div class="sym-info">
+      <div class="sym-info-head"><span class="sym-ico" aria-hidden="true">${symIcon(list[i])}</span><strong>${esc(L(x))}</strong></div>
       ${x.tip ? `<p class="small">${esc(L(x.tip))}</p>` : ''}
       ${x.help ? `<div class="notice ${x.urgent ? 'notice-alert' : 'notice-care'}"><span>${esc(L(x.help))}</span>${x.flag ? `<button type="button" class="link-btn" data-action="flag" data-flag="${symptomFlag(x)}">${esc(t().whatToDo)}</button>` : ''}</div>` : ''}
       ${x.src ? sourceLine(x.src) : ''}
