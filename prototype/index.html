@@ -942,7 +942,7 @@ const STR = {
     kick: 'Log kick',
     kicksToday: (n) => `${n} today`,
     tools: { explore: 'Explore', listen: 'Listen', portrait: 'Portrait', play: 'Time-lapse', pause: 'Pause', view: 'View' },
-    views: { whole: 'Whole baby', face: 'Face', hands: 'Hands', feet: 'Feet' },
+    views: { close: 'Close-up', whole: 'Whole baby', face: 'Face', hands: 'Hands', feet: 'Feet' },
     prevWeek: 'Previous week',
     nextWeek: 'Next week',
     scenes: {
@@ -1050,7 +1050,7 @@ const STR = {
     kick: 'Ритник',
     kicksToday: (n) => `${n} днес`,
     tools: { explore: 'Разгледай', listen: 'Слушай', portrait: 'Портрет', play: 'Таймлапс', pause: 'Пауза', view: 'Изглед' },
-    views: { whole: 'Цялото бебе', face: 'Лице', hands: 'Ръце', feet: 'Крачета' },
+    views: { close: 'Отблизо', whole: 'Цялото бебе', face: 'Лице', hands: 'Ръце', feet: 'Крачета' },
     prevWeek: 'Предишна седмица',
     nextWeek: 'Следваща седмица',
     scenes: {
@@ -1154,7 +1154,7 @@ const MODES = {
   dreamy: {
     bg: '#100d2a', exposure: 0.95,
     bloom: { strength: 0.85, radius: 0.75, threshold: 0.66 },
-    wall: { center: '#3b2b74', edge: '#0d0b26', caustic: '#c9b8ff', amount: 0.6 },
+    wall: { center: '#3b2b74', edge: '#0d0b26', caustic: '#c9b8ff', amount: 0.6, vessel: 0 },
     shell: { rim: '#b9aef0', glow: '#ffe6a3', intensity: 1.25 },
     particles: 1.4, stars: 1.5,
     baby: { color: '#eeac94', roughness: 0.42, sheen: 0.9, sheenColor: '#ffd8c6', iridescence: 0.45, clearcoat: 0.35, rim: '#d9c4ff', rimStrength: 0.22, heart: '#ffb36b', heartStrength: 0.5,
@@ -1164,23 +1164,27 @@ const MODES = {
     grade: { lift: '#1c1440', gain: '#fff8fc', sat: 0.97 },
     vignette: 0.7, grain: 0.03,
   },
+  // Realistic is lit like a film shot in the womb: a strong warm light behind the baby that the thin
+  // skin glows through, a soft fill from the front, deep reds, and a bright out-of-focus wall with
+  // vessels behind
   realistic: {
-    bg: '#120f1c', exposure: 0.95,
-    bloom: { strength: 0.2, radius: 0.35, threshold: 0.85 },
-    wall: { center: '#7a3236', edge: '#22100f', caustic: '#ffcba3', amount: 0.22 },
-    shell: { rim: '#f2a993', glow: '#ffcfb5', intensity: 0.5 },
-    particles: 0.4, stars: 0.35,
-    baby: { color: '#d98d78', roughness: 0.58, sheen: 0.4, sheenColor: '#ffd7c4', iridescence: 0.0, clearcoat: 0.4, rim: '#ffb39c', rimStrength: 0.05, heart: '#ff6a55', heartStrength: 0.25,
-      sss: '#f0a088', translucency: 0.9, wrap: 0.4, wrapTint: '#f59a80' },
-    placenta: '#8c2f3d',
-    lights: { hemi: 0.5, key: 1.5, back: 1.3, head: 0.35, env: 0.4, sky: '#ffe6d8', ground: '#3a2220', keyColor: '#ffd8bf', backColor: '#ffc89a' },
-    grade: { lift: '#000000', gain: '#ffffff', sat: 1.0 },
-    vignette: 0.5, grain: 0.02,
+    bg: '#1c0507', exposure: 1.0,
+    bloom: { strength: 0.42, radius: 0.85, threshold: 0.72 },
+    wall: { center: '#f6c19a', edge: '#3d070b', caustic: '#ffcba3', amount: 0, vessel: 0.5, vesselColor: '#c8552f', focus: 1 },
+    shell: { rim: '#ff9a72', glow: '#ffcfb0', intensity: 0.35 },
+    particles: 0.55, stars: 0,
+    baby: { color: '#c46a5d', roughness: 0.46, sheen: 0.7, sheenColor: '#ffb9a2', iridescence: 0.0, clearcoat: 0.3, rim: '#ff8a5a', rimStrength: 0.42, heart: '#ff5a40', heartStrength: 0.25,
+      sss: '#ff6a3c', translucency: 1.4, wrap: 0.6, wrapTint: '#e8604a', sssScale: 1.0 },
+    cord: '#ffd2c6', cordGlow: '#3a120e',
+    placenta: '#7a1c25',
+    lights: { hemi: 0.34, key: 1.0, back: 5.0, head: 0.16, env: 0.18, sky: '#ffa890', ground: '#330808', keyColor: '#ffc2aa', backColor: '#ffb36e' },
+    grade: { lift: '#160203', gain: '#fff1e8', sat: 1.04 },
+    vignette: 0.85, grain: 0.025,
   },
   moon: {
     bg: '#100f24', exposure: 1.0,
     bloom: { strength: 0.55, radius: 0.6, threshold: 0.78 },
-    wall: { center: '#2b2656', edge: '#110f26', caustic: '#c9c0ff', amount: 0.35 },
+    wall: { center: '#2b2656', edge: '#110f26', caustic: '#c9c0ff', amount: 0.35, vessel: 0 },
     shell: { rim: '#b9aef0', glow: '#ffe6a3', intensity: 0.55 },
     particles: 1.0, stars: 1.2,
     baby: null,
@@ -1217,7 +1221,7 @@ const state = {
   activeHotspot: null,
   sex: 'unknown',
   skin: 1,
-  view: 'whole',
+  view: 'close',
 };
 const SEXES = ['unknown', 'F', 'M'];
 // Skin tones as multipliers on the mode's skin colour (linear RGB), plus how much the
@@ -1412,6 +1416,10 @@ const wallMaterial = new THREE.ShaderMaterial({
     uCenter: { value: new THREE.Color() },
     uEdge: { value: new THREE.Color() },
     uCaustic: { value: new THREE.Color() },
+    uVessel: { value: 0 },
+    uVesselColor: { value: new THREE.Color() },
+    uFocus: { value: 0 },
+    uFocusDir: { value: new THREE.Vector3(0.22, 0.16, 1).normalize() },
   },
   vertexShader: /* glsl */`
     varying vec3 vObj;
@@ -1432,9 +1440,31 @@ const wallMaterial = new THREE.ShaderMaterial({
     uniform vec3 uCenter;
     uniform vec3 uEdge;
     uniform vec3 uCaustic;
+    uniform float uVessel;
+    uniform vec3 uVesselColor;
+    uniform float uFocus;
+    uniform vec3 uFocusDir;
     varying vec3 vObj;
     varying vec3 vNormalV;
     varying vec3 vViewDir;
+
+    // Value noise for the vessels (an arithmetic hash: sin() of large numbers loses precision on phones)
+    float hash3(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float vnoise(vec3 x) {
+      vec3 i = floor(x);
+      vec3 f = fract(x);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash3(i), hash3(i + vec3(1.0, 0.0, 0.0)), f.x), mix(hash3(i + vec3(0.0, 1.0, 0.0)), hash3(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+                 mix(mix(hash3(i + vec3(0.0, 0.0, 1.0)), hash3(i + vec3(1.0, 0.0, 1.0)), f.x), mix(hash3(i + vec3(0.0, 1.0, 1.0)), hash3(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+    }
+    // Branching vessels: the ridges where warped smooth noise crosses its middle. Kept soft on
+    // purpose, like a wall seen out of focus behind the baby
+    float vessels(vec3 p) {
+      vec3 q = p + (vec3(vnoise(p * 1.7 + 3.1), vnoise(p * 1.7 + 7.7), vnoise(p * 1.7 + 1.3)) - 0.5) * 1.4;
+      float a = 1.0 - abs(vnoise(q * 1.8) * 2.0 - 1.0);
+      float b = 1.0 - abs(vnoise(q * 4.2 + 11.0) * 2.0 - 1.0);
+      return smoothstep(0.9, 0.995, a) + 0.4 * smoothstep(0.93, 0.995, b);
+    }
 
     // Tileable water caustics (after the classic "joltz0r" shader)
     float caustic(vec2 uv, float time) {
@@ -1459,7 +1489,11 @@ const wallMaterial = new THREE.ShaderMaterial({
 
     void main() {
       float facing = clamp(abs(dot(normalize(vNormalV), normalize(vViewDir))), 0.0, 1.0);
-      vec3 base = mix(uEdge, uCenter, pow(facing, 1.4));
+      // seen from inside, the whole wall faces the camera; with uFocus the light gathers in one patch
+      // just behind and above the baby instead, the way a light behind the subject reads on film
+      float focus = smoothstep(0.84, 1.0, clamp(dot(normalize(vViewDir), uFocusDir), 0.0, 1.0));
+      float bright = mix(pow(facing, 1.4), focus, uFocus);
+      vec3 base = mix(uEdge, uCenter, bright);
       vec3 n = normalize(vObj);
       vec3 w = abs(n);
       w /= (w.x + w.y + w.z);
@@ -1471,6 +1505,7 @@ const wallMaterial = new THREE.ShaderMaterial({
           + caustic(vObj.xz * 0.34 + 0.5, time + 7.0) * w.y;
       }
       vec3 col = base + uCaustic * c * uAmount * (0.3 + 0.7 * facing);
+      if (uVessel > 0.001) col = mix(col, uVesselColor * (0.5 + 0.5 * bright), clamp(vessels(vObj) * uVessel * (0.35 + 0.65 * bright), 0.0, 1.0));
       gl_FragColor = vec4(col, 1.0);
     }
   `,
@@ -2027,6 +2062,7 @@ async function loadSculptedBaby() {
     gltfBaby.group.visible = true;
     if (babyMesh) babyMesh.visible = false;
     applyMode(state.mode);
+    if (state.view === 'close' && !MODES[state.mode].moon) setView('close'); // the sculpted face is the anchor now
     debugLog(`sculpted model ready: ${mesh.geometry.attributes.position.count} vertices, ${Object.keys(mesh.morphTargetDictionary).length} morph targets, ${sexKeys} sex shapes`);
   } catch (err) {
     console.warn('Sculpted model unavailable, keeping the procedural body.', err);
@@ -2756,6 +2792,7 @@ function applyTier(tier) {
    ========================================================================= */
 
 function applyMode(mode) {
+  const wasMoon = !!(MODES[state.mode] && MODES[state.mode].moon) && state.mode !== mode;
   state.mode = mode;
   const m = MODES[mode];
   scene.background.set(m.bg);
@@ -2764,6 +2801,11 @@ function applyMode(mode) {
   wallMaterial.uniforms.uEdge.value.set(m.wall.edge);
   wallMaterial.uniforms.uCaustic.value.set(m.wall.caustic);
   wallMaterial.uniforms.uAmount.value = m.wall.amount;
+  wallMaterial.uniforms.uVessel.value = m.wall.vessel;
+  wallMaterial.uniforms.uFocus.value = m.wall.focus || 0;
+  cordMaterial.color.set(m.cord || '#ffffff');
+  cordMaterial.emissive.set(m.cordGlow || '#000000');
+  if (m.wall.vesselColor) wallMaterial.uniforms.uVesselColor.value.set(m.wall.vesselColor);
   shellMaterial.uniforms.uRim.value.set(m.shell.rim);
   shellMaterial.uniforms.uGlow.value.set(m.shell.glow);
   shellMaterial.uniforms.uIntensity.value = m.shell.intensity;
@@ -2774,6 +2816,8 @@ function applyMode(mode) {
   stars.visible = m.stars > 0;
 
   const isMoon = !!m.moon;
+  if (isMoon && state.view !== 'whole') setView('whole');
+  else if (!isMoon && wasMoon && state.view === 'whole') setView('close');
   babyRoot.visible = !isMoon;
   cord.visible = !isMoon;
   placenta.visible = !!m.placenta;
@@ -2799,6 +2843,7 @@ function applyMode(mode) {
     babyUniforms.uSssColor.value.set(m.baby.sss);
     babyUniforms.uWrap.value = m.baby.wrap;
     babyUniforms.uWrapTint.value.set(m.baby.wrapTint);
+    babyUniforms.uSssScale.value = m.baby.sssScale ?? 0.8;
     babyUniforms.uHeartColor.value.set(m.baby.heart);
   }
 
@@ -3208,6 +3253,14 @@ function setDays(days) {
   babyDirty = true;
   userDistanceOverride = false;
   updateLabels();
+  if (state.view === 'close' && !state.playing && !MODES[state.mode].moon) reframeSoon();
+}
+
+// re-aim the close-up once the new week's shape is in place (the anchors follow the morphs)
+let reframeTimer = 0;
+function reframeSoon() {
+  clearTimeout(reframeTimer);
+  reframeTimer = setTimeout(() => { if (state.view === 'close' && !state.playing) setView('close'); }, 120);
 }
 
 $('timeline').addEventListener('input', (e) => {
@@ -3422,13 +3475,20 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 /* ---------- Views: the camera moves to the face, hands or feet and follows them ---------- */
-const VIEWS = ['whole', 'face', 'hands', 'feet'];
-const viewCam = { active: false, foot: 'footL', home: new THREE.Vector3(0, 0.15, 1), t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), anchor: new THREE.Vector3(), dir: new THREE.Vector3(), dist: 0 };
+const VIEWS = ['close', 'whole', 'face', 'hands', 'feet'];
+// the close-up frames the head and chest from three quarters, like a film shot
+const CLOSE_FRAME = 0.36;
+const viewCam = { flip: 0, active: false, foot: 'footL', home: new THREE.Vector3(0, 0.15, 1), t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), anchor: new THREE.Vector3(), dir: new THREE.Vector3(), dist: 0 };
 const viewTmp = new THREE.Vector3();
+const viewTmp2 = new THREE.Vector3();
 const viewCenter = new THREE.Vector3();
 
 const hasFace = () => gltfBaby.ready && gltfBaby.rig.anchors.face;
 function viewAnchor(view, out) {
+  if (view === 'close') {
+    babyAnchor(hasFace() ? 'face' : 'head', out);
+    return out.lerp(babyAnchor('heart', viewTmp2), 0.42);
+  }
   if (view === 'face') return babyAnchor(hasFace() ? 'face' : 'head', out);
   if (view === 'hands') return babyAnchor('hand', out);
   // one foot: the point between the two can be empty space when the legs are apart
@@ -3443,6 +3503,12 @@ function viewDirection(view, anchor, out) {
   babyRoot.getWorldPosition(viewCenter);
   const faceFwd = hasFace() ? babyAnchor('faceFront', out).sub(babyAnchor('face', viewTmp)).normalize() : babyAnchor('navel', out).sub(viewCenter).normalize();
   if (view === 'face') return out;
+  if (view === 'close') {
+    // turn a third of the way to the side the camera is already on, and look a little from below
+    const side = viewTmp.crossVectors(out, yAxis).normalize();
+    if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
+    return out.multiplyScalar(0.78).addScaledVector(side, 0.62).addScaledVector(yAxis, -0.08).normalize();
+  }
   if (view === 'hands') return out.addScaledVector(viewTmp.copy(anchor).sub(viewCenter).normalize(), 0.35).normalize();
   babyAnchor('groin', viewTmp);
   return out.multiplyScalar(0.35).add(viewTmp.subVectors(anchor, viewTmp).normalize()).normalize();
@@ -3464,15 +3530,56 @@ function setView(view) {
   }
   viewAnchor(view, viewCam.anchor);
   viewDirection(view, viewCam.anchor, viewCam.dir);
-  viewCam.dist = view === 'whole' ? preferredDistance(S) : Math.max(controls.minDistance + 0.05, ({ face: 0.78, hands: 0.72, feet: 0.7 })[view] * S);
-  userDistanceOverride = view !== 'whole';
+  viewCam.dist = view === 'whole' ? preferredDistance(S) : view === 'close' ? closeDistance(S) : Math.max(controls.minDistance + 0.05, ({ face: 0.78, hands: 0.72, feet: 0.7 })[view] * S);
+  userDistanceOverride = view !== 'whole' && view !== 'close';
   lastInteraction = elapsed;
   closeInfo();
   renderViewLabel();
 }
 
+function closeDistance(S) {
+  // the app's Today card is short and wide: step back a little so the top of the head stays in
+  const frame = appMode && appView === 'hero' ? CLOSE_FRAME * 1.22 : CLOSE_FRAME;
+  return Math.max(controls.minDistance + 0.05, (frame * S) / frameTan);
+}
+
+// The close-up drifts slowly from side to side while nobody touches it, like a slow camera move
+let closeDrift = 0;
+const closeAim = new THREE.Vector3();
+const closeDir = new THREE.Vector3();
+function driftClose(now, dt) {
+  const target = Math.sin(now * 0.11) * 0.2;
+  const delta = target - closeDrift;
+  closeDrift = target;
+  if (state.view !== 'close' || viewCam.active) return;
+  // while the baby grows in a time-lapse, keep steering the shot to the face and chest
+  if (state.playing && now - lastInteraction > 1) {
+    viewAnchor('close', closeAim);
+    viewDirection('close', closeAim, closeDir);
+    const k = Math.min(1, dt * 2.2);
+    controls.target.lerp(closeAim, k);
+    camera.position.lerp(closeDir.multiplyScalar(closeDistance(sceneSize(gaOf(state.days)))).add(closeAim), k);
+    return;
+  }
+  if (reduceMotionQuery.matches || now - lastInteraction < 4) return;
+  camera.position.sub(controls.target).applyAxisAngle(yAxis, delta);
+  // grow with the baby (a time-lapse, or the week arrows) unless the viewer has zoomed by hand
+  if (!userDistanceOverride) {
+    const dist = camera.position.length();
+    camera.position.setLength(dist + (closeDistance(sceneSize(gaOf(state.days))) - dist) * Math.min(1, dt * 2.5));
+  }
+  camera.position.add(controls.target);
+}
+
 function updateViewCamera(now) {
+  // the turn to head-down (weeks 30 to 36) carries the shot round with the baby
+  const dFlip = flip - viewCam.flip;
+  viewCam.flip = flip;
   if (state.view === 'whole' && !viewCam.active) return;
+  if (dFlip) {
+    viewCam.dir.applyAxisAngle(zAxis, dFlip);
+    if (!viewCam.active) camera.position.sub(controls.target).applyAxisAngle(zAxis, dFlip).add(controls.target);
+  }
   const prev = viewTmp.copy(viewCam.anchor);
   viewAnchor(state.view, viewCam.anchor);
   if (viewCam.active) {
@@ -3526,8 +3633,10 @@ $('tool-listen').addEventListener('click', () => {
 });
 
 function togglePlay(force) {
+  const wasPlaying = state.playing;
   state.playing = typeof force === 'boolean' ? force : !state.playing;
   if (state.playing && state.days >= LAST_DAY) setDays(FIRST_DAY);
+  if (wasPlaying && !state.playing) reframeSoon();
   playhead = state.days;
   $('tool-play').setAttribute('aria-pressed', String(state.playing));
   $('label-play').textContent = state.playing ? t().tools.pause : t().tools.play;
@@ -3752,6 +3861,7 @@ const frameLoop = (timestamp) => {
   // Camera: frame the baby unless the viewer has zoomed by hand
   const preferred = preferredDistance(S);
   updateViewCamera(now, S);
+  driftClose(now, dt);
   if (state.view === 'whole' && !userDistanceOverride && now - lastInteraction > 1) {
     const dist = camera.position.distanceTo(controls.target);
     const nextDist = dist + (preferred - dist) * Math.min(1, dt * 2.5);
@@ -3815,6 +3925,7 @@ $('loader-text').textContent = STR[state.lang].loading;
 updateStaticCopy();
 applyTier(state.quality === 'auto' ? detectTier() : Number(state.quality));
 camera.position.set(0.35, 0.18, 1).normalize().multiplyScalar(preferredDistance(sceneSize(gaOf(state.days))));
+if (state.view === 'close' && !MODES[state.mode].moon) setView('close');
 loadSculptedBaby();
 
 /* ---------- Messages from the Lunabump app ---------- */
@@ -3828,7 +3939,7 @@ function applyAppView(view) {
     closeSexPanel(false);
     setRail(false);
     if (state.playing) togglePlay(false);
-    if (state.view !== 'whole') setView('whole');
+    if (state.view !== 'close' && !MODES[state.mode].moon) setView('close');
   }
   userDistanceOverride = false;
   resize();
