@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lunabump</title>
+<script>
+  // a saved light or dark choice is applied before the first paint; without one the device decides
+  try { const th = localStorage.getItem('lunabump.app.theme'); if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th; } catch (err) { /* storage blocked: follow the device */ }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Sofia+Sans:wght@400;500;600;700&display=swap">
@@ -1119,6 +1123,11 @@
     <section class="card" aria-labelledby="me-lang-title">
       <div class="row-between"><div class="kv"><span id="me-lang-title" data-t="language"></span><strong id="me-lang-name"></strong></div><button type="button" class="btn btn-quiet" data-action="lang-open" data-t="change"></button></div>
     </section>
+    <section class="card" aria-labelledby="me-theme-title">
+      <h2 id="me-theme-title" data-t="theme"></h2>
+      <div class="seg" role="radiogroup" aria-labelledby="me-theme-title" id="me-theme"></div>
+      <p class="fine" data-t="themeHint"></p>
+    </section>
     <section class="card" aria-labelledby="me-care-title">
       <h2 id="me-care-title" data-t="care"></h2>
       <label class="field"><span data-t="unitPhone"></span><input class="input" type="tel" id="care-unit" autocomplete="off" inputmode="tel"></label>
@@ -1178,6 +1187,7 @@
 const LUNA_SRC = 'index.html';
 const KEY = 'lunabump.app';
 const LANG_KEY = 'lunabump.app.lang';
+const THEME_KEY = 'lunabump.app.theme';
 const DAY_MS = 86400000;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -1354,6 +1364,9 @@ const STR = {
       moon: ['Moon', 'A growing moon instead of the baby, if pictures of the baby feel like too much right now'],
     },
     language: 'Language',
+    theme: 'Theme',
+    themes: { auto: 'Auto', light: 'Light', dark: 'Dark' },
+    themeHint: 'Auto follows your phone’s light or dark mode.',
     change: 'Change',
     care: 'Care team',
     unitPhone: 'Maternity unit phone',
@@ -1589,6 +1602,9 @@ const STR = {
       moon: ['Луна', 'Растяща луна вместо бебето, ако образите на бебето ти идват в повече сега'],
     },
     language: 'Език',
+    theme: 'Тема',
+    themes: { auto: 'Авто', light: 'Светла', dark: 'Тъмна' },
+    themeHint: '„Авто“ следва светлата или тъмната тема на телефона.',
     change: 'Смени',
     care: 'Медицински екип',
     unitPhone: 'Телефон на родилното отделение',
@@ -2468,6 +2484,17 @@ let lang = (() => {
   try { const saved = localStorage.getItem(LANG_KEY); if (saved === 'en' || saved === 'bg') return saved; } catch (err) { /* ignore */ }
   return (navigator.language || '').toLowerCase().startsWith('bg') ? 'bg' : 'en';
 })();
+// auto follows the device (prefers-color-scheme in the CSS); light and dark pin it with data-theme
+let theme = (() => {
+  try { const saved = localStorage.getItem(THEME_KEY); if (saved === 'light' || saved === 'dark') return saved; } catch (err) { /* ignore */ }
+  return 'auto';
+})();
+function setTheme(next) {
+  theme = next;
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  try { if (theme === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, theme); } catch (err) { /* ignore */ }
+}
 const t = () => STR[lang];
 const L = (obj) => (obj && (obj[lang] ?? obj.en)) || '';
 // example prices, written the way the language writes money (29,99 € or €29.99)
@@ -5938,6 +5965,7 @@ function renderMe() {
   const swatches = ['#F3C9B4', '#DDAA8C', '#B07A59', '#7B5240'];
   $('me-skin').innerHTML = swatches.map((c, i) => `<button type="button" role="radio" aria-checked="${(p.skin || 1) === i + 1}" aria-label="${esc(t().skins[i])}" data-action="skin" data-skin="${i + 1}"><span style="--sw:${c}"></span></button>`).join('');
   $('me-lang-name').textContent = langNative(lang);
+  $('me-theme').innerHTML = ['auto', 'light', 'dark'].map((th) => `<button type="button" role="radio" aria-checked="${theme === th}" data-action="theme" data-value="${th}">${esc(t().themes[th])}</button>`).join('');
   $('care-unit').value = data.care.unit || '';
   $('care-doctor').value = data.care.doctor || '';
 
@@ -7078,6 +7106,7 @@ const ACTIONS = {
   lang: (el) => setLang(el.dataset.lang),
   tool: (el) => { closeSheet(); openTool(el.dataset.tool); },
   'tool-back': () => { showTab('tools'); animateIn($('screen-tools'), -28); },
+  theme: (el) => { setTheme(el.dataset.value); renderMe(); $('me-theme').querySelector('[aria-checked="true"]').focus(); },
   skin: (el) => { data.profile.skin = Number(el.dataset.skin); save(); renderMe(); postLuna({ skin: data.profile.skin }); },
   'size-week': (el) => { ui.sizeWeek = Number(el.dataset.week); renderSizeCard(!reduceMotion.matches); },
   'size-step': (el) => stepSizeWeek(Number(el.dataset.step)),
