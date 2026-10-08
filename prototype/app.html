@@ -3327,12 +3327,17 @@ const SIZES = [
 const SIZE_FIRST = 4, SIZE_LAST = 41;
 
 
-// What the baby's size is compared with. Each set names every week from 8 to 40 and has a picture
-// for it; the length and weight stay the ones in SIZES. The produce pictures in img/produce were
-// made for Lunabump with Gemini and cut out of one sheet.
+// What the baby's size is compared with. Each set has a picture for every week from 4 to 41 and,
+// unless it uses the names in SIZES, its own [en, bg] names; the length and weight stay the ones in
+// SIZES. The pictures in img/<dir> were made for Lunabump with Gemini and cut out of one sheet per set.
 const COMPARE_SETS = {
-  produce: { name: { en: 'Fruit and vegetables', bg: 'Плодове и зеленчуци' }, art: { 4: 'chia', 5: 'sesame', 6: 'pea', 7: 'blueberry', 8: 'raspberry', 9: 'cherry', 10: 'strawberry', 11: 'fig', 12: 'plum', 13: 'lemon', 14: 'peach', 15: 'apple', 16: 'avocado', 17: 'pomegranate', 18: 'pepper', 19: 'mango', 20: 'banana', 21: 'potato', 22: 'corn', 23: 'grapefruit', 24: 'eggplant', 25: 'grapes', 26: 'turnip', 27: 'cauliflower', 28: 'coconut', 29: 'butternut', 30: 'pointedcabbage', 31: 'zucchini', 32: 'celery', 33: 'pineapple', 34: 'cantaloupe', 35: 'honeydew', 36: 'savoy', 37: 'leek', 38: 'papaya', 39: 'squash', 40: 'pumpkin', 41: 'watermelon' } },
-  animals: { name: { en: 'Animals', bg: 'Животни' }, soon: true },
+  produce: { name: { en: 'Fruit and vegetables', bg: 'Плодове и зеленчуци' }, dir: 'produce', art: { 4: 'chia', 5: 'sesame', 6: 'pea', 7: 'blueberry', 8: 'raspberry', 9: 'cherry', 10: 'strawberry', 11: 'fig', 12: 'plum', 13: 'lemon', 14: 'peach', 15: 'apple', 16: 'avocado', 17: 'pomegranate', 18: 'pepper', 19: 'mango', 20: 'banana', 21: 'potato', 22: 'corn', 23: 'grapefruit', 24: 'eggplant', 25: 'grapes', 26: 'turnip', 27: 'cauliflower', 28: 'coconut', 29: 'butternut', 30: 'pointedcabbage', 31: 'zucchini', 32: 'celery', 33: 'pineapple', 34: 'cantaloupe', 35: 'honeydew', 36: 'savoy', 37: 'leek', 38: 'papaya', 39: 'squash', 40: 'pumpkin', 41: 'watermelon' } },
+  animals: {
+    name: { en: 'Animals', bg: 'Животни' },
+    dir: 'animals',
+    names: { 4: ['a baby seahorse', 'малко морско конче'], 5: ['a tiny tadpole', 'мъничка попова лъжичка'], 6: ['a ladybug', 'калинка'], 7: ['a honey bee', 'медоносна пчела'], 8: ['a baby snail', 'малък охлюв'], 9: ['a bumblebee', 'земна пчела'], 10: ['a butterfly', 'пеперуда'], 11: ['a tree frog', 'дървесна жаба'], 12: ['a hummingbird', 'колибри'], 13: ['a chick', 'пиленце'], 14: ['a hamster', 'хамстер'], 15: ['a pygmy hedgehog', 'пигмейски таралеж'], 16: ['a chipmunk', 'бурундук'], 17: ['a guinea pig', 'морско свинче'], 18: ['a red squirrel', 'червена катерица'], 19: ['a duckling', 'патенце'], 20: ['a prairie dog', 'прерийно куче'], 21: ['a kitten', 'коте'], 22: ['a rabbit', 'заек'], 23: ['a ferret', 'пор'], 24: ['a red fox cub', 'лисиче'], 25: ['a chinchilla', 'чинчила'], 26: ['a fennec fox', 'фенек'], 27: ['a baby koala', 'малко коала'], 28: ['a baby sloth', 'малък ленивец'], 29: ['a platypus', 'птицечовка'], 30: ['a tiny otter', 'малка видра'], 31: ['a capuchin monkey', 'маймуна капуцин'], 32: ['a baby raccoon', 'малка миеща мечка'], 33: ['a red panda', 'червена панда'], 34: ['a baby kangaroo', 'малко кенгуру'], 35: ['a lamb', 'агне'], 36: ['a cat', 'котка'], 37: ['a Yorkshire terrier', 'йоркширски териер'], 38: ['a baby goat', 'яре'], 39: ['a newborn seal', 'новородено тюленче'], 40: ['a cheetah cub', 'малко гепардче'], 41: ['a Maltese dog', 'малтийска болонка'] },
+    art: { 4: 'seahorse', 5: 'tadpole', 6: 'ladybug', 7: 'honeybee', 8: 'snail', 9: 'bumblebee', 10: 'butterfly', 11: 'treefrog', 12: 'hummingbird', 13: 'chick', 14: 'hamster', 15: 'hedgehog', 16: 'chipmunk', 17: 'guineapig', 18: 'squirrel', 19: 'duckling', 20: 'prairiedog', 21: 'kitten', 22: 'rabbit', 23: 'ferret', 24: 'foxcub', 25: 'chinchilla', 26: 'fennec', 27: 'koala', 28: 'sloth', 29: 'platypus', 30: 'otter', 31: 'capuchin', 32: 'raccoon', 33: 'redpanda', 34: 'kangaroo', 35: 'lamb', 36: 'cat', 37: 'yorkie', 38: 'goat', 39: 'seal', 40: 'cheetah', 41: 'maltese' },
+  },
 };
 const compareSet = () => {
   const id = data.profile && data.profile.compare;
@@ -3343,12 +3348,12 @@ function sizeRow(w) {
   if (!r) return null;
   const set = COMPARE_SETS[compareSet()];
   const [en, bg] = set.names ? set.names[w] : [r[1], r[2]];
-  return { w, en, bg, len: r[3], wt: r[4], art: set.art[w] };
+  return { w, en, bg, len: r[3], wt: r[4], art: `${set.dir}/${set.art[w]}` };
 }
 // the names Luna View shows for each week, so the 3D view follows the same choice
 const sizeNames = () => Object.fromEntries(SIZES.filter(([w]) => w >= 8 && w <= 40).map(([w]) => { const r = sizeRow(w); return [w, [r.en, r.bg]]; }));
-const sizeArtSrc = (key) => `img/produce/${key}.webp`;
-const sizeArt = (key) => `<img src="${sizeArtSrc(key)}" alt="" width="256" height="256" decoding="async" draggable="false">`;
+const sizeArtSrc = (art) => `img/${art}.webp`;
+const sizeArt = (art) => `<img src="${sizeArtSrc(art)}" alt="" width="256" height="256" decoding="async" draggable="false">`;
 
 function sizeLine(row) {
   const { en, bg, len, wt } = row;
