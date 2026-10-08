@@ -1164,22 +1164,22 @@ const MODES = {
     grade: { lift: '#1c1440', gain: '#fff8fc', sat: 0.97 },
     vignette: 0.7, grain: 0.03,
   },
-  // Realistic is lit like a film shot in the womb: a strong warm light behind the baby that the thin
-  // skin glows through, a soft fill from the front, deep reds, and a bright out-of-focus wall with
-  // vessels behind
+  // Realistic: pale peach skin under a soft front light, a warm light behind that only reddens the
+  // thin edges (and the whole body when the camera turns into it), a beige wall with faint vessels
+  // that sits out of focus behind the baby
   realistic: {
-    bg: '#1c0507', exposure: 1.0,
-    bloom: { strength: 0.42, radius: 0.85, threshold: 0.72 },
-    wall: { center: '#f6c19a', edge: '#3d070b', caustic: '#ffcba3', amount: 0, vessel: 0.5, vesselColor: '#c8552f', focus: 1 },
-    shell: { rim: '#ff9a72', glow: '#ffcfb0', intensity: 0.35 },
-    particles: 0.55, stars: 0,
-    baby: { color: '#c46a5d', roughness: 0.46, sheen: 0.7, sheenColor: '#ffb9a2', iridescence: 0.0, clearcoat: 0.3, rim: '#ff8a5a', rimStrength: 0.42, heart: '#ff5a40', heartStrength: 0.25,
-      sss: '#ff6a3c', translucency: 1.4, wrap: 0.6, wrapTint: '#e8604a', sssScale: 1.0 },
-    cord: '#ffd2c6', cordGlow: '#3a120e',
-    placenta: '#7a1c25',
-    lights: { hemi: 0.34, key: 1.0, back: 5.0, head: 0.16, env: 0.18, sky: '#ffa890', ground: '#330808', keyColor: '#ffc2aa', backColor: '#ffb36e' },
-    grade: { lift: '#160203', gain: '#fff1e8', sat: 1.04 },
-    vignette: 0.85, grain: 0.025,
+    bg: '#2a1b16', exposure: 1.0,
+    bloom: { strength: 0.22, radius: 0.7, threshold: 0.82 },
+    wall: { center: '#dcc2a8', edge: '#7e5a44', caustic: '#ffcba3', amount: 0, vessel: 0.3, vesselColor: '#c47a68', focus: 1 },
+    shell: { rim: '#f2c4ae', glow: '#ffe6d4', intensity: 0.25 },
+    particles: 0.35, stars: 0,
+    baby: { color: '#f2a88c', roughness: 0.5, sheen: 0.5, sheenColor: '#ffd8c8', iridescence: 0.0, clearcoat: 0.25, rim: '#ffb394', rimStrength: 0.12, heart: '#ff6a55', heartStrength: 0.2,
+      sss: '#ff5236', translucency: 1.1, wrap: 0.45, wrapTint: '#ec8a72', sssScale: 0.9 },
+    cord: '#f3c2ae', cordGlow: '#1c0a06',
+    placenta: '#9a5a52',
+    lights: { hemi: 0.6, key: 1.7, back: 2.8, head: 0.3, env: 0.32, sky: '#fff1e8', ground: '#6e4e44', keyColor: '#fff0e6', backColor: '#ffcfaa' },
+    grade: { lift: '#000000', gain: '#fffaf6', sat: 0.96 },
+    vignette: 0.5, grain: 0.02,
   },
   moon: {
     bg: '#100f24', exposure: 1.0,
