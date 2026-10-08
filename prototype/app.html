@@ -51,30 +51,6 @@
     --heat: 110, 91, 208;
     --bp-sys: #6E5BD0;
     --bp-dia: #D97A2B;
-    --pr-red: #F2685C;
-    --pr-pink: #F58AAE;
-    --pr-yellow: #FFD03D;
-    --pr-orange: #F99A45;
-    --pr-orange-light: #FBBE72;
-    --pr-green: #8CCB66;
-    --pr-green-light: #BEE496;
-    --pr-green-dark: #4FA65B;
-    --pr-flesh: #D9EA7E;
-    --pr-flesh-pink: #F78A78;
-    --pr-purple: #A07AEA;
-    --pr-cream: #F7E6C2;
-    --pr-brown: #BC8248;
-    --pr-cantaloupe: #F3B45E;
-    --pr-stripe: #2A6E43;
-    --pr-shine: rgba(255, 255, 255, 0.9);
-    --pr-blush: #E5563F;
-    --pr-blue: #6A82EA;
-    --pr-tan: #DFA662;
-    --pr-grey: #A99A8F;
-    --pr-dot: #3A2F38;
-    --pr-stripe-soft: #55A15C;
-    --pr-line: #342869;
-    --pr-stem: var(--pr-line);
 
     --display: 'Lora', Georgia, 'Times New Roman', serif;
     --body: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -103,30 +79,6 @@
       --mood-1: #6F6A99;
       --bp-sys: #8A78E6;
       --bp-dia: #CF7A2A;
-      --pr-red: #E65E50;
-      --pr-pink: #E57B9E;
-      --pr-yellow: #F0C033;
-      --pr-orange: #EC8C3A;
-      --pr-orange-light: #E9AC62;
-      --pr-green: #7DBB59;
-      --pr-green-light: #A8D182;
-      --pr-green-dark: #459552;
-      --pr-flesh: #C6D96C;
-      --pr-flesh-pink: #E87B6A;
-      --pr-purple: #916AE0;
-      --pr-cream: #E4D3AE;
-      --pr-brown: #AA733E;
-      --pr-cantaloupe: #E0A250;
-      --pr-stripe: #22603A;
-      --pr-shine: rgba(255, 255, 255, 0.7);
-      --pr-blush: #D74E39;
-      --pr-blue: #5C74DE;
-      --pr-tan: #CC9455;
-      --pr-grey: #988A80;
-      --pr-dot: #2A2128;
-      --pr-stripe-soft: #4A9152;
-      --pr-line: #1B1533;
-      --pr-stem: #C7A57E;
       --mood-2: #8F84D6;
       --mood-3: #8D8678;
       --mood-4: #D9A48E;
@@ -154,30 +106,6 @@
     --mood-1: #6F6A99;
     --bp-sys: #8A78E6;
     --bp-dia: #CF7A2A;
-    --pr-red: #E65E50;
-    --pr-pink: #E57B9E;
-    --pr-yellow: #F0C033;
-    --pr-orange: #EC8C3A;
-    --pr-orange-light: #E9AC62;
-    --pr-green: #7DBB59;
-    --pr-green-light: #A8D182;
-    --pr-green-dark: #459552;
-    --pr-flesh: #C6D96C;
-    --pr-flesh-pink: #E87B6A;
-    --pr-purple: #916AE0;
-    --pr-cream: #E4D3AE;
-    --pr-brown: #AA733E;
-    --pr-cantaloupe: #E0A250;
-    --pr-stripe: #22603A;
-    --pr-shine: rgba(255, 255, 255, 0.7);
-    --pr-blush: #D74E39;
-    --pr-blue: #5C74DE;
-    --pr-tan: #CC9455;
-    --pr-grey: #988A80;
-    --pr-dot: #2A2128;
-    --pr-stripe-soft: #4A9152;
-    --pr-line: #1B1533;
-    --pr-stem: #C7A57E;
     --mood-2: #8F84D6;
     --mood-3: #8D8678;
     --mood-4: #D9A48E;
@@ -358,38 +286,9 @@
   .week-strip button.is-now::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); }
   .week-strip button.is-now[aria-pressed="true"]::after { background: var(--on-accent); }
   .size-stage { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; }
-  .size-art { width: min(200px, 52vw); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; background: var(--tint); display: grid; place-items: center; touch-action: pan-y; }
-  .size-art svg { width: 80%; height: 80%; overflow: visible; }
-  .size-art svg * { fill: none; stroke: var(--pr-line); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  .size-art .p-red { fill: var(--pr-red); }
-  .size-art .p-pink { fill: var(--pr-pink); }
-  .size-art .p-yellow { fill: var(--pr-yellow); }
-  .size-art .p-orange { fill: var(--pr-orange); }
-  .size-art .p-orange-light { fill: var(--pr-orange-light); }
-  .size-art .p-green { fill: var(--pr-green); }
-  .size-art .p-green-light { fill: var(--pr-green-light); }
-  .size-art .p-green-dark { fill: var(--pr-green-dark); }
-  .size-art .p-flesh { fill: var(--pr-flesh); }
-  .size-art .p-flesh-pink { fill: var(--pr-flesh-pink); }
-  .size-art .p-purple { fill: var(--pr-purple); }
-  .size-art .p-cream { fill: var(--pr-cream); }
-  .size-art .p-brown { fill: var(--pr-brown); }
-  .size-art .p-cantaloupe { fill: var(--pr-cantaloupe); }
-  .size-art .p-leaf { fill: var(--pr-green-dark); }
-  .size-art .p-blue { fill: var(--pr-blue); }
-  .size-art .p-tan { fill: var(--pr-tan); }
-  .size-art .p-grey { fill: var(--pr-grey); }
-  .size-art .p-dot-dark { fill: var(--pr-dot); stroke: none; }
-  .size-art .p-stripe-soft { stroke: var(--pr-stripe-soft); stroke-width: 2.8; opacity: 0.7; }
-  .size-art svg g > * { fill: inherit; stroke: inherit; stroke-width: inherit; }
-  .size-art .p-stem { stroke: var(--pr-stem); stroke-width: 1.7; }
-  .size-art .p-loose { fill: var(--pr-stem); stroke: none; }
-  .size-art .p-line-soft { opacity: 0.55; }
-  .size-art .p-seed { stroke-width: 2.3; }
-  .size-art .p-shine { stroke: var(--pr-shine); stroke-width: 2.1; }
-  .size-art .p-stripe { stroke: var(--pr-stripe); stroke-width: 2.8; opacity: 0.7; }
-  .size-art .p-blush { stroke: var(--pr-blush); stroke-width: 2.6; opacity: 0.7; }
-  .size-art.pop svg { animation: pop 420ms var(--ease-spring); }
+  .size-art { width: min(200px, 52vw); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; background: var(--tint); display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; touch-action: pan-y; }
+  .size-art img { width: 72%; height: 72%; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+  .size-art.pop img { animation: pop 420ms var(--ease-spring); }
   .size-name { margin: 0; text-align: center; font: 600 26px/1.2 var(--display); }
   .size-phrase { margin: -8px 0 0; text-align: center; color: var(--muted); }
   .stats.size-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -3401,52 +3300,12 @@ const SIZES = [
 const SIZE_FIRST = 4, SIZE_LAST = 41;
 
 
-// What the baby's size is compared with. Each set names every week from 8 to 40 and has a drawing
-// for it; the length and weight stay the ones in SIZES. The drawings are our own.
+// What the baby's size is compared with. Each set names every week from 8 to 40 and has a picture
+// for it; the length and weight stay the ones in SIZES. The produce pictures in img/produce were
+// made for Lunabump with Gemini and cut out of one sheet.
 const COMPARE_SETS = {
   produce: { name: { en: 'Fruit and vegetables', bg: 'Плодове и зеленчуци' }, art: { 4: 'chia', 5: 'sesame', 6: 'pea', 7: 'blueberry', 8: 'raspberry', 9: 'cherry', 10: 'strawberry', 11: 'fig', 12: 'plum', 13: 'lemon', 14: 'peach', 15: 'apple', 16: 'avocado', 17: 'pomegranate', 18: 'pepper', 19: 'mango', 20: 'banana', 21: 'potato', 22: 'corn', 23: 'grapefruit', 24: 'eggplant', 25: 'grapes', 26: 'turnip', 27: 'cauliflower', 28: 'coconut', 29: 'butternut', 30: 'pointedcabbage', 31: 'zucchini', 32: 'celery', 33: 'pineapple', 34: 'cantaloupe', 35: 'honeydew', 36: 'savoy', 37: 'leek', 38: 'papaya', 39: 'squash', 40: 'pumpkin', 41: 'watermelon' } },
   animals: { name: { en: 'Animals', bg: 'Животни' }, soon: true },
-};
-const PRODUCE_ART = {
-  raspberry: `<path class="p-pink" d="M32 17c9.5 0 16 6.5 16 15.5C48 43 40.5 52 32 52s-16-9-16-19.5C16 23.5 22.5 17 32 17z"/><g class="p-line-soft"><circle cx="26" cy="26" r="3.6"/><circle cx="33.5" cy="25" r="3.6"/><circle cx="40" cy="28" r="3.4"/><circle cx="22.5" cy="33.5" r="3.4"/><circle cx="30" cy="33" r="3.6"/><circle cx="37.5" cy="34.5" r="3.6"/><circle cx="25.5" cy="41" r="3.4"/><circle cx="33" cy="42" r="3.6"/><circle cx="40.5" cy="40.5" r="3"/><circle cx="29.5" cy="48" r="2.6"/><circle cx="36" cy="48" r="2.4"/></g><path class="p-leaf" d="M32 18c-3-4-7-5-11-4 2 3 5 5 9 5m2-1c3-4 7-5 11-4-2 3-5 5-9 5m-2-1v-6"/>`,
-  cherry: `<path class="p-stem" d="M28 34c1-9 5-17 13-23M40 37c-1-8-1-17 1-26"/><path class="p-leaf" d="M41 11c5-3 11-2 14 2-5 3-10 3-14-2z"/><circle class="p-red" cx="24" cy="42" r="10"/><circle class="p-red" cx="42" cy="44" r="9"/><path class="p-shine" d="M19 39c1-2 2.5-3 4.5-3.5M38 41c1-2 2.5-3 4-3.2"/>`,
-  strawberry: `<path class="p-red" d="M32 54c-10-6-17-15-17-25 0-6 5-9 10-9 3 0 5 1 7 2 2-1 4-2 7-2 5 0 10 3 10 9 0 10-7 19-17 25z"/><path class="p-leaf" d="M32 22c-4-1-8 0-11 3 3 1 6 1 9-1-2 3-2 6-1 8 2-2 3-5 3-8 0 3 1 6 3 8 1-2 1-5-1-8 3 2 6 2 9 1-3-3-7-4-11-3zM32 22v-7"/><g class="p-seed"><path d="M24 31v1M32 30v1M40 31v1M27 38v1M36 38v1M31 45v1M24 44l.5.8M40 44l-.5.8"/></g>`,
-  fig: `<path class="p-purple" d="M32 16c3 0 4 3 5 6 2 5 9 8 11 15 2 9-6 16-16 16S14 46 16 37c2-7 9-10 11-15 1-3 2-6 5-6z"/><path class="p-flesh-pink" d="M32 30c6 0 10 4 10 9s-4 8-10 8-10-3-10-8 4-9 10-9z"/><g class="p-seed"><path d="M28 36v1M32 34v1M36 36v1M30 41v1M35 41v1M32 44v1"/></g><path class="p-stem" d="M32 16v-5"/>`,
-  plum: `<path class="p-purple" d="M33 18c10 0 17 7 17 17s-8 18-18 18-17-8-17-18c0-9 8-17 18-17z"/><path class="p-line-soft" d="M33 19c-4 7-5 22 1 33"/><path class="p-stem" d="M33 18c0-3 1-6 3-8"/><path class="p-leaf" d="M36 13c4-3 10-3 13 0-4 3-9 3-13 0z"/><path class="p-shine" d="M22 30c1-3 3-5 6-6"/>`,
-  lemon: `<path class="p-yellow" d="M10 34c2-2 4-3 6-3 3-8 10-12 17-12s14 4 17 12c2 0 4 1 6 3-2 2-4 3-6 3-3 8-10 12-17 12s-14-4-17-12c-2 0-4-1-6-3z"/><path class="p-shine" d="M22 28c2-3 5-5 9-5.5"/><g class="p-seed"><path d="M27 38h.01M34 41h.01M40 36h.01M24 33h.01"/></g>`,
-  peach: `<path class="p-orange" d="M31 19c-9-1-17 6-17 16 0 11 8 18 18 18s18-7 18-18c0-10-8-17-17-16-1 0-1 0-2 0z"/><path class="p-line-soft" d="M32 20c4 7 4 22-1 32"/><path class="p-leaf" d="M33 19c1-5 5-8 11-8-1 5-5 8-11 8z"/><path class="p-shine" d="M20 31c1-3 3-5 6-6"/>`,
-  apple: `<path class="p-red" d="M32 23c-3-2-6-3-9-3-6 0-10 5-10 13 0 10 7 20 13 20 2 0 4-1 6-2 2 1 4 2 6 2 6 0 13-10 13-20 0-8-4-13-10-13-3 0-6 1-9 3z"/><path class="p-stem" d="M32 23c0-5 1-9 4-12"/><path class="p-leaf" d="M35 15c3-4 8-5 12-3-2 4-7 5-12 3z"/><path class="p-shine" d="M19 31c1-3 3-5 5-6"/>`,
-  avocado: `<path class="p-green-dark" d="M32 10c5 0 8 5 9 10 1 4 8 9 8 18 0 9-8 16-17 16s-17-7-17-16c0-9 7-14 8-18 1-5 4-10 9-10z"/><path class="p-flesh" d="M32 15c3 0 5 3 6 7 1 4 6 8 6 16 0 7-6 11-12 11s-12-4-12-11c0-8 5-12 6-16 1-4 3-7 6-7z"/><circle class="p-brown" cx="32" cy="38" r="7"/><path class="p-shine" d="M29 35c.5-1.5 1.5-2.5 3-3"/>`,
-  pepper: `<path class="p-red" d="M20 28c0-4 5-7 12-7s12 3 12 7c3 3 4 8 3 13-1 7-4 12-8 13-2 0-3-1-4-2-1 1-2 2-3 2s-2-1-3-2c-1 1-2 2-4 2-4-1-7-6-8-13-1-5 0-10 3-13z"/><path class="p-line-soft" d="M26 25c-3 8-3 19 1 28M38 25c3 8 3 19-1 28"/><path class="p-leaf" d="M23 24c2-3 5-5 9-5s7 2 9 5c-5 2-13 2-18 0z"/><path class="p-stem" d="M32 19c0-4 2-7 6-8"/><path class="p-shine" d="M23 34c0-3 1-5 2-6"/>`,
-  mango: `<path class="p-orange" d="M20 18c9-6 22-3 27 7 5 9 2 20-6 25-8 5-19 4-24-3-4-6-2-11 0-15 2-5-5-9 3-14z"/><path class="p-blush" d="M40 22c5 3 7 9 6 14"/><path class="p-stem" d="M22 18c-1-3-1-5 0-7"/><path class="p-leaf" d="M22 13c3-4 9-5 13-3-3 4-9 5-13 3z"/>`,
-  pomegranate: `<path class="p-red" d="M32 20c11 0 18 7 18 16 0 10-8 17-18 17s-18-7-18-17c0-9 7-16 18-16z"/><path class="p-red" d="M26 21l-2-7 4 2 4-4 4 4 4-2-2 7"/><path class="p-shine" d="M21 32c1-3 3-5 6-6"/>`,
-  zucchini: `<path class="p-green-dark" d="M14 44c-3-3-2-7 2-9 10-6 21-15 30-21 3-2 7-1 8 2s0 6-3 8C42 31 32 41 22 46c-3 2-6 1-8-2z"/><path class="p-line-soft" d="M18 41c9-6 19-14 29-22"/><path class="p-stem" d="M53 17l4-3"/>`,
-  grapefruit: `<circle class="p-orange" cx="32" cy="34" r="19"/><circle class="p-flesh-pink" cx="32" cy="34" r="15"/><path class="p-line-soft" d="M32 19v30M17 34h30M21.4 23.4l21.2 21.2M42.6 23.4 21.4 44.6"/><circle class="p-cream" cx="32" cy="34" r="2.5"/>`,
-  cauliflower: `<path class="p-leaf" d="M12 36c2 9 9 16 20 16s18-7 20-16c-4 2-8 3-12 2-2 4-5 6-8 6s-6-2-8-6c-4 1-8 0-12-2z"/><path class="p-cream" d="M14 32c-2-6 1-12 7-13 1-5 6-8 11-8s10 3 11 8c6 1 9 7 7 13-1 4-5 7-10 7-2 3-5 5-8 5s-6-2-8-5c-5 0-9-3-10-7z"/><g class="p-line-soft"><path d="M22 26c2 1 3 3 3 5M32 18c2 1 3 3 3 5M42 26c-2 1-3 3-3 5M27 34c2 0 4 1 5 3M37 34c-2 0-4 1-5 3"/></g>`,
-  cabbage: `<circle class="p-green" cx="32" cy="34" r="19"/><path class="p-green-light" d="M32 22c7 0 12 5 12 12s-5 12-12 12-12-5-12-12 5-12 12-12z"/><path class="p-line-soft" d="M32 15c-4 6-5 13-3 19M32 15c4 6 5 13 3 19M14 30c6 1 11 4 15 9M50 30c-6 1-11 4-15 9M32 34v19"/>`,
-  eggplant: `<path class="p-purple" d="M40 18c6 2 9 8 7 14-3 9-9 18-18 21-7 2-13-1-14-7-1-5 2-9 7-13 6-4 9-9 11-12 2-3 4-4 7-3z"/><path class="p-leaf" d="M37 18c1-3 4-5 8-5 3 0 5 2 6 5-3-1-5 0-7 2 0-2-2-3-3-3-1 2-2 2-4 1z"/><path class="p-stem" d="M46 13c1-3 3-5 5-6"/><path class="p-shine" d="M22 42c1-3 3-6 6-8"/>`,
-  butternut: `<path class="p-orange-light" d="M28 13c4-1 8 1 9 5 1 5-1 9 1 13 5 3 9 8 8 14-1 6-7 10-14 10s-13-4-14-10c-1-6 3-11 8-14 2-4 0-8 1-13 0-2 1-4 1-5z"/><path class="p-line-soft" d="M24 39c5 2 11 2 16 0"/><path class="p-stem" d="M31 13c0-2 1-4 3-5"/>`,
-  cantaloupe: `<circle class="p-cantaloupe" cx="32" cy="34" r="19"/><path class="p-line-soft" d="M18 24l28 20M14 34l22 16M24 17l26 18M46 24L18 44M50 34 28 50M40 17 14 35"/><path class="p-stem" d="M32 15v-4"/>`,
-  honeydew: `<ellipse class="p-green-light" cx="32" cy="35" rx="21" ry="17"/><path class="p-line-soft" d="M18 26c4-3 8-4 12-4M40 46c4-1 8-3 10-6"/><path class="p-shine" d="M19 31c1-3 3-5 6-6"/><path class="p-stem" d="M53 33l4-2"/>`,
-  pumpkin: `<path class="p-orange" d="M32 21c3-2 7-2 10-1 8-2 14 5 14 14s-6 17-14 16c-3 1-7 1-10 0-3 1-7 1-10 0-8 1-14-7-14-16s6-16 14-14c3-1 7-1 10 1z"/><path class="p-line-soft" d="M22 21c-4 7-4 21 0 29M42 21c4 7 4 21 0 29M32 22v28"/><path class="p-stem" d="M31 21c0-4 1-7 4-9l3 2c-2 2-3 4-3 7"/><path class="p-leaf" d="M36 13c4-3 10-2 13 1-4 3-9 2-13-1z"/>`,
-  watermelon: `<ellipse class="p-green-dark" cx="32" cy="35" rx="22" ry="18"/><path class="p-stripe" d="M16 23c4 4 5 9 4 14-1 4-1 7 1 10M26 18c3 5 4 11 2 17-1 5 0 9 2 13M38 18c-2 5-3 11-1 17 1 5 0 9-2 13M48 23c-4 4-5 9-4 14 1 4 1 7-1 10"/><path class="p-stem" d="M32 17c0-3 1-5 3-6"/>`,
-  chia: `<path class="p-grey" d="M9 47c3-9 12-15 23-15s20 6 23 15c-7 3-15 4-23 4s-16-1-23-4z"/><g class="p-dot-dark"><circle cx="20" cy="43" r="1.3"/><circle cx="27" cy="39" r="1.3"/><circle cx="34" cy="42" r="1.3"/><circle cx="41" cy="38" r="1.3"/><circle cx="46" cy="44" r="1.3"/><circle cx="31" cy="46" r="1.3"/><circle cx="24" cy="47" r="1.3"/><circle cx="38" cy="47" r="1.3"/><circle cx="33" cy="36" r="1.3"/></g><g class="p-loose"><circle cx="14" cy="54" r="1.4"/><circle cx="50" cy="55" r="1.4"/><circle cx="56" cy="51" r="1.2"/></g>`,
-  sesame: `<path class="p-cream" d="M9 47c3-9 12-15 23-15s20 6 23 15c-7 3-15 4-23 4s-16-1-23-4z"/><g class="p-line-soft"><ellipse cx="20" cy="43" rx="2.4" ry="1.4" transform="rotate(-20 20 43)"/><ellipse cx="28" cy="39" rx="2.4" ry="1.4" transform="rotate(15 28 39)"/><ellipse cx="36" cy="41" rx="2.4" ry="1.4" transform="rotate(-10 36 41)"/><ellipse cx="44" cy="44" rx="2.4" ry="1.4" transform="rotate(25 44 44)"/><ellipse cx="30" cy="46" rx="2.4" ry="1.4" transform="rotate(5 30 46)"/><ellipse cx="33" cy="35" rx="2.4" ry="1.4" transform="rotate(-25 33 35)"/></g><ellipse class="p-cream" cx="14" cy="55" rx="2.6" ry="1.6" transform="rotate(-15 14 55)"/><ellipse class="p-cream" cx="51" cy="55" rx="2.6" ry="1.6" transform="rotate(20 51 55)"/>`,
-  pea: `<circle class="p-green" cx="32" cy="24" r="10"/><circle class="p-green" cx="22" cy="41" r="10"/><circle class="p-green" cx="42" cy="41" r="10"/><path class="p-shine" d="M27 20c1-2 3-3 5-3.5M17 37c1-2 3-3 5-3.5M37 37c1-2 3-3 5-3.5"/>`,
-  blueberry: `<circle class="p-blue" cx="32" cy="35" r="18"/><path class="p-line-soft" d="M27 22l2 3 3-4 3 4 2-3"/><circle class="p-line-soft" cx="32" cy="24" r="3"/><path class="p-shine" d="M20 33c1-4 3-7 7-8"/>`,
-  banana: `<path class="p-yellow" d="M13 22c2-2 5-2 6 1 2 11 9 20 20 23 7 2 12 0 15-4 2 1 2 4 0 6-5 6-14 8-23 5C19 49 12 37 13 22z"/><path class="p-line-soft" d="M18 25c3 11 10 19 21 22"/><path class="p-stem" d="M13 22l-2-5M54 42l3 1"/>`,
-  potato: `<path class="p-tan" d="M14 33c0-9 8-16 18-16 12 0 19 6 19 15 0 10-8 17-19 17-11 0-18-6-18-16z"/><g class="p-dot-dark"><circle cx="24" cy="27" r="1.2"/><circle cx="38" cy="25" r="1.2"/><circle cx="43" cy="36" r="1.2"/><circle cx="28" cy="39" r="1.2"/><circle cx="20" cy="36" r="1.2"/></g><path class="p-shine" d="M20 26c2-3 5-5 9-5.5"/>`,
-  corn: `<path class="p-leaf" d="M20 52c-4-10-4-22 2-32 3 9 5 20 4 32zM44 52c4-10 4-22-2-32-3 9-5 20-4 32z"/><path class="p-yellow" d="M32 9c7 0 11 9 11 22s-4 23-11 23-11-10-11-23S25 9 32 9z"/><path class="p-line-soft" d="M22 20h20M21 27h22M21 34h22M21 41h22M23 48h18M28 11v41M36 11v41"/>`,
-  grapes: `<path class="p-stem" d="M32 13c0-3 1-5 3-6"/><path class="p-leaf" d="M35 11c4-3 10-3 13 1-4 3-9 3-13-1z"/><circle class="p-green-light" cx="24" cy="21" r="6"/><circle class="p-green-light" cx="36" cy="20" r="6"/><circle class="p-green-light" cx="30" cy="30" r="6"/><circle class="p-green-light" cx="42" cy="30" r="6"/><circle class="p-green-light" cx="19" cy="31" r="5.5"/><circle class="p-green-light" cx="25" cy="40" r="6"/><circle class="p-green-light" cx="37" cy="40" r="6"/><circle class="p-green-light" cx="31" cy="49" r="6"/>`,
-  turnip: `<path class="p-leaf" d="M27 22c-5-6-6-12-3-16 4 3 5 9 4 15M34 21c2-7 6-11 11-11 0 5-4 9-10 11M31 21c0-6 0-11 2-14"/><path class="p-cream" d="M32 20c11 0 18 7 18 15 0 9-8 14-15 17-1 1-2 4-3 7-1-3-2-6-3-7-7-3-15-8-15-17 0-8 7-15 18-15z"/><path class="p-purple" d="M14.3 31c1-7 8-11 17.7-11s16.7 4 17.7 11c-5 2-11 3-17.7 3s-12.7-1-17.7-3z"/>`,
-  coconut: `<circle class="p-brown" cx="32" cy="34" r="19"/><g class="p-line-soft"><path d="M17 26l4 2M20 44l4-1M44 46l-3-3M47 27l-4 2M30 50l1-4M33 18l1 4M24 18l2 3M42 18l-2 3M14 36h4M50 37h-4"/></g><g class="p-dot-dark"><circle cx="27" cy="31" r="2.2"/><circle cx="37" cy="31" r="2.2"/><circle cx="32" cy="39" r="2.2"/></g>`,
-  pointedcabbage: `<path class="p-green-light" d="M32 8c9 6 16 19 16 31 0 9-7 15-16 15s-16-6-16-15c0-12 7-25 16-31z"/><path class="p-green" d="M16.5 36c3 8 9 12 15.5 12s12.5-4 15.5-12c1 9-6 18-15.5 18S15.5 45 16.5 36z"/><path class="p-line-soft" d="M32 10v40M32 30c-5-3-8-8-9-14M32 30c5-3 8-8 9-14M32 41c-6-2-10-6-12-11M32 41c6-2 10-6 12-11"/>`,
-  celery: `<path class="p-leaf" d="M22 18c-4-6-2-11 2-12 2 4 1 8-1 11M30 15c-1-6 2-10 6-10 1 4-1 8-4 10M40 18c1-6 5-9 9-8 0 4-3 7-7 9"/><path class="p-green-light" d="M20 18h8l2 36h-8zM28 17h8l1 37h-8zM36 18h8l-2 36h-8z"/><path class="p-line-soft" d="M24 22l1 28M32 21v29M40 22l-1 28"/>`,
-  pineapple: `<path class="p-leaf" d="M32 22c-3-5-3-11 0-16 3 5 3 11 0 16zM32 22c-5-4-11-5-15-3 4 4 10 5 15 3zM32 22c5-4 11-5 15-3-4 4-10 5-15 3z"/><ellipse class="p-orange" cx="32" cy="39" rx="13" ry="17"/><path class="p-line-soft" d="M22 28l20 22M20 37l15 17M26 23l17 19M42 28 22 50M44 37 29 54M38 23 21 42"/>`,
-  savoy: `<circle class="p-green-dark" cx="32" cy="34" r="19"/><path class="p-green" d="M32 21c8 0 13 6 13 13s-5 13-13 13-13-6-13-13 5-13 13-13z"/><path class="p-line-soft" d="M15 30c3 1 5 0 7-2M49 30c-3 1-5 0-7-2M20 47c2-2 3-4 3-7M44 47c-2-2-3-4-3-7M26 27c2 2 4 2 6 0 2 2 4 2 6 0M25 36c2 2 5 2 7 0 2 2 5 2 7 0M32 21v26"/>`,
-  leek: `<path class="p-leaf" d="M30 30c-6-8-10-16-10-24 6 4 10 12 11 22M34 30c5-9 9-17 14-22 0 8-4 16-12 23M32 30c-1-9 0-17 2-23"/><path class="p-cream" d="M28 30h8v22a4 4 0 0 1-8 0z"/><path class="p-green-light" d="M28 30h8v8h-8z"/><path class="p-stem p-line-soft" d="M30 56c-1 2-3 3-5 3M32 57v3M34 56c1 2 3 3 5 3"/>`,
-  papaya: `<path class="p-orange" d="M32 10c6 0 9 6 10 12 1 5 7 9 7 17 0 9-8 15-17 15s-17-6-17-15c0-8 6-12 7-17 1-6 4-12 10-12z"/><path class="p-green-light" d="M32 10c6 0 9 6 10 12 1 3 3 5 4 8-6 1-12-4-14-9-2-5-1-9 0-11z" opacity=".8"/><path class="p-stem" d="M32 10V6"/><path class="p-shine" d="M21 37c0-4 2-7 4-9"/>`,
-  squash: `<path class="p-green-light" d="M12 40c-3-5 0-10 6-12 11-3 22-10 31-13 5-2 9 1 9 5 1 4-2 7-7 10-9 5-19 13-30 16-4 1-7-1-9-6z"/><path class="p-stripe-soft" d="M17 33c4-1 8-2 12-4M20 41c8-3 17-8 26-14M29 46c7-3 14-9 21-13"/><path class="p-stem" d="M57 18l4-3"/>`,
 };
 const compareSet = () => {
   const id = data.profile && data.profile.compare;
@@ -3461,7 +3320,8 @@ function sizeRow(w) {
 }
 // the names Luna View shows for each week, so the 3D view follows the same choice
 const sizeNames = () => Object.fromEntries(SIZES.filter(([w]) => w >= 8 && w <= 40).map(([w]) => { const r = sizeRow(w); return [w, [r.en, r.bg]]; }));
-const sizeArt = (key) => `<svg viewBox="0 0 64 64" aria-hidden="true">${PRODUCE_ART[key] || ''}</svg>`;
+const sizeArtSrc = (key) => `img/produce/${key}.webp`;
+const sizeArt = (key) => `<img src="${sizeArtSrc(key)}" alt="" width="256" height="256" decoding="async" draggable="false">`;
 
 function sizeLine(row) {
   const { en, bg, len, wt } = row;
@@ -3847,6 +3707,7 @@ function renderSizeCard(pop) {
   const on = stripEl.querySelector('[aria-pressed="true"]');
   if (on) stripEl.scrollLeft = on.offsetLeft - stripEl.clientWidth / 2 + on.offsetWidth / 2;
   // swipe the drawing to change the week
+  for (const n of [w - 1, w + 1]) { const r = n >= SIZE_FIRST && n <= SIZE_LAST && sizeRow(n); if (r && r.art) new Image().src = sizeArtSrc(r.art); }
   const artEl = $('size-art');
   let x0 = null;
   artEl.addEventListener('pointerdown', (e) => { x0 = e.clientX; });
