@@ -2083,7 +2083,7 @@ function embryoShading(shader) {
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
-  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(4.5, 10.0, 13.0) };
+  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.2, 7.5, 9.5) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
       attribute float _vessel;
@@ -2158,7 +2158,7 @@ function embryoShading(shader) {
       float eOrgans(vec3 p) {
         vec3 dir = normalize(p - uCamObj);
         float sum = 0.0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 12; i++) {
           vec3 q = p + dir * (0.026 * (float(i) + 0.5));
           sum += texture(uOrgans, (q - uOrgMin) / uOrgSize).r;
         }
@@ -2178,7 +2178,7 @@ function embryoShading(shader) {
     .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
       {
         // slope of the bumps along the surface (height and distance both in model units)
-        float h = eSkinHeight(vObjPos) * 0.0009;
+        float h = eSkinHeight(vObjPos) * 0.0003;
         vec3 dpx = dFdx(vObjPos);
         vec3 dpy = dFdy(vObjPos);
         float fade = clamp(1.0 - max(length(dpx), length(dpy)) * 140.0 * 0.7, 0.0, 1.0);
@@ -2193,11 +2193,11 @@ function embryoShading(shader) {
         eInside = eOrgans(vObjPos);
         // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
         // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
-        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.75);
+        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.55);
       #endif
       // soft mottling of the thin skin: blood showing through unevenly
       float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
-      diffuseColor.rgb *= mix(vec3(1.03, 1.0, 1.0), vec3(0.95, 0.88, 0.88), mottle);
+      diffuseColor.rgb *= mix(vec3(1.015, 1.0, 1.0), vec3(0.975, 0.94, 0.94), mottle);
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
@@ -2214,9 +2214,11 @@ function embryoShading(shader) {
         // the path through is shorter towards the outline, so the edges glow brighter (the hand and
         // foot plates are the thinnest of all, but still lose some light: no white glow)
         float eRim = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );
-        float ePath = sssThickness * ( 1.0 - 0.7 * eRim * eRim ) + 0.12;
-        vec3 eThrough = exp( -uThroughSigma * ePath ) * ( 1.0 - 0.9 * eInside );
-        reflectedLight.directDiffuse += ( 0.55 * scatter + 0.32 * eBehind + uSssAmbient ) * uTranslucency * eThrough * directLight.color;`);
+        // (most of an embryo is watery tissue round fluid-filled spaces: what darkens the light coming
+        // through is mainly the organs on the way, the brain, spinal cord, heart and liver)
+        float ePath = sssThickness * ( 1.0 - 0.7 * eRim * eRim ) * 0.75 + 0.08;
+        vec3 eThrough = exp( -uThroughSigma * ePath ) * ( 1.0 - 0.95 * eInside );
+        reflectedLight.directDiffuse += ( 0.55 * scatter + 0.42 * eBehind + uSssAmbient ) * uTranslucency * eThrough * directLight.color;`);
 }
 
 function embryoMaterials() {

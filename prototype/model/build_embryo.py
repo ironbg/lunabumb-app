@@ -106,7 +106,7 @@ class Week8:
             add(f"cheek{side}", Ellipsoid(vec(0.095 * s, -0.005, 0.06), vec(0.065, 0.05, 0.085)), 0.04, "head")
             # the eye sits in a low swelling on the side of the face (the eye itself is placed on the
             # finished surface in main())
-            add(f"eyeBulge{side}", Ellipsoid(vec(0.115 * s, self.EYE[0], self.EYE[1]), vec(0.045, 0.045, 0.045)), 0.035, "head")
+            add(f"eyeBulge{side}", Ellipsoid(vec(0.1 * s, self.EYE[0], self.EYE[1]), vec(0.04, 0.04, 0.04)), 0.03, "head")
 
         # ---- trunk: a deep body curled round the heart and liver; the back is one smooth curve
         add("upperBack", Ellipsoid(vec(0, -0.05, -0.1), vec(0.15, 0.13, 0.165)), 0.08, "torso")
@@ -152,17 +152,19 @@ class Week8:
                 for y in np.arange(-0.03, -0.45, -0.05)]
 
         # ---- limbs: short, thick, soft buds with no elbow or knee yet. The arm leaves the side of the
-        # body high up near the back and reaches forwards under the ear; the hand is a thick rounded
-        # bud bent down from it against the chest, with soft lobes round its tip where the fingers are
-        # starting. The leg leaves the rump and reaches forwards, the foot under the cord
+        # body high up near the back and reaches forwards under the ear towards the face; the hand is an
+        # open plate (not curled) carried on forwards and a little down from it, in front of the chin,
+        # with rounded finger lobes round its edge. The leg leaves the rump and reaches forwards, the
+        # foot a thick rounded bud under the cord
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
             sh = vec(0.115 * s, -0.14, -0.15)
-            wr = vec(0.19 * s, -0.085, -0.01)
-            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.046)]), 0.03, arm)
-            hand_c = vec(0.2 * s, -0.15, 0.015)
-            self.mitten(add, f"hand{side}", arm, centre=hand_c, normal=vec(1.0 * s, 0.0, 0.3),
-                        up=unit(wr - hand_c), r=(0.05, 0.068), thick=0.031, lobes=5, spread=2.0)
+            wr = vec(0.185 * s, -0.09, 0.02)
+            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.044)]), 0.03, arm)
+            reach = unit(vec(-0.05 * s, -0.55, 0.83))
+            hand_c = wr + reach * 0.07
+            self.hand_plate(add, f"hand{side}", arm, centre=hand_c, normal=vec(1.0 * s, 0.0, 0.25),
+                            reach=reach, r=(0.056, 0.07), thick=0.012, fingers=5, spread=1.8)
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
             an = vec(0.12 * s, -0.46, 0.23)
@@ -175,17 +177,26 @@ class Week8:
             self.anchors[f"knee{side}"] = 0.5 * (hip + an) + vec(0.04 * s, 0, 0)
 
         # ---- what blocks the light inside the body (baked into a small 3D texture, see main()): the
-        # heart and liver, the spinal cord and the vertebrae with their ribs. They sit well under the
-        # skin, so they show as soft dark shapes deep inside when light comes through the body, and
-        # shift with the viewing angle instead of looking drawn on. The head's darker middle comes
-        # from its thickness alone
+        # heart and liver, the brain, the spinal cord and the vertebrae with their ribs. They sit well
+        # under the skin, so they show as soft dark shapes deep inside when light comes through the
+        # body, and shift with the viewing angle instead of looking drawn on
         self.organs = [
             (Ellipsoid(vec(0, -0.15, 0.06), vec(0.08, 0.07, 0.08)), 3.0),     # heart
             (Ellipsoid(vec(0, -0.3, 0.06), vec(0.12, 0.09, 0.11)), 2.5),      # liver
+            # the brain, inside a rim of thinner tissue: the forebrain's two halves in front, the
+            # midbrain under the dome, the hindbrain at the back (the darkest) and the medulla
+            # running down into the spinal cord
+            (Ellipsoid(vec(0.065, 0.17, 0.17), vec(0.085, 0.1, 0.12)), 7.0),
+            (Ellipsoid(vec(-0.065, 0.17, 0.17), vec(0.085, 0.1, 0.12)), 7.0),
+            (Ellipsoid(vec(0, 0.27, 0.06), vec(0.1, 0.1, 0.13)), 9.0),
+            (Ellipsoid(vec(0, 0.18, -0.12), vec(0.1, 0.11, 0.09)), 14.0),
+            (RoundCone(vec(0, 0.13, -0.16), vec(0, -0.01, -0.2), 0.045, 0.034), 18.0),
         ]
+        # the spinal cord: one tube along the back from the medulla to the tail
+        cord_pts = [vec(0, -0.01, -0.2)] + [vec(0, y, line[len(line) // 2][1] + 0.06) for y, line in back]
+        for a_, b_ in zip(cord_pts[:-1], cord_pts[1:]):
+            self.organs.append((RoundCone(a_, b_, 0.03, 0.03), 30.0))
         for y, line in back:
-            z0 = line[len(line) // 2][1]
-            self.organs.append((Ellipsoid(vec(0, y, z0 + 0.06), vec(0.03, 0.034, 0.022)), 40.0))   # spinal cord
             if -0.36 < y < -0.05:
                 # a vertebra and its ribs: a bar across the back, fading out to the sides
                 for x, z in line:
@@ -210,6 +221,19 @@ class Week8:
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
+    def hand_plate(self, add, name, group, centre, normal, reach, r, thick, fingers, spread):
+        """An open hand plate: a broad, thin, soft oval carried on from the arm, with flat rounded
+        finger lobes standing a little out of its far edge, so the outline is scalloped (the fingers
+        are only rays yet). Nothing is curled."""
+        R = frame(normal, -reach)
+        add(name, Ellipsoid(centre, vec(r[0], r[1], thick), R), 0.03, group)
+        u, v = R[:, 0], R[:, 1]
+        for i in range(fingers):
+            a = -math.pi / 2 + (i - (fingers - 1) / 2) * spread / (fingers - 1)
+            d = math.cos(a) * u + math.sin(a) * v
+            rim = math.hypot(math.cos(a) * r[0], math.sin(a) * r[1])
+            add(f"{name}Finger{i}", Ellipsoid(centre + d * 0.9 * rim, vec(0.018, 0.018, thick * 0.85), R), 0.01, group)
+
     def mitten(self, add, name, group, centre, normal, up, r, thick, lobes, spread):
         """A hand or foot at this age: a thick, rounded bud, only a little flattened, with soft lobes
         round its far end where the fingers or toes are starting (no flat plate, no notches yet)."""
@@ -223,7 +247,7 @@ class Week8:
             add(f"{name}Lobe{i}", Ellipsoid(c, vec(0.016, 0.016, thick * 0.72), R), 0.012, group)
 
 
-def organ_volume(organs, h=0.01, blur=1.2):
+def organ_volume(organs, h=0.012, blur=1.0):
     """The organs' light absorbance as a small 3D texture: soft-edged and blurred a little more, so
     they read as shapes inside the body. Returns the texture's lower corner and size (covering whole
     texels), the uint8 volume with x varying fastest, and the absorbance per unit length at 255."""
@@ -245,15 +269,17 @@ def organ_volume(organs, h=0.01, blur=1.2):
     return lo - 0.5 * h, dims * h, vol, scale
 
 
-def sphere(c, r, rings=32, segs=48):
+def sphere(c, r, rings=32, segs=48, squash=1.0):
+    """A UV sphere, optionally flattened in y (an ellipsoid)."""
     verts, normals = [], []
+    k = np.array([1.0, squash, 1.0])
     for i in range(rings + 1):
         th = math.pi * i / rings
         for j in range(segs + 1):
             ph = 2 * math.pi * j / segs
             n = np.array([math.sin(th) * math.cos(ph), math.cos(th), math.sin(th) * math.sin(ph)])
-            verts.append(c + r * n)
-            normals.append(n)
+            verts.append(c + r * n * k)
+            normals.append(unit(n / k))
     tris = []
     for i in range(rings):
         for j in range(segs):
@@ -266,7 +292,8 @@ def sphere(c, r, rings=32, segs=48):
 def eye_colours(normals, outward):
     """Black pigment with a soft grey ring round the front, where the lens shows through."""
     cosang = normals @ outward
-    ring = np.exp(-((cosang - 0.8) / 0.09) ** 2)
+    # (the eye is set deep, so only the cap round the outward axis shows: keep the ring small in it)
+    ring = np.exp(-((cosang - 0.95) / 0.03) ** 2)
     shade = 0.03 + 0.32 * ring
     return np.round(np.clip(np.stack([shade, shade * 0.97, shade], axis=1), 0, 1) * 255).astype(np.uint8)
 
@@ -328,9 +355,10 @@ def main():
 
     for s in (1, -1):
         y, z = emb.EYE
-        r = 0.028
+        # set well into the head, so only a flat, almond-shaped cap shows (it doesn't bulge out)
+        r = 0.032
         sx = emb.surface_x(y, z)
-        emb.eyes.append((vec((sx - 0.45 * r) * s, y, z), r))
+        emb.eyes.append((vec((sx - 0.72 * r) * s, y, z), r))
         # a soft fold of skin above the eye: the eyelids are just starting
         emb.lid_lines.append(Ellipsoid(vec((sx - 0.012) * s, y + 0.033, z), vec(0.03, 0.006, 0.03)))
     obj = blender_mesh(verts, faces, args.tris, details=(
@@ -388,7 +416,7 @@ def main():
     }
     ev, en, et, ec = [], [], [], []
     for c, r in emb.eyes:
-        v_, n_, t_ = sphere(c - center, r)
+        v_, n_, t_ = sphere(c - center, r, squash=0.8)
         et.append(t_ + sum(len(x) for x in ev))
         ev.append(v_)
         en.append(n_)
