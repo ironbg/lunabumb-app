@@ -152,27 +152,28 @@ class Week8:
                 for y in np.arange(-0.03, -0.45, -0.05)]
 
         # ---- limbs: short, thick, soft buds with no elbow or knee yet. The arm leaves the side of the
-        # body high up near the back and reaches straight forwards and a little down past the chest;
-        # the hand is an open plate fanning out in line with it (no bend at the wrist), with rounded
-        # finger lobes round its far edge. The leg leaves the rump and reaches forwards, the foot a
-        # thick rounded bud under the cord
+        # body high up near the back and reaches straight forwards and a little down, beside the jaw;
+        # the hand is a thin, broad, rounded plate carried on in line with it (no bend at the wrist),
+        # turned so that its flat side faces out: from the side it shows whole, a pale plate in front of
+        # the chin with a softly scalloped edge. The leg leaves the rump and reaches forwards; the foot
+        # is a smooth flattened paddle carried on from it under the cord, its sole turned in
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
             sh = vec(0.125 * s, -0.12, -0.13)
-            reach = unit(vec(0.2 * s, -0.3, 0.93))
+            reach = unit(vec(0.22 * s, -0.1, 0.97))
             wr = sh + reach * 0.16
             add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.04)]), 0.03, arm)
-            # the plate is turned so that from the side it shows nearly edge-on, a pale wedge
-            self.hand_plate(add, f"hand{side}", arm, wrist=wr, reach=reach, normal=vec(0.75 * s, 0.66, 0.0),
-                            length=0.12, width=0.058, thick=0.012, fingers=5, spread=1.9)
+            self.hand_plate(add, f"hand{side}", arm, wrist=wr, reach=reach, normal=vec(1.0 * s, 0.0, 0.0),
+                            length=0.13, width=0.07, thick=0.011, fingers=5, spread=2.3)
             hand_c = wr + reach * 0.07
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
             an = vec(0.12 * s, -0.46, 0.23)
-            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.06, 0.05)]), 0.03, leg)
-            foot_c = vec(0.125 * s, -0.435, 0.285)
-            self.mitten(add, f"foot{side}", leg, centre=foot_c, normal=vec(1.0 * s, -0.15, 0.1),
-                        up=unit(an - foot_c), r=(0.045, 0.055), thick=0.033, lobes=5, spread=1.8)
+            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.06, 0.042)]), 0.03, leg)
+            axis = unit(vec(0.12 * s, 0.18, 1.0))
+            self.foot_paddle(add, f"foot{side}", leg, ankle=an - axis * 0.02, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
+                             length=0.11, width=0.056, thick=0.034)
+            foot_c = an + axis * 0.05
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
             self.anchors[f"knee{side}"] = 0.5 * (hip + an) + vec(0.04 * s, 0, 0)
@@ -237,32 +238,35 @@ class Week8:
         return self
 
     def hand_plate(self, add, name, group, wrist, reach, normal, length, width, thick, fingers, spread):
-        """An open hand plate fanning out from the wrist in line with the arm: narrow where it leaves
-        the arm, broad at the far end, thin and soft, with flat rounded finger lobes round the far edge
-        so the outline is scalloped (the fingers are only rays yet). Nothing is bent or curled."""
+        """An open hand plate carried on from the arm (no bend at the wrist): thin, broad and rounded,
+        wider across than it is long, a little narrower where it leaves the arm. Its far edge is made of
+        soft, flat, overlapping lobes where the fingers are starting, so the outline is only gently
+        wavy; nothing stands out as a finger yet."""
         n = np.asarray(normal, float)
         n = unit(n - reach * (n @ reach))
         R = frame(n, -reach)
         u, v = R[:, 0], R[:, 1]
-        for i, (t, w) in enumerate(((0.2, 0.6), (0.5, 0.82), (0.78, 1.0))):
-            add(f"{name}Palm{i}", Ellipsoid(wrist + reach * length * t, vec(width * w, length * 0.3, thick), R), 0.02, group)
-        far = wrist + reach * length * 0.78
-        for i in range(fingers):
+        for i, (t, w) in enumerate(((0.16, 0.55), (0.4, 0.8), (0.62, 0.96))):
+            add(f"{name}Palm{i}", Ellipsoid(wrist + reach * length * t, vec(width * w, length * 0.22, thick), R), 0.02, group)
+        far = wrist + reach * length * 0.66
+        add(f"{name}Far", Ellipsoid(far, vec(width, length * 0.26, thick), R), 0.02, group)
+        lobe = 0.42 * width * spread / (fingers - 1)
+        # (a little uneven, as a real hand plate is: the middle lobes reach a touch further)
+        for i, (k, r) in enumerate(((0.96, 0.9), (1.02, 1.0), (1.04, 1.05), (1.01, 0.95), (0.95, 0.85))[:fingers]):
             a = -math.pi / 2 + (i - (fingers - 1) / 2) * spread / (fingers - 1)
-            c = far + u * (math.cos(a) * width * 0.88) + v * (math.sin(a) * length * 0.3 * 0.88)
-            add(f"{name}Finger{i}", Ellipsoid(c, vec(0.017, 0.017, thick * 0.85), R), 0.01, group)
+            d = math.cos(a) * u + math.sin(a) * v
+            rim = math.hypot(math.cos(a) * width, math.sin(a) * length * 0.26)
+            c = far + d * (rim - 0.45 * lobe) * k
+            add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.9), R), 0.01, group)
 
-    def mitten(self, add, name, group, centre, normal, up, r, thick, lobes, spread):
-        """A hand or foot at this age: a thick, rounded bud, only a little flattened, with soft lobes
-        round its far end where the fingers or toes are starting (no flat plate, no notches yet)."""
-        R = frame(normal, up)
-        add(name, Ellipsoid(centre, vec(r[0], r[1], thick), R), 0.035, group)
-        u, v = R[:, 0], R[:, 1]
-        # the far end is away from the wrist or ankle (-v)
-        for i in range(lobes):
-            a = -math.pi / 2 + (i - (lobes - 1) / 2) * spread / (lobes - 1)
-            c = centre + u * (math.cos(a) * r[0] * 0.74) + v * (math.sin(a) * r[1] * 0.74)
-            add(f"{name}Lobe{i}", Ellipsoid(c, vec(0.016, 0.016, thick * 0.72), R), 0.012, group)
+    def foot_paddle(self, add, name, group, ankle, axis, normal, length, width, thick):
+        """A foot at this age: a smooth, flattened, oblong paddle carried on from the leg, slightly
+        broader than the leg towards its rounded end, with the sole turned in. No toes show yet."""
+        n = np.asarray(normal, float)
+        n = unit(n - axis * (n @ axis))
+        R = frame(n, -axis)
+        for i, (t, w, th) in enumerate(((0.22, 0.72, 0.95), (0.5, 0.94, 0.9), (0.74, 1.0, 0.85))):
+            add(f"{name}{i}", Ellipsoid(ankle + axis * length * t, vec(width * w, length * 0.3, thick * th), R), 0.04, group)
 
 
 def organ_volume(organs, h=0.012, blur=1.0):
