@@ -5,9 +5,11 @@ different for that: its own sculpt per week reads better. Each week here is a st
 the two dark eyes, with per-vertex data for the skin shader:
 
   COLOR_0   rgb: soft occlusion and tints, a: local thickness (for the light shining through)
-  _DETAIL   x: how much of the light through the skin the organs inside block (heart, liver,
-             vertebrae, ribs), seen as dark shapes when the light is behind the embryo;
-            y: where the fine surface vessels of the head show (the shader draws them)
+  _VESSEL   where the fine surface vessels of the head may show (the shader draws them)
+
+The organs that block the light coming through the body (heart, liver, spinal cord, vertebrae and
+ribs) are not painted on the skin: they are baked into a small 3D texture that goes in the rig, and
+the shader looks into it along the line of sight, so they sit deep inside and shift with the view.
 
 Coordinates are those of build_fetus.py: pose space, x = the embryo's right, y = up, z = front,
 in crown-rump units (CRL = 1), written out centred on the bounding box. A small JSON rig holds
@@ -149,48 +151,46 @@ class Week8:
         back = [(float(y), [(float(x), back_z(x, y)) for x in np.linspace(-0.1, 0.1, 9)])
                 for y in np.arange(-0.03, -0.45, -0.05)]
 
-        # ---- limbs: short, thick buds with no elbow or knee yet, ending in plates for the hands and
-        # feet. The arm leaves the side of the body high up near the back and reaches forwards under
-        # the ear; the hand plate hangs down from it against the chest. The leg leaves the rump and
-        # reaches forwards, the foot plate under the cord
+        # ---- limbs: short, thick, soft buds with no elbow or knee yet. The arm leaves the side of the
+        # body high up near the back and reaches forwards under the ear; the hand is a thick rounded
+        # bud bent down from it against the chest, with soft lobes round its tip where the fingers are
+        # starting. The leg leaves the rump and reaches forwards, the foot under the cord
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
-            sh = vec(0.12 * s, -0.14, -0.15)
-            wr = vec(0.21 * s, -0.08, -0.01)
-            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.05, 0.043)]), 0.03, arm)
-            hand_c = vec(0.225 * s, -0.15, 0.02)
-            self.plate(add, sub, f"hand{side}", arm, centre=hand_c,
-                       normal=vec(1.0 * s, 0.0, 0.25), up=unit(wr - hand_c), r=(0.06, 0.085), thick=0.018, rays=5,
-                       spread=1.7, from_dir=unit(wr - hand_c))
+            sh = vec(0.115 * s, -0.14, -0.15)
+            wr = vec(0.19 * s, -0.085, -0.01)
+            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.046)]), 0.03, arm)
+            hand_c = vec(0.2 * s, -0.15, 0.015)
+            self.mitten(add, f"hand{side}", arm, centre=hand_c, normal=vec(1.0 * s, 0.0, 0.3),
+                        up=unit(wr - hand_c), r=(0.05, 0.068), thick=0.031, lobes=5, spread=2.0)
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
             an = vec(0.12 * s, -0.46, 0.23)
             add(f"legBud{side}", Chain([RoundCone(hip, an, 0.06, 0.05)]), 0.03, leg)
-            foot_c = vec(0.125 * s, -0.43, 0.29)
-            self.plate(add, sub, f"foot{side}", leg, centre=foot_c,
-                       normal=vec(1.0 * s, -0.15, 0.1), up=unit(foot_c - an), r=(0.05, 0.06), thick=0.018, rays=5,
-                       spread=1.6, from_dir=unit(an - foot_c))
+            foot_c = vec(0.125 * s, -0.435, 0.285)
+            self.mitten(add, f"foot{side}", leg, centre=foot_c, normal=vec(1.0 * s, -0.15, 0.1),
+                        up=unit(an - foot_c), r=(0.045, 0.055), thick=0.033, lobes=5, spread=1.8)
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
             self.anchors[f"knee{side}"] = 0.5 * (hip + an) + vec(0.04 * s, 0, 0)
 
-        # ---- what blocks the light inside, just under the skin: the heart and liver faintly from the
-        # front; the spinal cord and the vertebrae with their ribs much more, as the dark column and
-        # bars that show through the back. The head's darker middle comes from its thickness alone
+        # ---- what blocks the light inside the body (baked into a small 3D texture, see main()): the
+        # heart and liver, the spinal cord and the vertebrae with their ribs. They sit well under the
+        # skin, so they show as soft dark shapes deep inside when light comes through the body, and
+        # shift with the viewing angle instead of looking drawn on. The head's darker middle comes
+        # from its thickness alone
         self.organs = [
-            (Ellipsoid(vec(0, -0.15, 0.06), vec(0.08, 0.07, 0.08)), 6.0),     # heart
-            (Ellipsoid(vec(0, -0.3, 0.06), vec(0.12, 0.09, 0.11)), 5.0),      # liver
+            (Ellipsoid(vec(0, -0.15, 0.06), vec(0.08, 0.07, 0.08)), 3.0),     # heart
+            (Ellipsoid(vec(0, -0.3, 0.06), vec(0.12, 0.09, 0.11)), 2.5),      # liver
         ]
-        # (these only show from behind: seen from the side they would streak the flanks)
-        behind = vec(0, 0, -1)
         for y, line in back:
             z0 = line[len(line) // 2][1]
-            self.organs.append((Ellipsoid(vec(0, y, z0 + 0.035), vec(0.036, 0.034, 0.022)), 50.0, behind))   # spinal cord
+            self.organs.append((Ellipsoid(vec(0, y, z0 + 0.06), vec(0.03, 0.034, 0.022)), 40.0))   # spinal cord
             if -0.36 < y < -0.05:
                 # a vertebra and its ribs: a bar across the back, fading out to the sides
                 for x, z in line:
-                    self.organs.append((Ellipsoid(vec(x, y, z + 0.03), vec(0.022, 0.016, 0.022)),
-                                        70.0 * (1.0 - 0.45 * abs(x) / 0.1), behind))
+                    self.organs.append((Ellipsoid(vec(x, y, z + 0.055), vec(0.022, 0.015, 0.02)),
+                                        60.0 * (1.0 - 0.45 * abs(x) / 0.1)))
 
         # ---- anchors for the page
         self.anchors.update({
@@ -199,6 +199,8 @@ class Week8:
             "faceFront": vec(0, -0.1, 0.5),
             "heart": vec(0.05, -0.13, 0.2),
             "navel": cord_b + vec(0, 0, 0.03),
+            # the cord leaves along the root's axis
+            "cordBase": cord_a,
             "groin": vec(0, -0.48, 0.12),
             "core": vec(0, -0.05, 0.0),
         })
@@ -208,41 +210,39 @@ class Week8:
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def plate(self, add, sub, name, group, centre, normal, up, r, thick, rays, spread, from_dir):
-        """A hand or foot plate: a flat oval with raised rays fanning out to the rim, and small
-        notches between the rays where the fingers or toes will separate."""
+    def mitten(self, add, name, group, centre, normal, up, r, thick, lobes, spread):
+        """A hand or foot at this age: a thick, rounded bud, only a little flattened, with soft lobes
+        round its far end where the fingers or toes are starting (no flat plate, no notches yet)."""
         R = frame(normal, up)
-        add(name, Ellipsoid(centre, vec(r[0], r[1], thick), R), 0.02, group)
-        u, v, n = R[:, 0], R[:, 1], R[:, 2]
-        # the rays fan away from the wrist or ankle
-        back = unit(from_dir - n * (from_dir @ n))
-        angle0 = math.atan2(back @ v, back @ u) + math.pi
-        for i in range(rays):
-            a = angle0 + (i - (rays - 1) / 2) * spread / (rays - 1)
-            d = math.cos(a) * u + math.sin(a) * v
-            tip = centre + d * 0.86 * min(r)
-            add(f"{name}Ray{i}", RoundCone(centre + d * 0.2 * min(r), tip, 0.011, 0.0125), 0.016, group)
-            if i < rays - 1:
-                a2 = a + spread / (rays - 1) / 2
-                d2 = math.cos(a2) * u + math.sin(a2) * v
-                sub(f"{name}Notch{i}", Ellipsoid(centre + d2 * 1.0 * min(r), vec(0.006, 0.008, 0.03)), 0.008, group)
+        add(name, Ellipsoid(centre, vec(r[0], r[1], thick), R), 0.035, group)
+        u, v = R[:, 0], R[:, 1]
+        # the far end is away from the wrist or ankle (-v)
+        for i in range(lobes):
+            a = -math.pi / 2 + (i - (lobes - 1) / 2) * spread / (lobes - 1)
+            c = centre + u * (math.cos(a) * r[0] * 0.74) + v * (math.sin(a) * r[1] * 0.74)
+            add(f"{name}Lobe{i}", Ellipsoid(c, vec(0.016, 0.016, thick * 0.72), R), 0.012, group)
 
 
-def organ_shadow(organs, p, nrm, depth, steps=20):
-    """How much of the light passing through the skin at p the organs inside absorb, from a march
-    inward along the normal through the body (Beer-Lambert over the organs' soft volumes). An organ
-    may carry a direction it only shows from (its absorption fades where the skin faces away)."""
-    total = np.zeros(len(p))
-    facing = [np.ones(len(p)) if len(o) < 3 else np.clip((nrm @ o[2] - 0.25) / 0.45, 0.0, 1.0) for o in organs]
-    for k in range(steps):
-        t = (k + 0.5) / steps * depth
-        q = p - nrm * t[:, None]
-        dens = np.zeros(len(p))
-        for (shape, absorb, *_), f in zip(organs, facing):
-            d = shape.sdf(q)
-            dens += absorb * f * np.clip(-d / 0.01 + 0.5, 0.0, 1.0)
-        total += dens * depth / steps
-    return 1.0 - np.exp(-total)
+def organ_volume(organs, h=0.01, blur=1.2):
+    """The organs' light absorbance as a small 3D texture: soft-edged and blurred a little more, so
+    they read as shapes inside the body. Returns the texture's lower corner and size (covering whole
+    texels), the uint8 volume with x varying fastest, and the absorbance per unit length at 255."""
+    from scipy.ndimage import gaussian_filter
+    boxes = [shape.aabb() for shape, _ in organs]
+    lo = np.min([b[0] for b in boxes], axis=0) - 0.04
+    hi = np.max([b[1] for b in boxes], axis=0) + 0.04
+    dims = np.ceil((hi - lo) / h).astype(int) + 1
+    axes = [lo[i] + h * np.arange(dims[i]) for i in range(3)]
+    gx, gy, gz = np.meshgrid(*axes, indexing="ij")
+    pts = np.stack([gx.ravel(), gy.ravel(), gz.ravel()], axis=1)
+    dens = np.zeros(len(pts))
+    for shape, absorb in organs:
+        dens += absorb * np.clip(-shape.sdf(pts) / 0.01 + 0.5, 0.0, 1.0)
+    dens = gaussian_filter(dens.reshape(dims), blur)
+    scale = float(dens.max())
+    vol = np.round(dens / scale * 255).astype(np.uint8).transpose(2, 1, 0)
+    # texel i is centred on lo + i * h
+    return lo - 0.5 * h, dims * h, vol, scale
 
 
 def sphere(c, r, rings=32, segs=48):
@@ -272,8 +272,8 @@ def eye_colours(normals, outward):
 
 
 def write_glb(path, skin, eyes):
-    """skin: dict(position, normal, color (uint8 RGBA), detail (uint8 VEC2), tris); eyes the same
-    without colour and detail. Plain floats: the file is small enough without quantization."""
+    """skin: dict(position, normal, color (uint8 RGBA), vessel (float), tris); eyes the same with
+    an RGB colour and no vessel mask. Plain floats: the file is small enough without quantization."""
     out = GlbWriter()
 
     def prim(m, extra=True):
@@ -288,7 +288,7 @@ def write_glb(path, skin, eyes):
             nc = m["color"].shape[1]
             attrs["COLOR_0"] = out.dense(m["color"], {"componentType": 5121, "normalized": True, "type": f"VEC{nc}", "count": n})
         if extra:
-            attrs["_DETAIL"] = out.dense(m["detail"], {"componentType": 5121, "normalized": True, "type": "VEC2", "count": n})
+            attrs["_VESSEL"] = out.dense(m["vessel"].astype(np.float32)[:, None], {"componentType": 5126, "type": "SCALAR", "count": n})
         kind, dtype = (5123, np.uint16) if n < 65536 else (5125, np.uint32)
         idx = out.dense(m["tris"].astype(dtype).ravel()[:, None], {"componentType": kind, "type": "SCALAR",
                                                                    "count": int(m["tris"].size)}, indices=True)
@@ -334,7 +334,7 @@ def main():
         # a soft fold of skin above the eye: the eyelids are just starting
         emb.lid_lines.append(Ellipsoid(vec((sx - 0.012) * s, y + 0.033, z), vec(0.03, 0.006, 0.03)))
     obj = blender_mesh(verts, faces, args.tris, details=(
-        (near(("ear",), 0.01), 0.6), (near(("hand", "foot"), 0.012), 0.5),
+        (near(("ear",), 0.01), 0.6), (near(("hand", "foot"), 0.01), 0.7),
         (near(("snout", "nasalPit", "mouth", "eyeBulge", "jaw"), 0.01), 0.6)))
     pos, tris, _ = read_mesh(obj)
     pos = project(ops, pos, iterations=2, max_step=0.003)
@@ -367,26 +367,23 @@ def main():
     print(f"thickness: min {thick.min():.3f}, median {np.median(thick):.3f}, max {thick.max():.3f}")
     alpha = np.array([smoothstep(0.02, 0.5, x) for x in thick])
 
-    # ---- organs in the way of the light, and where the head's surface vessels run
-    # only what lies just under the skin shows as a shape: from the front the heart and liver,
-    # from behind the spine and ribs (deeper organs only add to the overall darkening by thickness)
-    organ = organ_shadow(emb.organs, pos, nrm, np.minimum(thick, 0.16))
-    for _ in range(1):
-        organ = 0.5 * organ + 0.5 * (A @ organ) / deg
+    # ---- where the head's surface vessels run
     head_ops = [by[n] for n in ("cranium", "forebrain", "midbrain", "hindbrain")]
     on_head = np.exp(-np.maximum(np.min([o.shape.sdf(pos) for o in head_ops], axis=0), 0) / 0.01)
     away_from_face = np.array([smoothstep(0.02, 0.12, y) for y in pos[:, 1]])
     vessel = on_head * away_from_face
     for _ in range(3):
         vessel = 0.5 * vessel + 0.5 * (A @ vessel) / deg
-    print(f"organ shadow: mean {organ.mean():.2f}, max {organ.max():.2f}")
+    # ---- the organs inside, as a 3D texture
+    vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs)
+    print(f"organ volume {vol.shape[::-1]} ({vol.size / 1e3:.0f} kB), absorbance up to {vol_scale:.0f}")
 
     center = (pos.min(axis=0) + pos.max(axis=0)) / 2
     skin = {
         "position": pos - center,
         "normal": nrm,
         "color": np.round(np.clip(np.concatenate([rgb, alpha[:, None]], axis=1), 0, 1) * 255).astype(np.uint8),
-        "detail": np.round(np.clip(np.stack([organ, vessel], axis=1), 0, 1) * 255).astype(np.uint8),
+        "vessel": np.clip(vessel, 0, 1).round(3),
         "tris": tris,
     }
     ev, en, et, ec = [], [], [], []
@@ -401,8 +398,13 @@ def main():
             "color": np.concatenate(ec)}
     write_glb(args.out, skin, eyes)
 
+    import base64
     rig = {"week": args.week, "center": center.round(5).tolist(),
-           "anchors": {k: (v - center).round(5).tolist() for k, v in emb.anchors.items()}}
+           "anchors": {k: (v - center).round(5).tolist() for k, v in emb.anchors.items()},
+           # x varies fastest, then y, then z; "scale" is the absorbance per CRL at a texel of 255
+           "organs": {"min": (vol_lo - center).round(5).tolist(), "size": vol_size.round(5).tolist(),
+                      "dims": list(vol.shape[::-1]), "scale": round(vol_scale, 2),
+                      "data": base64.b64encode(vol.tobytes()).decode("ascii")}}
     with open(args.rig, "w") as fh:
         json.dump(rig, fh, separators=(",", ":"))
     import os

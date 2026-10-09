@@ -2057,6 +2057,26 @@ const embryoWeekAt = (ga) => (embryoEnabled && ga < 9 ? 8 : 0);
 
 // where the head's vessels fan out from, and the middle of the skull (from the model's rig)
 const embryoUniforms = { uVesselC: { value: new THREE.Vector3(0.2, 0.3, -0.1) }, uSkullC: { value: new THREE.Vector3(0, 0.27, 0) } };
+// The organs inside (heart, liver, spinal cord, vertebrae and ribs) as a small 3D texture of how much
+// light they absorb, from the rig: the shader looks into it along the line of sight (uCamObj is the
+// camera in the model's own space), so they sit deep and soft inside rather than on the skin
+const noOrgans = new THREE.Data3DTexture(new Uint8Array(1), 1, 1, 1);
+noOrgans.format = THREE.RedFormat;
+noOrgans.needsUpdate = true;
+Object.assign(embryoUniforms, {
+  uOrgans: { value: noOrgans }, uOrgMin: { value: new THREE.Vector3() }, uOrgSize: { value: new THREE.Vector3(1, 1, 1) },
+  uOrgScale: { value: 0 }, uCamObj: { value: new THREE.Vector3() },
+});
+
+function organTexture(o) {
+  const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
+  const tex = new THREE.Data3DTexture(bytes, o.dims[0], o.dims[1], o.dims[2]);
+  tex.format = THREE.RedFormat;
+  tex.minFilter = tex.magFilter = THREE.LinearFilter;
+  tex.unpackAlignment = 1;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 function embryoShading(shader) {
   Object.assign(shader.uniforms, embryoUniforms);
@@ -2066,17 +2086,24 @@ function embryoShading(shader) {
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(4.5, 10.0, 13.0) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
-      attribute vec2 _detail;
-      varying vec2 vDetail;
+      attribute float _vessel;
+      varying float vVessel;
       varying vec3 vObjPos;`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>
-      vDetail = _detail;
+      vVessel = _vessel;
       vObjPos = position;`);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
-      varying vec2 vDetail;
+      varying float vVessel;
       varying vec3 vObjPos;
       uniform vec3 uVesselTint;
+      uniform sampler3D uOrgans;
+      uniform vec3 uOrgMin;
+      uniform vec3 uOrgSize;
+      uniform float uOrgScale;
+      uniform vec3 uCamObj;
+      // how much of the light coming through the body the organs on the line of sight block
+      float eInside = 0.0;
       uniform vec3 uThroughSigma;
       uniform vec3 uVesselC;
       uniform vec3 uSkullC;
@@ -2127,6 +2154,16 @@ function embryoShading(shader) {
         // where they meet: a small red knot
         return max(m, 1.0 - smoothstep(0.004, 0.009, r));
       }
+      // the organs on the line of sight, from the skin a little way into the body
+      float eOrgans(vec3 p) {
+        vec3 dir = normalize(p - uCamObj);
+        float sum = 0.0;
+        for (int i = 0; i < 10; i++) {
+          vec3 q = p + dir * (0.026 * (float(i) + 0.5));
+          sum += texture(uOrgans, (q - uOrgMin) / uOrgSize).r;
+        }
+        return 1.0 - exp(-sum * uOrgScale * 0.026);
+      }
       // fine bumps of the skin, faded out where they would be smaller than a pixel
       float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
       vec3 ePerturb(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDir) {
@@ -2149,29 +2186,37 @@ function embryoShading(shader) {
         normal = ePerturb(-vViewPosition, normal, slope, faceDirection);
       }`)
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-      // what lies just under the skin shows through it even where it is lit: the spinal cord and
-      // vertebrae as a dark red column and bars down the back, the heart and liver as a duskier patch
-      diffuseColor.rgb *= mix(vec3(1.0), vec3(0.42, 0.14, 0.12), clamp(vDetail.x, 0.0, 1.0));
+      #ifdef EMBRYO_CORD
+        // the cord: a tube about as thick as a leg
+        sssThickness = 0.3;
+      #else
+        eInside = eOrgans(vObjPos);
+        // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
+        // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
+        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.75);
+      #endif
       // soft mottling of the thin skin: blood showing through unevenly
       float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
       diffuseColor.rgb *= mix(vec3(1.03, 1.0, 1.0), vec3(0.95, 0.88, 0.88), mottle);
-      float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
-      diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vDetail.y * 0.8);`)
+      #ifndef EMBRYO_CORD
+        float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
+        diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
+      #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
       reflectedLight.indirectDiffuse *= 0.4;
       reflectedLight.indirectSpecular *= 0.6;`)
     // The whole embryo lets light through, not only its thin edges. Seen from the side away from
-    // the light it glows: deep red where the body is thick, pale where it is thin (the hand and
-    // foot plates, the rim of the head), and the heart, liver and spine show as dark shapes in it
+    // the light it glows softly: deep red where the body is thick, paler where it is thin (the hands
+    // and feet, the rim of the head), and the organs on the line of sight show as dark shapes in it
     .replace('reflectedLight.directDiffuse += ( scatter + uSssAmbient ) * thin * uTranslucency * directLight.color * uSssColor;', `
         float eBehind = saturate( ( dot( -geometryNormal, directLight.direction ) + 0.35 ) / 1.35 );
         // the path through is shorter towards the outline, so the edges glow brighter (the hand and
         // foot plates are the thinnest of all, but still lose some light: no white glow)
         float eRim = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );
         float ePath = sssThickness * ( 1.0 - 0.7 * eRim * eRim ) + 0.12;
-        vec3 eThrough = exp( -uThroughSigma * ePath ) * ( 1.0 - 0.92 * vDetail.x );
-        reflectedLight.directDiffuse += ( scatter + 0.6 * eBehind + uSssAmbient ) * uTranslucency * eThrough * directLight.color;`);
+        vec3 eThrough = exp( -uThroughSigma * ePath ) * ( 1.0 - 0.9 * eInside );
+        reflectedLight.directDiffuse += ( 0.55 * scatter + 0.32 * eBehind + uSssAmbient ) * uTranslucency * eThrough * directLight.color;`);
 }
 
 function embryoMaterials() {
@@ -2181,6 +2226,13 @@ function embryoMaterials() {
   mat.onBeforeCompile = (shader) => { babyMaterial.onBeforeCompile(shader); embryoShading(shader); };
   mat.customProgramCacheKey = () => (skinShading ? 'luna-embryo' : 'luna-embryo-basic');
   embryo.material = mat;
+  // the cord while the embryo shows: the same skin, so it grows out of the belly without a seam
+  const cordMat = mat.clone();
+  cordMat.vertexColors = false;
+  cordMat.defines = { ...cordMat.defines, EMBRYO_CORD: '' };
+  cordMat.onBeforeCompile = mat.onBeforeCompile;
+  cordMat.customProgramCacheKey = () => (skinShading ? 'luna-embryo-cord' : 'luna-embryo-cord-basic');
+  embryo.cordMaterial = cordMat;
   // the eye: dark with pigment and a grey ring round the lens (vertex colour), under a thin, wet surface
   embryo.eyeMaterial = new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#6a5a66') });
 }
@@ -2202,10 +2254,12 @@ async function loadEmbryo(week) {
       if (!o.isMesh) return;
       o.material = o.name === 'Eyes' ? embryo.eyeMaterial : embryo.material;
       o.frustumCulled = false;
+      // where the camera is in the model's own space, for looking into the organs
+      if (o.name !== 'Eyes') o.onBeforeRender = (r, s, cam) => o.worldToLocal(embryoUniforms.uCamObj.value.setFromMatrixPosition(cam.matrixWorld));
     });
     gltf.scene.visible = false;
     embryo.group.add(gltf.scene);
-    embryo.models[week] = { scene: gltf.scene, rig };
+    embryo.models[week] = { scene: gltf.scene, rig, organs: rig.organs ? organTexture(rig.organs) : null };
     applyMode(state.mode);
     debugLog(`embryo week ${week} ready`);
   } catch (err) {
@@ -2225,11 +2279,17 @@ function syncBabyModel(ga, moon) {
     const anchors = embryo.rig?.anchors;
     if (anchors?.vessels) embryoUniforms.uVesselC.value.fromArray(anchors.vessels);
     if (anchors?.skull) embryoUniforms.uSkullC.value.fromArray(anchors.skull);
+    const organs = active ? embryo.models[week].organs : null;
+    embryoUniforms.uOrgans.value = organs || noOrgans;
+    embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
+    if (organs) {
+      embryoUniforms.uOrgMin.value.fromArray(embryo.rig.organs.min);
+      embryoUniforms.uOrgSize.value.fromArray(embryo.rig.organs.size);
+    }
     embryoActive = active;
     embryo.group.visible = active;
-    // the early cord is plain and pale like the skin: no dark vessels showing yet
-    cordMaterial.vertexColors = !active;
-    cordMaterial.needsUpdate = true;
+    // the early cord is the same skin as the embryo: no dark vessels showing yet
+    cord.material = active ? embryo.cordMaterial : cordMaterial;
     if (state.view === 'close' && !state.playing) reframeSoon();
   }
   gltfBaby.group.visible = gltfBaby.ready && !embryoActive;
@@ -2544,6 +2604,7 @@ const cordB = new THREE.Vector3();
 const cordDir = new THREE.Vector3();
 const cordAround = new THREE.Vector3();
 const cordPts = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
+const cordBaseW = new THREE.Vector3();
 const cordTmp = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
 // The cord goes round the legs instead of through them: knees, thighs and feet as spheres
 // (model-space centre and radius; the right knee mirrors the left)
@@ -2584,9 +2645,12 @@ function updateCord(now, S) {
   const pts = cordCurve.points;
   babyAnchor('navel', navel);
   babyRoot.getWorldPosition(babyCenter);
-  const out = v2.copy(navel).sub(babyCenter).normalize();
+  // the embryo's cord leaves along the axis of its root, as thick as the root, so the two read as one
+  const rooted = embryoActive && embryo.rig.anchors.cordBase;
+  const out = rooted ? v2.copy(navel).sub(babyAnchor('cordBase', cordBaseW)).normalize() : v2.copy(navel).sub(babyCenter).normalize();
+  const emUnit = embryoActive ? embryo.group.getWorldScale(cordBaseW).x : 0;
   // both ends sink a little into the body and the placenta, so the tube's open rims never show
-  pts[0].copy(navel).addScaledVector(out, -0.02 * S);
+  pts[0].copy(navel).addScaledVector(out, rooted ? -0.06 * emUnit : -0.02 * S);
   pts[1].copy(navel).addScaledVector(out, 0.45 * S);
   pts[4].copy(cordEnd).addScaledVector(placentaNormal, 0.06);
   pts[3].copy(cordEnd).addScaledVector(placentaNormal, -0.7);
@@ -2600,7 +2664,10 @@ function updateCord(now, S) {
 
   // A tube with frames carried along the curve (parallel transport), starting at the placenta,
   // which never moves: the vessel spirals stay put instead of crawling round as the cord sways
-  const radius = embryoActive ? 0.042 * S : 0.022 * S + 0.012;
+  // (the embryo's in its own units: about a leg's thickness, as in the reference)
+  const radius = embryoActive ? 0.05 * emUnit : 0.022 * S + 0.012;
+  // its cord is smooth skin: the vessels inside don't show as lumps yet
+  const lumps = embryoActive ? 0 : 1;
   cordCurve.updateArcLengths();
   for (let i = 0; i <= CORD_SEG; i++) cordCurve.getPointAt(i / CORD_SEG, cordPts[i]);
   // keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
@@ -2625,14 +2692,16 @@ function updateCord(now, S) {
     // the cord flares where it goes into the placenta
     const flare = 1 + 0.45 * THREE.MathUtils.smoothstep(u, 0.9, 1);
     // smooth ends: where it meets the body and the placenta the gel's lumps would show as a ragged rim
-    const ends = THREE.MathUtils.smoothstep(u, 0, 0.06) * (1 - THREE.MathUtils.smoothstep(u, 0.88, 0.97));
+    const ends = THREE.MathUtils.smoothstep(u, 0, 0.06) * (1 - THREE.MathUtils.smoothstep(u, 0.88, 0.97)) * lumps;
+    // the embryo's widens a little into its root
+    const root = embryoActive ? 1 + 0.12 * (1 - THREE.MathUtils.smoothstep(u, 0, 0.05)) : 1;
     for (let j = 0; j <= CORD_RAD; j++) {
       const k = i * (CORD_RAD + 1) + j;
       const a = (j / CORD_RAD) * Math.PI * 2;
       const c = Math.cos(a), s = Math.sin(a);
       cordDir.copy(cordN).multiplyScalar(c).addScaledVector(cordB, s);
       cordAround.copy(cordN).multiplyScalar(-s).addScaledVector(cordB, c);
-      const r = radius * flare * (1 + cordSwell[k] * ends);
+      const r = radius * flare * root * (1 + cordSwell[k] * ends);
       cordPos[k * 3] = cordP.x + cordDir.x * r;
       cordPos[k * 3 + 1] = cordP.y + cordDir.y * r;
       cordPos[k * 3 + 2] = cordP.z + cordDir.z * r;
@@ -4239,7 +4308,7 @@ const frameLoop = (timestamp) => {
     for (const mat of [babyMaterial, gltfBaby.material, embryo.material]) if (mat) mat.color.copy(babyBaseColor).multiply(skinMul);
     if (embryoActive) {
       embryo.material.color.multiply(EMBRYO_TINT);
-      cordMaterial.color.copy(embryo.material.color);
+      embryo.cordMaterial.color.copy(embryo.material.color);
     }
     babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency * (1 - tone[3] * toneK);
     babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);
