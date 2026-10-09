@@ -1175,7 +1175,7 @@ const MODES = {
     particles: 0.35, stars: 0,
     baby: { color: '#f2a88c', roughness: 0.5, sheen: 0.5, sheenColor: '#ffd8c8', iridescence: 0.0, clearcoat: 0.25, rim: '#ffb394', rimStrength: 0.12, heart: '#ff6a55', heartStrength: 0.2,
       sss: '#ff5236', translucency: 1.1, wrap: 0.45, wrapTint: '#ec8a72', sssScale: 0.9 },
-    cord: '#f3c2ae', cordGlow: '#1c0a06',
+    cord: '#ffc9b4', cordGlow: '#1c0a06',
     placenta: '#9a5a52',
     lights: { hemi: 0.6, key: 1.7, back: 2.8, head: 0.3, env: 0.32, sky: '#fff1e8', ground: '#6e4e44', keyColor: '#fff0e6', backColor: '#ffcfaa' },
     grade: { lift: '#000000', gain: '#fffaf6', sat: 0.96 },
@@ -1916,6 +1916,7 @@ renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
     skinShading = false;
     babyMaterial.needsUpdate = true;
     if (gltfBaby.material) gltfBaby.material.needsUpdate = true;
+    if (embryo.material) embryo.material.needsUpdate = true;
     console.warn('Skin shading turned off on this device.');
   } else if (gltfBaby.ready) {
     gltfBaby.ready = false;
@@ -2013,8 +2014,8 @@ babyRoot.add(gltfBaby.group);
 // Hosts that can't serve .glb files (such as the artifact viewer) get a base64 copy as text
 const isGlb = (buffer) => buffer.byteLength > 12 && new DataView(buffer).getUint32(0, true) === 0x46546c67; // "glTF"
 
-async function fetchModel() {
-  for (const url of ['models/fetus.glb', 'models/fetus.glb.txt']) {
+async function fetchModel(base = 'models/fetus.glb') {
+  for (const url of [base, `${base}.txt`]) {
     try {
       const res = await fetch(url);
       if (!res.ok) { debugLog(`${url}: HTTP ${res.status}`); continue; }
@@ -2035,6 +2036,145 @@ async function fetchModel() {
     }
   }
   throw new Error('model file not found');
+}
+
+/* ---------- The embryo: an early week gets its own sculpt instead of the fetus morph ----------
+   Built offline by model/build_embryo.py: a still skin mesh and the two dark eyes. COLOR_0 holds
+   soft occlusion (rgb) and thickness (a); _DETAIL holds how much the organs inside (heart, liver,
+   spine, ribs) block the light through the skin, and where the fine vessels of the head run. */
+const EMBRYO_WEEKS = [8];
+// the embryo's thin skin reads a little more orange than the fetus'
+const EMBRYO_TINT = new THREE.Color(1.0, 0.86, 0.8);
+const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.Group(), material: null, eyeMaterial: null };
+embryo.group.visible = false;
+babyRoot.add(embryo.group);
+let embryoActive = false;
+// the week whose own embryo sculpt shows at this age, or 0 (the fetus model takes over)
+const embryoWeekAt = (ga) => (ga < 9 ? 8 : 0);
+
+function embryoShading(shader) {
+  shader.uniforms.uVesselTint = { value: new THREE.Color('#d0423a') };
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>
+      attribute vec2 _detail;
+      varying vec2 vDetail;
+      varying vec3 vObjPos;`)
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+      vDetail = _detail;
+      vObjPos = position;`);
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>
+      varying vec2 vDetail;
+      varying vec3 vObjPos;
+      uniform vec3 uVesselTint;
+      // value noise (an arithmetic hash: sin() of big numbers loses precision on phones)
+      float eHash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+      float eNoise(vec3 x) {
+        vec3 i = floor(x);
+        vec3 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(mix(eHash(i), eHash(i + vec3(1.0, 0.0, 0.0)), f.x), mix(eHash(i + vec3(0.0, 1.0, 0.0)), eHash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+                   mix(mix(eHash(i + vec3(0.0, 0.0, 1.0)), eHash(i + vec3(1.0, 0.0, 1.0)), f.x), mix(eHash(i + vec3(0.0, 1.0, 1.0)), eHash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
+      }
+      // thin branching vessels: ridges of warped noise, kept to a width of about a pixel or more
+      float eVessels(vec3 p) {
+        vec3 q = p * 9.0;
+        q += (vec3(eNoise(q * 0.9 + 3.1), eNoise(q * 0.9 + 7.7), eNoise(q * 0.9 + 1.3)) - 0.5) * 1.6;
+        float a = 1.0 - abs(eNoise(q) * 2.0 - 1.0);
+        float b = 1.0 - abs(eNoise(q * 2.3 + 11.0) * 2.0 - 1.0);
+        float wa = max(0.05, fwidth(a) * 1.5);
+        float wb = max(0.05, fwidth(b) * 1.5);
+        return smoothstep(1.0 - wa, 1.0, a) + 0.55 * smoothstep(1.0 - wb, 1.0, b) * smoothstep(0.35, 0.7, eNoise(q * 0.5 + 5.0));
+      }
+      // fine bumps of the skin, faded out where they would be smaller than a pixel
+      float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
+      vec3 ePerturb(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDir) {
+        vec3 sx = normalize(dFdx(surfPos));
+        vec3 sy = normalize(dFdy(surfPos));
+        vec3 r1 = cross(sy, surfNorm);
+        vec3 r2 = cross(surfNorm, sx);
+        float det = dot(sx, r1) * faceDir;
+        vec3 grad = sign(det) * (dHdxy.x * r1 + dHdxy.y * r2);
+        return normalize(abs(det) * surfNorm - grad);
+      }`)
+    .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      {
+        // slope of the bumps along the surface (height and distance both in model units)
+        float h = eSkinHeight(vObjPos) * 0.0004;
+        vec3 dpx = dFdx(vObjPos);
+        vec3 dpy = dFdy(vObjPos);
+        float fade = clamp(1.0 - max(length(dpx), length(dpy)) * 140.0 * 0.7, 0.0, 1.0);
+        vec2 slope = vec2(dFdx(h) / max(length(dpx), 1e-6), dFdy(h) / max(length(dpy), 1e-6)) * fade;
+        normal = ePerturb(-vViewPosition, normal, slope, faceDirection);
+      }`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      // the liver and heart show faintly through the skin even from the front; the head's vessels
+      diffuseColor.rgb *= mix(vec3(1.0), vec3(0.88, 0.8, 0.84), vDetail.x * 0.55);
+      // soft mottling of the thin skin: blood showing through unevenly
+      float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
+      diffuseColor.rgb *= mix(vec3(1.03, 1.0, 1.0), vec3(0.95, 0.88, 0.88), mottle);
+      diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, clamp(eVessels(vObjPos), 0.0, 1.0) * vDetail.y * 0.7);`)
+    // the organs inside block the light from behind: they show as dark shapes when backlit
+    .replace('thin * uTranslucency * directLight.color', 'thin * uTranslucency * (1.0 - 0.92 * vDetail.x) * directLight.color');
+}
+
+function embryoMaterials() {
+  if (embryo.material) return;
+  const mat = babyMaterial.clone();
+  mat.vertexColors = true;
+  mat.onBeforeCompile = (shader) => { babyMaterial.onBeforeCompile(shader); embryoShading(shader); };
+  mat.customProgramCacheKey = () => (skinShading ? 'luna-embryo' : 'luna-embryo-basic');
+  embryo.material = mat;
+  // the eye: dark with pigment under a thin, wet surface
+  embryo.eyeMaterial = new THREE.MeshPhysicalMaterial({ color: '#0d0707', roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#6a5a66') });
+}
+
+async function loadEmbryo(week) {
+  if (embryo.models[week] || embryo.loading[week]) return;
+  embryo.loading[week] = true;
+  const name = `models/embryo-w${String(week).padStart(2, '0')}`;
+  try {
+    const [gltf, rig] = await Promise.all([
+      fetchModel(`${name}.glb`).then((buffer) => new GLTFLoader().parseAsync(buffer, '')),
+      fetch(`${name}.json`).then((r) => {
+        if (!r.ok) throw new Error(`embryo rig: HTTP ${r.status}`);
+        return r.json();
+      }),
+    ]);
+    embryoMaterials();
+    gltf.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = o.name === 'Eyes' ? embryo.eyeMaterial : embryo.material;
+      o.frustumCulled = false;
+    });
+    gltf.scene.visible = false;
+    embryo.group.add(gltf.scene);
+    embryo.models[week] = { scene: gltf.scene, rig };
+    applyMode(state.mode);
+    debugLog(`embryo week ${week} ready`);
+  } catch (err) {
+    console.warn(`Embryo model for week ${week} unavailable, keeping the fetus model.`, err);
+  }
+}
+
+// Which model shows: the week's own embryo sculpt when there is one, else the fetus model
+function syncBabyModel(ga, moon) {
+  const week = moon ? 0 : embryoWeekAt(ga);
+  if (week && !embryo.models[week]) loadEmbryo(week);
+  const active = !!(week && embryo.models[week]);
+  if (active !== embryoActive || (active && week !== embryo.week)) {
+    for (const [w, mdl] of Object.entries(embryo.models)) mdl.scene.visible = active && Number(w) === week;
+    embryo.week = active ? week : 0;
+    embryo.rig = active ? embryo.models[week].rig : null;
+    embryoActive = active;
+    embryo.group.visible = active;
+    // the early cord is plain and pale like the skin: no dark vessels showing yet
+    cordMaterial.vertexColors = !active;
+    cordMaterial.needsUpdate = true;
+    if (state.view === 'close' && !state.playing) reframeSoon();
+  }
+  gltfBaby.group.visible = gltfBaby.ready && !embryoActive;
+  if (babyMesh) babyMesh.visible = !gltfBaby.ready && !embryoActive;
 }
 
 async function loadSculptedBaby() {
@@ -2231,6 +2371,10 @@ function rigPoint(name, ga, out) {
 
 // World position of a named point on the baby: head, ear, heart, hand, knee, navel, footL, footR
 function babyAnchor(name, out) {
+  if (embryoActive) {
+    const a = embryo.rig.anchors[name] || embryo.rig.anchors.head;
+    return embryo.group.localToWorld(out.set(a[0], a[1], a[2]));
+  }
   if (gltfBaby.ready) {
     rigPoint(name, gaOf(state.days), out);
     return gltfBaby.group.localToWorld(out);
@@ -2258,6 +2402,7 @@ function babyAnchor(name, out) {
 
 // Where a kicking foot ends up (for the ripple and sparks)
 function kickFoot(side, out) {
+  if (embryoActive) return babyAnchor(`foot${side}`, out);
   if (gltfBaby.ready) {
     const k = gltfBaby.rig[`KICK_${side}`];
     return gltfBaby.group.localToWorld(out.set(k[0], k[1], k[2]));
@@ -2396,12 +2541,12 @@ function updateCord(now, S) {
 
   // A tube with frames carried along the curve (parallel transport), starting at the placenta,
   // which never moves: the vessel spirals stay put instead of crawling round as the cord sways
-  const radius = 0.022 * S + 0.012;
+  const radius = embryoActive ? 0.042 * S : 0.022 * S + 0.012;
   cordCurve.updateArcLengths();
   for (let i = 0; i <= CORD_SEG; i++) cordCurve.getPointAt(i / CORD_SEG, cordPts[i]);
   // keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
   // would fold through itself (or through a leg), and the fold changes every frame as it sways
-  const obstacles = gltfBaby.ready;
+  const obstacles = gltfBaby.ready && !embryoActive;
   if (obstacles) placeCordObstacles(gaOf(state.days));
   for (let pass = 0; pass < 3; pass++) {
     if (obstacles) pushCordOut(radius, S);
@@ -2829,10 +2974,10 @@ function applyMode(mode) {
 
   if (m.baby) {
     babyBaseColor.set(m.baby.color);
-    for (const mat of [babyMaterial, gltfBaby.material]) {
+    for (const mat of [babyMaterial, gltfBaby.material, embryo.material]) {
       if (!mat) continue;
       mat.color.set(m.baby.color);
-      mat.roughness = m.baby.roughness;
+      mat.roughness = mat === embryo.material ? Math.max(m.baby.roughness, 0.62) : m.baby.roughness;
       mat.sheen = m.baby.sheen;
       mat.sheenColor.set(m.baby.sheenColor);
       mat.iridescence = m.baby.iridescence;
@@ -3483,8 +3628,9 @@ const viewTmp = new THREE.Vector3();
 const viewTmp2 = new THREE.Vector3();
 const viewCenter = new THREE.Vector3();
 
-const hasFace = () => gltfBaby.ready && gltfBaby.rig.anchors.face;
+const hasFace = () => (embryoActive ? !!embryo.rig.anchors.face : gltfBaby.ready && gltfBaby.rig.anchors.face);
 function viewAnchor(view, out) {
+  if (view === 'close' && embryoActive) return babyAnchor('core', out);
   if (view === 'close') {
     babyAnchor(hasFace() ? 'face' : 'head', out);
     return out.lerp(babyAnchor('heart', viewTmp2), 0.42);
@@ -3502,11 +3648,23 @@ function viewDirection(view, anchor, out) {
   if (view === 'whole') return out.copy(viewCam.home).normalize();
   babyRoot.getWorldPosition(viewCenter);
   const faceFwd = hasFace() ? babyAnchor('faceFront', out).sub(babyAnchor('face', viewTmp)).normalize() : babyAnchor('navel', out).sub(viewCenter).normalize();
-  if (view === 'face') return out;
-  if (view === 'close') {
-    // turn a third of the way to the side the camera is already on, and look a little from below
+  if (view === 'face' && embryoActive) {
+    // the embryo's hands cover its face from the front: look from three quarters instead
     const side = viewTmp.crossVectors(out, yAxis).normalize();
     if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
+    return out.multiplyScalar(0.55).addScaledVector(side, 0.83).addScaledVector(yAxis, 0.1).normalize();
+  }
+  if (view === 'face') return out;
+  if (view === 'close') {
+    // turn a third of the way to the side the camera is already on, and look a little from below;
+    // the embryo is seen nearly in profile, where its curled shape reads best
+    const side = viewTmp.crossVectors(out, yAxis).normalize();
+    if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
+    if (embryoActive) {
+      // from the side the cord doesn't cross
+      if (side.dot(viewTmp2.subVectors(cordCurve.points[2], anchor)) > 0) side.negate();
+      return out.multiplyScalar(0.16).addScaledVector(side, 0.98).addScaledVector(yAxis, 0.06).normalize();
+    }
     return out.multiplyScalar(0.78).addScaledVector(side, 0.62).addScaledVector(yAxis, -0.08).normalize();
   }
   if (view === 'hands') return out.addScaledVector(viewTmp.copy(anchor).sub(viewCenter).normalize(), 0.35).normalize();
@@ -3530,7 +3688,8 @@ function setView(view) {
   }
   viewAnchor(view, viewCam.anchor);
   viewDirection(view, viewCam.anchor, viewCam.dir);
-  viewCam.dist = view === 'whole' ? preferredDistance(S) : view === 'close' ? closeDistance(S) : Math.max(controls.minDistance + 0.05, ({ face: 0.78, hands: 0.72, feet: 0.7 })[view] * S);
+  const near = embryoActive ? { face: 1.6, hands: 1.35, feet: 1.35 } : { face: 0.78, hands: 0.72, feet: 0.7 };
+  viewCam.dist = view === 'whole' ? preferredDistance(S) : view === 'close' ? closeDistance(S) : Math.max(controls.minDistance + 0.05, near[view] * S);
   userDistanceOverride = view !== 'whole' && view !== 'close';
   lastInteraction = elapsed;
   closeInfo();
@@ -3539,7 +3698,8 @@ function setView(view) {
 
 function closeDistance(S) {
   // the app's Today card is short and wide: step back a little so the top of the head stays in
-  const frame = appMode && appView === 'hero' ? CLOSE_FRAME * 1.22 : CLOSE_FRAME;
+  let frame = appMode && appView === 'hero' ? CLOSE_FRAME * 1.22 : CLOSE_FRAME;
+  if (embryoActive) frame *= 1.55;
   return Math.max(controls.minDistance + 0.05, (frame * S) / frameTan);
 }
 
@@ -3832,6 +3992,8 @@ const frameLoop = (timestamp) => {
   // Baby transform: size, slow sway, and the turn to head-down between weeks 30 and 36
   babyMesh.scale.setScalar(S / (2 * K));
   gltfBaby.group.scale.setScalar(S);
+  embryo.group.scale.setScalar(S);
+  syncBabyModel(ga, !!m.moon);
   const flipTarget = 0.2 + (Math.PI - 0.35) * THREE.MathUtils.smoothstep(ga, 30, 36);
   flip += (flipTarget - flip) * Math.min(1, rawDt * 3);
   qFlip.setFromAxisAngle(zAxis, flip);
@@ -3842,7 +4004,7 @@ const frameLoop = (timestamp) => {
   babyRoot.position.y = (reduce ? 0 : Math.sin(now * 0.5) * 0.04 * S) + 0.012 * jolt * S;
   babyRoot.updateMatrixWorld(true);
 
-  if (!m.moon) {
+  if (!m.moon && !embryoActive) {
     if (gltfBaby.ready) {
       updateGltfBaby(ga, now);
       updateSexShape(ga, dt);
@@ -3892,7 +4054,11 @@ const frameLoop = (timestamp) => {
     const tone = SKIN_TONES[state.skin - 1];
     const toneK = 0.2 + 0.8 * THREE.MathUtils.smoothstep(ga, 16, 34);
     skinMul.setRGB(1 + (tone[0] - 1) * toneK, 1 + (tone[1] - 1) * toneK, 1 + (tone[2] - 1) * toneK);
-    for (const mat of [babyMaterial, gltfBaby.material]) if (mat) mat.color.copy(babyBaseColor).multiply(skinMul);
+    for (const mat of [babyMaterial, gltfBaby.material, embryo.material]) if (mat) mat.color.copy(babyBaseColor).multiply(skinMul);
+    if (embryoActive) {
+      embryo.material.color.multiply(EMBRYO_TINT);
+      cordMaterial.color.copy(embryo.material.color);
+    }
     babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency * (1 - tone[3] * toneK);
     babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);
     babyAnchor('heart', heartWorld);
