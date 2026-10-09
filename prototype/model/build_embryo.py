@@ -470,9 +470,10 @@ def main():
         move[other, 1] = 0
     print("moving parts: " + ", ".join(f"{g} {int((move[:, 0] == parts[g]).sum())}" for g in parts))
 
-    # ---- the paler hands and feet. The colour runs gradually along each limb: from the body (where
-    # the limb leaves it, nothing) through a paler bud to the full pale a little way into the plate,
-    # on a long, soft curve, so the plate (wider than the arm, in front of it) doesn't stand out
+    # ---- the paler hands and feet. Both the pale colour and the thickness the light comes through
+    # run along each limb on one long, soft curve: from where the limb leaves the body (the body's own
+    # tone and thickness) all the way to a little past the wrist or ankle (the plate's). There is no
+    # second step at the shoulder or the wrist, so the limb shades evenly from the body into the plate
     pale = np.zeros(len(pos))
     limb = np.zeros(len(pos), bool)
     for gi, g in enumerate(groups[1:], start=1):
@@ -481,21 +482,32 @@ def main():
         j = emb.joints[g]
         sel = owner == gi
         limb |= sel
-        along = (pos[sel] - j["plate"]) @ j["dir"]
-        t = np.clip((along + 0.22) / 0.3, 0, 1)
+        along = (pos[sel] - j["pivot"]) @ j["dir"]
+        start = np.percentile(along[other[sel]], 97) if other[sel].any() else along.min()
+        end = (j["plate"] - j["pivot"]) @ j["dir"] + 0.05
+        t = np.clip((along - start) / (end - start), 0, 1)
         t = t * t * t * (t * (6 * t - 15) + 10)
-        w = move[sel, 1]
-        pale[sel] = w * (0.2 + 0.8 * t)
-        # and the thickness the light comes through: the plate is much thinner than the bud and would
-        # glow far more. It follows the same curve, and the plate keeps more than half the bud's
-        # thickness, so the hands and feet are only a little more see-through than the limbs
-        a_bud = np.median(alpha[sel][along < -0.16]) if (along < -0.16).any() else alpha[sel].max()
-        a_plate = np.median(alpha[sel][along > 0.06]) if (along > 0.06).any() else alpha[sel].min()
-        a_plate = a_bud + (a_plate - a_bud) * 0.4
-        alpha[sel] = alpha[sel] * (1 - w) + (a_bud + (a_plate - a_bud) * t) * w
-    for _ in range(32):
+        # (the paleness picks up a little later than the thickness: the upper arm and thigh keep
+        # nearly the body's tone)
+        pale[sel] = t ** 1.6
+        # the limb starts with the thickness of the body next to it (a thin bud would otherwise glow
+        # paler than the trunk it grows from), and the plate keeps more than half of that
+        from scipy.spatial import cKDTree
+        rim = pos[sel & other]
+        body_rim = (owner == 0) & other
+        near = cKDTree(rim).query(pos[body_rim], distance_upper_bound=0.04)[0] < np.inf if len(rim) else np.zeros(int(body_rim.sum()), bool)
+        a_root = np.median(alpha[body_rim][near]) if near.any() else alpha[sel].max()
+        a_plate = np.median(alpha[sel][along > end]) if (along > end).any() else alpha[sel].min()
+        a_plate = a_root + (a_plate - a_root) * 0.4
+        alpha[sel] = a_root + (a_plate - a_root) * t
+    # soften both over the surface, the thickness also a little way into the body round each limb
+    near_limb = limb.astype(float)
+    for _ in range(6):
+        near_limb = np.maximum(near_limb, (A @ near_limb) / deg)
+    near_limb = near_limb > 0.01
+    for _ in range(40):
         pale = 0.5 * pale + 0.5 * (A @ pale) / deg
-        alpha = np.where(limb, 0.5 * alpha + 0.5 * (A @ alpha) / deg, alpha)
+        alpha = np.where(near_limb, 0.5 * alpha + 0.5 * (A @ alpha) / deg, alpha)
 
     # ---- the organs inside, as a 3D texture
     vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs)

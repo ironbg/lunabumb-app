@@ -2223,15 +2223,15 @@ function embryoShading(shader) {
         eInside = eOrgans(vObjPos);
         // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
         // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
-        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.55);
+        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.46);
       #endif
       // soft mottling of the thin skin: blood showing through unevenly
       float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
-      diffuseColor.rgb *= mix(vec3(1.015, 1.0, 1.0), vec3(0.975, 0.94, 0.94), mottle);
+      diffuseColor.rgb *= mix(vec3(1.008, 1.0, 1.0), vec3(0.988, 0.97, 0.97), mottle);
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.46);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.4);
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
@@ -2242,6 +2242,11 @@ function embryoShading(shader) {
     // and feet, the rim of the head), and the organs on the line of sight show as dark shapes in it
     .replace('reflectedLight.directDiffuse += ( scatter + uSssAmbient ) * thin * uTranslucency * directLight.color * uSssColor;', `
         float eBehind = saturate( ( dot( -geometryNormal, directLight.direction ) + 0.35 ) / 1.35 );
+        #ifndef EMBRYO_CORD
+          // along the limbs the round bud turns into a flat plate, and the light through them would
+          // change with that turn of the surface; there it depends far less on which way the skin faces
+          eBehind = mix( eBehind, 0.35 + 0.4 * saturate( dot( -geometryNormal, directLight.direction ) * 0.5 + 0.5 ), clamp( vPale, 0.0, 1.0 ) * 0.8 );
+        #endif
         // the path through is shorter towards the outline, so the edges glow brighter (the hand and
         // foot plates are the thinnest of all, but still lose some light: no white glow)
         float eRim = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );
