@@ -1915,6 +1915,7 @@ renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
     babyMaterial.needsUpdate = true;
     if (gltfBaby.material) gltfBaby.material.needsUpdate = true;
     if (embryo.material) embryo.material.needsUpdate = true;
+    if (embryo.boneMaterial) embryo.boneMaterial.needsUpdate = true;
     console.warn('Skin shading turned off on this device.');
   } else if (gltfBaby.ready) {
     gltfBaby.ready = false;
@@ -2040,7 +2041,7 @@ async function fetchModel(base = 'models/fetus.glb') {
    Built offline by model/build_embryo.py: a still skin mesh and the two dark eyes. COLOR_0 holds
    soft occlusion (rgb) and thickness (a); _DETAIL holds how much the organs inside (heart, liver,
    spine, ribs) block the light through the skin, and where the fine vessels of the head run. */
-const EMBRYO_WEEKS = [8];
+const EMBRYO_WEEKS = [8, 9];
 // the embryo's thin skin reads a little more orange than the fetus'
 const EMBRYO_TINT = new THREE.Color(1.0, 0.86, 0.8);
 const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.Group(), material: null, eyeMaterial: null };
@@ -2051,7 +2052,7 @@ let embryoActive = false;
 // While the new models are being tested they only show with ?embryo=1 (the app's Test tab);
 // everywhere else the earlier fetus model stays
 const embryoEnabled = new URLSearchParams(location.search).get('embryo') === '1';
-const embryoWeekAt = (ga) => (embryoEnabled && ga < 9 ? 8 : 0);
+const embryoWeekAt = (ga) => (!embryoEnabled || ga >= 10 ? 0 : ga < 9 ? 8 : 9);
 
 // where the head's vessels fan out from, and the middle of the skull (from the model's rig)
 const embryoUniforms = { uVesselC: { value: new THREE.Vector3(0.2, 0.3, -0.1) }, uSkullC: { value: new THREE.Vector3(0, 0.27, 0) } };
@@ -2093,7 +2094,8 @@ function embryoMoveShading(shader) {
 function organTexture(o) {
   const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
   const tex = new THREE.Data3DTexture(bytes, o.dims[0], o.dims[1], o.dims[2]);
-  tex.format = THREE.RedFormat;
+  // (from week 9 a second channel holds the long bones of the arms and legs)
+  tex.format = o.channels === 2 ? THREE.RGFormat : THREE.RedFormat;
   tex.minFilter = tex.magFilter = THREE.LinearFilter;
   tex.unpackAlignment = 1;
   tex.needsUpdate = true;
@@ -2105,6 +2107,7 @@ function embryoShading(shader) {
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
+  shader.uniforms.uBoneTint = { value: new THREE.Color('#9c5249') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
@@ -2115,10 +2118,17 @@ function embryoShading(shader) {
       varying float vVessel;
       varying float vPale;
       varying float vLimb;
-      varying vec3 vObjPos;`)
+      varying vec3 vObjPos;
+      #ifdef EMBRYO_BONES
+        attribute vec2 _bone;
+        varying vec2 vBone;
+      #endif`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>
       vVessel = _vessel;
       vPale = _pale;
+      #ifdef EMBRYO_BONES
+        vBone = _bone;
+      #endif
       // how far out along an arm or a leg this is (0 on the body; from _MOVE, declared below)
       vLimb = ( _move.x > 0.5 && _move.x < 4.5 ) ? _move.y : 0.0;
       vObjPos = position;`);
@@ -2129,6 +2139,11 @@ function embryoShading(shader) {
       varying float vPale;
       varying float vLimb;
       varying vec3 vObjPos;
+      #ifdef EMBRYO_BONES
+        // x: the small bones of the fingers and toes, y: none of the organs' shadow (the cord's root)
+        varying vec2 vBone;
+        uniform vec3 uBoneTint;
+      #endif
       uniform vec3 uVesselTint;
       uniform vec3 uPaleTint;
       uniform sampler3D uOrgans;
@@ -2198,6 +2213,19 @@ function embryoShading(shader) {
         }
         return 1.0 - exp(-sum * uOrgScale * 0.026);
       }
+      #ifdef EMBRYO_BONES
+        // the same for the long bones of the arms and legs (the second channel), which only the
+        // limbs look into
+        vec2 eOrgans2(vec3 p) {
+          vec3 dir = normalize(p - uCamObj);
+          vec2 sum = vec2(0.0);
+          for (int i = 0; i < 12; i++) {
+            vec3 q = p + dir * (0.026 * (float(i) + 0.5));
+            sum += texture(uOrgans, (q - uOrgMin) / uOrgSize).rg;
+          }
+          return 1.0 - exp(-sum * uOrgScale * 0.026);
+        }
+      #endif
       // fine bumps of the skin, faded out where they would be smaller than a pixel
       float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
       vec3 ePerturb(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDir) {
@@ -2226,7 +2254,12 @@ function embryoShading(shader) {
       #else
         // (not on the arms and legs: a hand held in front of the chest would otherwise take on the
         // shadows of the ribs and liver behind it)
-        eInside = eOrgans(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
+        #ifdef EMBRYO_BONES
+          vec2 eOrg = eOrgans2(vObjPos);
+          eInside = mix(eOrg.x, eOrg.y, clamp( vLimb, 0.0, 1.0 )) * ( 1.0 - clamp( vBone.y, 0.0, 1.0 ) );
+        #else
+          eInside = eOrgans(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
+        #endif
         // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
         // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
         diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.46);
@@ -2239,6 +2272,10 @@ function embryoShading(shader) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
         // the limbs lighten gradually from the body out to the tips of the fingers and toes
         diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * 0.82);
+        #ifdef EMBRYO_BONES
+          // the small bones of the fingers and toes, starting to harden: dark red dots
+          diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.7);
+        #endif
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
@@ -2271,6 +2308,13 @@ function embryoMaterials() {
   mat.onBeforeCompile = (shader) => { babyMaterial.onBeforeCompile(shader); embryoShading(shader); };
   mat.customProgramCacheKey = () => (skinShading ? 'luna-embryo' : 'luna-embryo-basic');
   embryo.material = mat;
+  // from week 9: the bones of the fingers and toes, and the long bones of the limbs in the light
+  // through them (the week 8 model has neither and keeps the material above)
+  const boneMat = mat.clone();
+  boneMat.defines = { ...boneMat.defines, EMBRYO_BONES: '' };
+  boneMat.onBeforeCompile = mat.onBeforeCompile;
+  boneMat.customProgramCacheKey = () => (skinShading ? 'luna-embryo-bones' : 'luna-embryo-bones-basic');
+  embryo.boneMaterial = boneMat;
   // the cord while the embryo shows: the same skin, so it grows out of the belly without a seam
   const cordMat = mat.clone();
   cordMat.vertexColors = false;
@@ -2300,7 +2344,7 @@ async function loadEmbryo(week) {
     embryoMaterials();
     gltf.scene.traverse((o) => {
       if (!o.isMesh) return;
-      o.material = o.name === 'Eyes' ? embryo.eyeMaterial : embryo.material;
+      o.material = o.name === 'Eyes' ? embryo.eyeMaterial : o.geometry.attributes._bone ? embryo.boneMaterial : embryo.material;
       o.frustumCulled = false;
       // where the camera is in the model's own space, for looking into the organs
       if (o.name !== 'Eyes') o.onBeforeRender = (r, s, cam) => o.worldToLocal(embryoUniforms.uCamObj.value.setFromMatrixPosition(cam.matrixWorld));
@@ -3249,10 +3293,10 @@ function applyMode(mode) {
 
   if (m.baby) {
     babyBaseColor.set(m.baby.color);
-    for (const mat of [babyMaterial, gltfBaby.material, embryo.material]) {
+    for (const mat of [babyMaterial, gltfBaby.material, embryo.material, embryo.boneMaterial]) {
       if (!mat) continue;
       mat.color.set(m.baby.color);
-      mat.roughness = mat === embryo.material ? Math.max(m.baby.roughness, 0.62) : m.baby.roughness;
+      mat.roughness = mat === embryo.material || mat === embryo.boneMaterial ? Math.max(m.baby.roughness, 0.62) : m.baby.roughness;
       mat.sheen = m.baby.sheen;
       mat.sheenColor.set(m.baby.sheenColor);
       mat.iridescence = m.baby.iridescence;
@@ -4426,6 +4470,7 @@ const frameLoop = (timestamp) => {
     if (embryoActive) {
       embryo.material.color.multiply(EMBRYO_TINT);
       embryo.cordMaterial.color.copy(embryo.material.color);
+      embryo.boneMaterial.color.copy(embryo.material.color);
     }
     babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency * (1 - tone[3] * toneK);
     babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);
