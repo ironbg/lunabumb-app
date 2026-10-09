@@ -6,6 +6,8 @@ the two dark eyes, with per-vertex data for the skin shader:
 
   COLOR_0   rgb: soft occlusion and tints, a: local thickness (for the light shining through)
   _VESSEL   where the fine surface vessels of the head may show (the shader draws them)
+  _PALE     how much paler the skin is: the hand and foot plates and, less, the limb buds have
+            little blood in them yet and look almost white-pink next to the red body
 
 The organs that block the light coming through the body (heart, liver, spinal cord, vertebrae and
 ribs) are not painted on the skin: they are baked into a small 3D texture that goes in the rig, and
@@ -172,7 +174,7 @@ class Week8:
             add(f"legBud{side}", Chain([RoundCone(hip, an, 0.06, 0.042)]), 0.03, leg)
             axis = unit(vec(0.12 * s, 0.18, 1.0))
             self.foot_paddle(add, f"foot{side}", leg, ankle=an - axis * 0.02, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
-                             length=0.11, width=0.056, thick=0.034)
+                             length=0.12, width=0.05, thick=0.036)
             foot_c = an + axis * 0.05
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
@@ -250,14 +252,14 @@ class Week8:
             add(f"{name}Palm{i}", Ellipsoid(wrist + reach * length * t, vec(width * w, length * 0.22, thick), R), 0.02, group)
         far = wrist + reach * length * 0.66
         add(f"{name}Far", Ellipsoid(far, vec(width, length * 0.26, thick), R), 0.02, group)
-        lobe = 0.42 * width * spread / (fingers - 1)
+        lobe = 0.46 * width * spread / (fingers - 1)
         # (a little uneven, as a real hand plate is: the middle lobes reach a touch further)
         for i, (k, r) in enumerate(((0.96, 0.9), (1.02, 1.0), (1.04, 1.05), (1.01, 0.95), (0.95, 0.85))[:fingers]):
             a = -math.pi / 2 + (i - (fingers - 1) / 2) * spread / (fingers - 1)
             d = math.cos(a) * u + math.sin(a) * v
             rim = math.hypot(math.cos(a) * width, math.sin(a) * length * 0.26)
-            c = far + d * (rim - 0.45 * lobe) * k
-            add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.9), R), 0.01, group)
+            c = far + d * (rim - 0.55 * lobe) * k
+            add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.65), R), 0.01, group)
 
     def foot_paddle(self, add, name, group, ankle, axis, normal, length, width, thick):
         """A foot at this age: a smooth, flattened, oblong paddle carried on from the leg, slightly
@@ -338,6 +340,7 @@ def write_glb(path, skin, eyes):
             attrs["COLOR_0"] = out.dense(m["color"], {"componentType": 5121, "normalized": True, "type": f"VEC{nc}", "count": n})
         if extra:
             attrs["_VESSEL"] = out.dense(m["vessel"].astype(np.float32)[:, None], {"componentType": 5126, "type": "SCALAR", "count": n})
+            attrs["_PALE"] = out.dense(m["pale"].astype(np.float32)[:, None], {"componentType": 5126, "type": "SCALAR", "count": n})
         kind, dtype = (5123, np.uint16) if n < 65536 else (5125, np.uint32)
         idx = out.dense(m["tris"].astype(dtype).ravel()[:, None], {"componentType": kind, "type": "SCALAR",
                                                                    "count": int(m["tris"].size)}, indices=True)
@@ -430,6 +433,15 @@ def main():
     vessel = on_head * away_from_face
     for _ in range(3):
         vessel = 0.5 * vessel + 0.5 * (A @ vessel) / deg
+    # ---- the paler hands and feet: full on the plates, fading up the limb buds
+    plates = [op for op in ops if op.name.startswith(("hand", "foot")) and op.mode == "add"]
+    buds = [op for op in ops if op.name.startswith(("armBud", "legBud"))]
+    d_plate = np.min([op.shape.sdf(pos) for op in plates], axis=0)
+    d_bud = np.min([op.shape.sdf(pos) for op in buds], axis=0)
+    pale = np.maximum(np.exp(-np.maximum(d_plate, 0) / 0.012), 0.45 * np.exp(-np.maximum(d_bud, 0) / 0.01))
+    for _ in range(3):
+        pale = 0.5 * pale + 0.5 * (A @ pale) / deg
+
     # ---- the organs inside, as a 3D texture
     vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs)
     print(f"organ volume {vol.shape[::-1]} ({vol.size / 1e3:.0f} kB), absorbance up to {vol_scale:.0f}")
@@ -440,6 +452,7 @@ def main():
         "normal": nrm,
         "color": np.round(np.clip(np.concatenate([rgb, alpha[:, None]], axis=1), 0, 1) * 255).astype(np.uint8),
         "vessel": np.clip(vessel, 0, 1).round(3),
+        "pale": np.clip(pale, 0, 1).round(3),
         "tris": tris,
     }
     ev, en, et, ec = [], [], [], []

@@ -2077,22 +2077,29 @@ function organTexture(o) {
 function embryoShading(shader) {
   Object.assign(shader.uniforms, embryoUniforms);
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
+  // the hand and foot plates have little blood in them yet: they look almost white-pink
+  shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.2, 7.5, 9.5) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
       attribute float _vessel;
+      attribute float _pale;
       varying float vVessel;
+      varying float vPale;
       varying vec3 vObjPos;`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>
       vVessel = _vessel;
+      vPale = _pale;
       vObjPos = position;`);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
       varying float vVessel;
+      varying float vPale;
       varying vec3 vObjPos;
       uniform vec3 uVesselTint;
+      uniform vec3 uPaleTint;
       uniform sampler3D uOrgans;
       uniform vec3 uOrgMin;
       uniform vec3 uOrgSize;
@@ -2197,6 +2204,7 @@ function embryoShading(shader) {
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, clamp(vPale, 0.0, 1.0) * 0.6);
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
