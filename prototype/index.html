@@ -1152,7 +1152,7 @@ const STR = {
 // grade: a light colour grade after the scene (shadow lift, highlight tint, saturation).
 const MODES = {
   dreamy: {
-    bg: '#100d2a', exposure: 0.95,
+    bg: '#100d2a', exposure: 0.95, dof: true,
     bloom: { strength: 0.85, radius: 0.75, threshold: 0.66 },
     wall: { center: '#3b2b74', edge: '#0d0b26', caustic: '#c9b8ff', amount: 0.6, vessel: 0 },
     shell: { rim: '#b9aef0', glow: '#ffe6a3', intensity: 1.25 },
@@ -2055,8 +2055,15 @@ let embryoActive = false;
 const embryoEnabled = new URLSearchParams(location.search).get('embryo') === '1';
 const embryoWeekAt = (ga) => (embryoEnabled && ga < 9 ? 8 : 0);
 
+// where the head's vessels fan out from, and the middle of the skull (from the model's rig)
+const embryoUniforms = { uVesselC: { value: new THREE.Vector3(0.2, 0.3, -0.1) }, uSkullC: { value: new THREE.Vector3(0, 0.27, 0) } };
+
 function embryoShading(shader) {
-  shader.uniforms.uVesselTint = { value: new THREE.Color('#d0423a') };
+  Object.assign(shader.uniforms, embryoUniforms);
+  shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
+  // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
+  // blue and green are soaked up first, so what comes through thick parts is deep red
+  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(4.5, 10.0, 13.0) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
       attribute vec2 _detail;
@@ -2070,6 +2077,9 @@ function embryoShading(shader) {
       varying vec2 vDetail;
       varying vec3 vObjPos;
       uniform vec3 uVesselTint;
+      uniform vec3 uThroughSigma;
+      uniform vec3 uVesselC;
+      uniform vec3 uSkullC;
       // value noise (an arithmetic hash: sin() of big numbers loses precision on phones)
       float eHash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
       float eNoise(vec3 x) {
@@ -2085,9 +2095,37 @@ function embryoShading(shader) {
         q += (vec3(eNoise(q * 0.9 + 3.1), eNoise(q * 0.9 + 7.7), eNoise(q * 0.9 + 1.3)) - 0.5) * 1.6;
         float a = 1.0 - abs(eNoise(q) * 2.0 - 1.0);
         float b = 1.0 - abs(eNoise(q * 2.3 + 11.0) * 2.0 - 1.0);
-        float wa = max(0.05, fwidth(a) * 1.5);
-        float wb = max(0.05, fwidth(b) * 1.5);
+        float wa = max(0.03, fwidth(a) * 1.5);
+        float wb = max(0.03, fwidth(b) * 1.5);
         return smoothstep(1.0 - wa, 1.0, a) + 0.55 * smoothstep(1.0 - wb, 1.0, b) * smoothstep(0.35, 0.7, eNoise(q * 0.5 + 5.0));
+      }
+      // the head's first surface vessels: a few fanning out from a point high on each side, meandering
+      // and branching as they go (widths in model units, kept to about a pixel or more)
+      float eFan(vec3 p) {
+        vec3 c = vec3(sign(p.x) * abs(uVesselC.x), uVesselC.yz);
+        vec3 n = normalize(c - uSkullC);
+        vec3 t1 = normalize(cross(n, vec3(0.0, 0.0, 1.0)));
+        vec3 t2 = cross(n, t1);
+        vec3 d = p - c;
+        float r = length(d);
+        float a = atan(dot(d, t2), dot(d, t1));
+        float m = 0.0;
+        for (int i = 0; i < 2; i++) {
+          float fi = float(i);
+          // main vessels first, then the branches that start further out
+          float k = mix(7.0, 16.0, fi);
+          float drift = (eNoise(p * mix(22.0, 34.0, fi) + fi * 5.0) - 0.5) * mix(1.1, 0.7, fi);
+          float dist = r * abs(sin((a + drift) * k * 0.5)) / (k * 0.5);
+          float w = mix(0.0032, 0.0018, fi) * (1.0 - 0.45 * smoothstep(0.0, 0.2, r));
+          float aa = fwidth(dist) + 1e-5;
+          float line = 1.0 - smoothstep(w - aa, w + aa, dist);
+          line *= smoothstep(0.04 * fi, 0.04 * fi + 0.03, r) * (1.0 - smoothstep(0.1, 0.22, r));
+          // broken here and there, so they don't all run the full length
+          line *= smoothstep(0.22, 0.42, eNoise(p * 26.0 + fi * 11.0));
+          m = max(m, line * mix(1.0, 0.65, fi));
+        }
+        // where they meet: a small red knot
+        return max(m, 1.0 - smoothstep(0.004, 0.009, r));
       }
       // fine bumps of the skin, faded out where they would be smaller than a pixel
       float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
@@ -2103,7 +2141,7 @@ function embryoShading(shader) {
     .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
       {
         // slope of the bumps along the surface (height and distance both in model units)
-        float h = eSkinHeight(vObjPos) * 0.0004;
+        float h = eSkinHeight(vObjPos) * 0.0009;
         vec3 dpx = dFdx(vObjPos);
         vec3 dpy = dFdy(vObjPos);
         float fade = clamp(1.0 - max(length(dpx), length(dpy)) * 140.0 * 0.7, 0.0, 1.0);
@@ -2111,14 +2149,29 @@ function embryoShading(shader) {
         normal = ePerturb(-vViewPosition, normal, slope, faceDirection);
       }`)
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-      // the liver and heart show faintly through the skin even from the front; the head's vessels
-      diffuseColor.rgb *= mix(vec3(1.0), vec3(0.88, 0.8, 0.84), vDetail.x * 0.55);
+      // what lies just under the skin shows through it even where it is lit: the spinal cord and
+      // vertebrae as a dark red column and bars down the back, the heart and liver as a duskier patch
+      diffuseColor.rgb *= mix(vec3(1.0), vec3(0.42, 0.14, 0.12), clamp(vDetail.x, 0.0, 1.0));
       // soft mottling of the thin skin: blood showing through unevenly
       float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
       diffuseColor.rgb *= mix(vec3(1.03, 1.0, 1.0), vec3(0.95, 0.88, 0.88), mottle);
-      diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, clamp(eVessels(vObjPos), 0.0, 1.0) * vDetail.y * 0.7);`)
-    // the organs inside block the light from behind: they show as dark shapes when backlit
-    .replace('thin * uTranslucency * directLight.color', 'thin * uTranslucency * (1.0 - 0.92 * vDetail.x) * directLight.color');
+      float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
+      diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vDetail.y * 0.8);`)
+    // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
+    .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+      reflectedLight.indirectDiffuse *= 0.4;
+      reflectedLight.indirectSpecular *= 0.6;`)
+    // The whole embryo lets light through, not only its thin edges. Seen from the side away from
+    // the light it glows: deep red where the body is thick, pale where it is thin (the hand and
+    // foot plates, the rim of the head), and the heart, liver and spine show as dark shapes in it
+    .replace('reflectedLight.directDiffuse += ( scatter + uSssAmbient ) * thin * uTranslucency * directLight.color * uSssColor;', `
+        float eBehind = saturate( ( dot( -geometryNormal, directLight.direction ) + 0.35 ) / 1.35 );
+        // the path through is shorter towards the outline, so the edges glow brighter (the hand and
+        // foot plates are the thinnest of all, but still lose some light: no white glow)
+        float eRim = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );
+        float ePath = sssThickness * ( 1.0 - 0.7 * eRim * eRim ) + 0.12;
+        vec3 eThrough = exp( -uThroughSigma * ePath ) * ( 1.0 - 0.92 * vDetail.x );
+        reflectedLight.directDiffuse += ( scatter + 0.6 * eBehind + uSssAmbient ) * uTranslucency * eThrough * directLight.color;`);
 }
 
 function embryoMaterials() {
@@ -2128,8 +2181,8 @@ function embryoMaterials() {
   mat.onBeforeCompile = (shader) => { babyMaterial.onBeforeCompile(shader); embryoShading(shader); };
   mat.customProgramCacheKey = () => (skinShading ? 'luna-embryo' : 'luna-embryo-basic');
   embryo.material = mat;
-  // the eye: dark with pigment under a thin, wet surface
-  embryo.eyeMaterial = new THREE.MeshPhysicalMaterial({ color: '#0d0707', roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#6a5a66') });
+  // the eye: dark with pigment and a grey ring round the lens (vertex colour), under a thin, wet surface
+  embryo.eyeMaterial = new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#6a5a66') });
 }
 
 async function loadEmbryo(week) {
@@ -2169,6 +2222,9 @@ function syncBabyModel(ga, moon) {
     for (const [w, mdl] of Object.entries(embryo.models)) mdl.scene.visible = active && Number(w) === week;
     embryo.week = active ? week : 0;
     embryo.rig = active ? embryo.models[week].rig : null;
+    const anchors = embryo.rig?.anchors;
+    if (anchors?.vessels) embryoUniforms.uVesselC.value.fromArray(anchors.vessels);
+    if (anchors?.skull) embryoUniforms.uSkullC.value.fromArray(anchors.skull);
     embryoActive = active;
     embryo.group.visible = active;
     // the early cord is plain and pale like the skin: no dark vessels showing yet
@@ -3750,10 +3806,11 @@ function viewDirection(view, anchor, out) {
   babyRoot.getWorldPosition(viewCenter);
   const faceFwd = hasFace() ? babyAnchor('faceFront', out).sub(babyAnchor('face', viewTmp)).normalize() : babyAnchor('navel', out).sub(viewCenter).normalize();
   if (view === 'face' && embryoActive) {
-    // the embryo's hands cover its face from the front: look from three quarters instead
+    // the embryo's hands cover its face from the front: look from three quarters instead, and a
+    // little from below, since the small face is tucked under the forehead
     const side = viewTmp.crossVectors(out, yAxis).normalize();
     if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
-    return out.multiplyScalar(0.55).addScaledVector(side, 0.83).addScaledVector(yAxis, 0.1).normalize();
+    return out.multiplyScalar(0.55).addScaledVector(side, 0.83).addScaledVector(yAxis, -0.18).normalize();
   }
   if (view === 'face') return out;
   if (view === 'close') {
@@ -3789,7 +3846,7 @@ function setView(view) {
   }
   viewAnchor(view, viewCam.anchor);
   viewDirection(view, viewCam.anchor, viewCam.dir);
-  const near = embryoActive ? { face: 1.6, hands: 1.35, feet: 1.35 } : { face: 0.78, hands: 0.72, feet: 0.7 };
+  const near = embryoActive ? { face: 2.3, hands: 1.5, feet: 1.5 } : { face: 0.78, hands: 0.72, feet: 0.7 };
   viewCam.dist = view === 'whole' ? preferredDistance(S) : view === 'close' ? closeDistance(S) : Math.max(controls.minDistance + 0.05, near[view] * S);
   userDistanceOverride = view !== 'whole' && view !== 'close';
   lastInteraction = elapsed;
@@ -4034,13 +4091,37 @@ const camRight = new THREE.Vector3();
 const camUp = new THREE.Vector3();
 const camBack = new THREE.Vector3();
 
+// The embryo is lit like a film set instead: the lights stay put beside it (key at its left
+// front, a faint rim behind its right shoulder) and the camera moves round. From the lit side the
+// skin is peach; from the far side the light comes through it, deep red, with the organs and the
+// spine dark inside
+const EMBRYO_KEY = new THREE.Vector3(-0.75, 0.55, 0.3).normalize();
+const EMBRYO_RIM = new THREE.Vector3(0.5, 0.45, -0.74).normalize();
+const embryoQuat = new THREE.Quaternion();
+const lightDir = new THREE.Vector3();
+
 // Key light from the viewer's side; back light behind the baby so thin parts glow (contre-jour)
-function placeLights() {
+function placeLights(m) {
   camera.updateMatrixWorld();
   camera.matrixWorld.extractBasis(camRight, camUp, camBack);
   const t = controls.target;
+  const lights = m.lights;
+  if (embryoActive) {
+    embryo.group.getWorldQuaternion(embryoQuat);
+    keyLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_KEY).applyQuaternion(embryoQuat), 6);
+    backLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_RIM).applyQuaternion(embryoQuat), 6);
+    keyLight.intensity = lights.key * 1.2;
+    backLight.intensity = lights.back * 0.08;
+    headLight.intensity = lights.head * 0.15;
+    hemi.intensity = lights.hemi * 0.45;
+    return;
+  }
   keyLight.position.copy(t).addScaledVector(camBack, 4).addScaledVector(camUp, 5).addScaledVector(camRight, 2.5);
   backLight.position.copy(t).addScaledVector(camBack, -6).addScaledVector(camUp, 2.2).addScaledVector(camRight, -1.4);
+  keyLight.intensity = lights.key;
+  backLight.intensity = lights.back;
+  headLight.intensity = lights.head;
+  hemi.intensity = lights.hemi;
 }
 
 function sceneSize(ga) {
@@ -4149,7 +4230,7 @@ const frameLoop = (timestamp) => {
   const bpm = interpTable(HEART_RATE, ga);
   const pulse = heartPulse(now, bpm);
   $('bpm').classList.toggle('beat', pulse > 0.6);
-  placeLights();
+  placeLights(m);
   if (m.baby) {
     // skin tone: every fetus is thin-skinned and pinkish; the chosen tone shows more with age
     const tone = SKIN_TONES[state.skin - 1];
