@@ -2049,8 +2049,11 @@ const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.G
 embryo.group.visible = false;
 babyRoot.add(embryo.group);
 let embryoActive = false;
-// the week whose own embryo sculpt shows at this age, or 0 (the fetus model takes over)
-const embryoWeekAt = (ga) => (ga < 9 ? 8 : 0);
+// the week whose own embryo sculpt shows at this age, or 0 (the fetus model takes over).
+// While the new models are being tested they only show with ?embryo=1 (the app's Test tab);
+// everywhere else the earlier fetus model stays
+const embryoEnabled = new URLSearchParams(location.search).get('embryo') === '1';
+const embryoWeekAt = (ga) => (embryoEnabled && ga < 9 ? 8 : 0);
 
 function embryoShading(shader) {
   shader.uniforms.uVesselTint = { value: new THREE.Color('#d0423a') };
