@@ -2114,16 +2114,20 @@ function embryoShading(shader) {
       attribute float _pale;
       varying float vVessel;
       varying float vPale;
+      varying float vLimb;
       varying vec3 vObjPos;`)
     .replace('#include <begin_vertex>', `#include <begin_vertex>
       vVessel = _vessel;
       vPale = _pale;
+      // how far out along an arm or a leg this is (0 on the body; from _MOVE, declared below)
+      vLimb = ( _move.x > 0.5 && _move.x < 4.5 ) ? _move.y : 0.0;
       vObjPos = position;`);
   embryoMoveShading(shader);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
       varying float vVessel;
       varying float vPale;
+      varying float vLimb;
       varying vec3 vObjPos;
       uniform vec3 uVesselTint;
       uniform vec3 uPaleTint;
@@ -2220,7 +2224,9 @@ function embryoShading(shader) {
         // the cord: a tube about as thick as a leg
         sssThickness = 0.3;
       #else
-        eInside = eOrgans(vObjPos);
+        // (not on the arms and legs: a hand held in front of the chest would otherwise take on the
+        // shadows of the ribs and liver behind it)
+        eInside = eOrgans(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
         // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
         // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
         diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.46);
@@ -2231,7 +2237,8 @@ function embryoShading(shader) {
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.4);
+        // the limbs lighten gradually from the body out to the tips of the fingers and toes
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * 0.82);
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>

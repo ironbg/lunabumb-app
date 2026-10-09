@@ -471,11 +471,12 @@ def main():
     print("moving parts: " + ", ".join(f"{g} {int((move[:, 0] == parts[g]).sum())}" for g in parts))
 
     # ---- the paler hands and feet. Both the pale colour and the thickness the light comes through
-    # run along each limb on one long, soft curve: from where the limb leaves the body (the body's own
-    # tone and thickness) all the way to a little past the wrist or ankle (the plate's). There is no
-    # second step at the shoulder or the wrist, so the limb shades evenly from the body into the plate
+    # run along each limb on one long, soft curve: dark where the limb leaves the body (the body's own
+    # tone and thickness), lighter and lighter down the limb, and lightest at the very ends of the
+    # fingers and toes. There is no step at the shoulder, the wrist or anywhere in between
     pale = np.zeros(len(pos))
     limb = np.zeros(len(pos), bool)
+    from scipy.spatial import cKDTree
     for gi, g in enumerate(groups[1:], start=1):
         if g == "head":
             continue
@@ -484,22 +485,21 @@ def main():
         limb |= sel
         along = (pos[sel] - j["pivot"]) @ j["dir"]
         start = np.percentile(along[other[sel]], 97) if other[sel].any() else along.min()
-        end = (j["plate"] - j["pivot"]) @ j["dir"] + 0.05
+        end = np.percentile(along, 99.5)   # the tips of the fingers or toes
         t = np.clip((along - start) / (end - start), 0, 1)
-        t = t * t * t * (t * (6 * t - 15) + 10)
-        # (the paleness picks up a little later than the thickness: the upper arm and thigh keep
-        # nearly the body's tone)
-        pale[sel] = t ** 1.6
+        t = t * t * (3 - 2 * t)
+        pale[sel] = t
         # the limb starts with the thickness of the body next to it (a thin bud would otherwise glow
-        # paler than the trunk it grows from), and the plate keeps more than half of that
-        from scipy.spatial import cKDTree
+        # paler than the trunk it grows from) and thins out towards the tips, which let a fair amount
+        # of light through, though less than the bare plate would
         rim = pos[sel & other]
         body_rim = (owner == 0) & other
         near = cKDTree(rim).query(pos[body_rim], distance_upper_bound=0.04)[0] < np.inf if len(rim) else np.zeros(int(body_rim.sum()), bool)
         a_root = np.median(alpha[body_rim][near]) if near.any() else alpha[sel].max()
-        a_plate = np.median(alpha[sel][along > end]) if (along > end).any() else alpha[sel].min()
-        a_plate = a_root + (a_plate - a_root) * 0.4
-        alpha[sel] = a_root + (a_plate - a_root) * t
+        tip = along > end - 0.04
+        a_tip = np.median(alpha[sel][tip]) if tip.any() else alpha[sel].min()
+        a_tip = a_root + (a_tip - a_root) * 0.85
+        alpha[sel] = a_root + (a_tip - a_root) * t
     # soften both over the surface, the thickness also a little way into the body round each limb
     near_limb = limb.astype(float)
     for _ in range(6):
