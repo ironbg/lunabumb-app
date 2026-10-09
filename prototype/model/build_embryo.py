@@ -173,7 +173,7 @@ class Week8:
             wr = sh + reach * 0.15
             add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.042)]), 0.03, arm)
             self.limb_plate(add, f"hand{side}", arm, root=wr, axis=reach, normal=vec(1.0 * s, 0.0, 0.0),
-                            length=0.15, width=0.078, thick=0.011, root_r=0.042, lobes=5, spread=2.3)
+                            length=0.15, width=0.074, thick=0.021, root_r=0.042, lobes=5, spread=2.3)
             hand_c = wr + reach * 0.09
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
@@ -181,7 +181,7 @@ class Week8:
             add(f"legBud{side}", Chain([RoundCone(hip, an, 0.062, 0.046)]), 0.03, leg)
             axis = unit(an - hip)
             self.limb_plate(add, f"foot{side}", leg, root=an, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
-                            length=0.12, width=0.052, thick=0.012, root_r=0.046, lobes=5, spread=1.7)
+                            length=0.12, width=0.05, thick=0.026, root_r=0.046, lobes=5, spread=1.7)
             foot_c = an + axis * 0.07
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
@@ -254,7 +254,8 @@ class Week8:
 
     def limb_plate(self, add, name, group, root, axis, normal, length, width, thick, root_r, lobes, spread):
         """A hand or foot plate carried on from its limb in line with it (no bend at the wrist or
-        ankle). The round limb flattens and widens gradually into a thin, broad plate (there is no
+        ankle). The round limb flattens and widens gradually into a broad, softly rounded plate (not a
+        thin blade: it keeps a fair thickness, fullest in the middle) (there is no
         narrowing at the wrist), whose far edge is made of soft, flat, overlapping lobes where the
         fingers or toes are starting, so the outline is gently scalloped and nothing stands out as a
         finger yet. root_r is the limb's radius where the plate begins."""
@@ -263,7 +264,7 @@ class Week8:
         R = frame(n, -axis)
         u, v = R[:, 0], R[:, 1]
         # the flattening: from the limb's own round section to the plate's
-        for i, (t, w, th) in enumerate(((0.0, 0.0, 1.0), (0.16, 0.35, 0.55), (0.34, 0.7, 0.25), (0.52, 0.92, 0.0))):
+        for i, (t, w, th) in enumerate(((0.0, 0.0, 1.0), (0.16, 0.35, 0.7), (0.34, 0.7, 0.42), (0.52, 0.92, 0.2))):
             ru = root_r + (width - root_r) * w
             rn = thick + (root_r * 0.9 - thick) * th
             add(f"{name}Palm{i}", Ellipsoid(root + axis * length * t, vec(ru, length * 0.2, rn), R), 0.025, group)
@@ -276,7 +277,7 @@ class Week8:
             d = math.cos(a) * u + math.sin(a) * v
             rim = math.hypot(math.cos(a) * width, math.sin(a) * length * 0.26)
             c = far + d * (rim - 0.55 * lobe) * k
-            add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.65), R), 0.01, group)
+            add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.8), R), 0.012, group)
 
 
 def organ_volume(organs, h=0.012, blur=1.0):
