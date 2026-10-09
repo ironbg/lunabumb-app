@@ -948,6 +948,7 @@ const STR = {
       kick: ['Kick', 'Most people first feel movements between weeks 16 and 24.'],
       hiccup: ['Hiccups', 'Babies often hiccup in the womb. You may feel it as small, rhythmic jerks.'],
       stretch: ['Stretch', 'Your baby stretches their arms and legs and then curls up again.'],
+      embryo: ['First movements', 'Around week 8 the embryo starts to make its first small movements. They are far too small to feel yet.'],
     },
     toolGroup: 'Scene tools',
     language: 'Language',
@@ -1055,6 +1056,7 @@ const STR = {
       kick: ['Ритник', 'Повечето жени усещат първите движения между 16-а и 24-та седмица.'],
       hiccup: ['Хълцане', 'Бебетата често хълцат в утробата. Може да го усетиш като леки ритмични потрепвания.'],
       stretch: ['Протягане', 'Бебето протяга ръчички и крачета и после пак се свива.'],
+      embryo: ['Първи движения', 'Около 8-а седмица ембрионът започва да прави първите си малки движения. Още са твърде малки, за да се усетят.'],
     },
     toolGroup: 'Инструменти за сцената',
     language: 'Език',
@@ -1742,7 +1744,7 @@ function computePose(ga, now) {
 }
 
 /* ---------- Movement: kicks, waves, spontaneous stretches ---------- */
-const motion = { kick: null, wave: null, stretch: null, hiccup: null, nextSpontaneous: 8 };
+const motion = { kick: null, wave: null, stretch: null, hiccup: null, embryo: null, nextSpontaneous: 8 };
 const v1 = new THREE.Vector3();
 const v2 = new THREE.Vector3();
 
@@ -2064,6 +2066,30 @@ Object.assign(embryoUniforms, {
   uOrgScale: { value: 0 }, uCamObj: { value: new THREE.Vector3() },
 });
 
+// A touched part of the embryo (an arm, a leg, the head) swings a little round its joint: the
+// vertex shader turns the vertices marked for that part (_MOVE, baked in build_embryo.py) about the
+// joint's axis, more the further they are from it
+const embryoMove = {
+  uMovePart: { value: 0 }, uMoveAngle: { value: 0 }, uMovePivot: { value: new THREE.Vector3() }, uMoveAxis: { value: new THREE.Vector3(1, 0, 0) },
+};
+const EMBRYO_MOVE_COMMON = `
+      attribute vec2 _move;
+      uniform float uMovePart;
+      uniform float uMoveAngle;
+      uniform vec3 uMovePivot;
+      uniform vec3 uMoveAxis;
+      vec3 eRot(vec3 v, vec3 k, float a) { float c = cos(a), s = sin(a); return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c); }
+      float eMoveAngle() { return uMoveAngle * _move.y * (1.0 - step(0.5, abs(_move.x - uMovePart))); }`;
+function embryoMoveShading(shader) {
+  Object.assign(shader.uniforms, embryoMove);
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', `#include <common>${EMBRYO_MOVE_COMMON}`)
+    .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+      objectNormal = eRot(objectNormal, uMoveAxis, eMoveAngle());`)
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+      transformed = eRot(transformed - uMovePivot, uMoveAxis, eMoveAngle()) + uMovePivot;`);
+}
+
 function organTexture(o) {
   const bytes = Uint8Array.from(atob(o.data), (c) => c.charCodeAt(0));
   const tex = new THREE.Data3DTexture(bytes, o.dims[0], o.dims[1], o.dims[2]);
@@ -2093,6 +2119,7 @@ function embryoShading(shader) {
       vVessel = _vessel;
       vPale = _pale;
       vObjPos = position;`);
+  embryoMoveShading(shader);
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>
       varying float vVessel;
@@ -2204,7 +2231,7 @@ function embryoShading(shader) {
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, clamp(vPale, 0.0, 1.0) * 0.6);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.52);
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
@@ -2241,6 +2268,9 @@ function embryoMaterials() {
   embryo.cordMaterial = cordMat;
   // the eye: dark with pigment and a grey ring round the lens (vertex colour), under a thin, wet surface
   embryo.eyeMaterial = new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.3, sheenColor: new THREE.Color('#6a5a66') });
+  // (they nod with the head)
+  embryo.eyeMaterial.onBeforeCompile = embryoMoveShading;
+  embryo.eyeMaterial.customProgramCacheKey = () => 'luna-embryo-eye';
 }
 
 async function loadEmbryo(week) {
@@ -2265,7 +2295,9 @@ async function loadEmbryo(week) {
     });
     gltf.scene.visible = false;
     embryo.group.add(gltf.scene);
-    embryo.models[week] = { scene: gltf.scene, rig, organs: rig.organs ? organTexture(rig.organs) : null };
+    const meshes = [];
+    gltf.scene.traverse((o) => { if (o.isMesh) meshes.push(o); });
+    embryo.models[week] = { scene: gltf.scene, rig, meshes, organs: rig.organs ? organTexture(rig.organs) : null };
     applyMode(state.mode);
     debugLog(`embryo week ${week} ready`);
   } catch (err) {
@@ -3846,9 +3878,65 @@ canvas.addEventListener('pointerup', (e) => {
   const quick = performance.now() - tapStart.t < 350;
   tapStart = null;
   if (moved > 10 || !quick || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  if (embryoActive && !MODES[state.mode].moon) {
+    touchEmbryo(e);
+    return;
+  }
   sceneIndex = (sceneIndex + 1) % SCENES.length;
   playScene(SCENES[sceneIndex]);
 });
+
+/* ---------- The embryo: what is touched moves a little ----------
+   A tap on an arm or a hand lifts the arm a little towards the face, one on a leg or a foot
+   kicks it forwards, one on the head makes it nod; a tap on the body gives a small start of the
+   whole embryo. Now and then it moves on its own, as embryos start to around week 8 */
+const EMBRYO_MOTIONS = { 1: [0.3, 1.3], 2: [0.3, 1.3], 3: [0.3, 1.2], 4: [0.3, 1.2], 5: [0.12, 1.6] };
+const embryoRay = new THREE.Raycaster();
+const embryoNdc = new THREE.Vector2();
+let embryoToastShown = false;
+
+function moveEmbryoPart(part, amp) {
+  const joint = Object.values(embryo.rig.joints || {}).find((j) => j.part === part);
+  if (!joint) return;
+  const [angle, dur] = EMBRYO_MOTIONS[part];
+  motion.embryo = { t0: elapsed, dur, part, amp: angle * amp, pivot: joint.pivot, axis: joint.axis };
+}
+
+function touchEmbryo(e) {
+  const mdl = embryo.models[embryo.week];
+  if (!mdl) return;
+  const rect = canvas.getBoundingClientRect();
+  embryoNdc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  embryoRay.setFromCamera(embryoNdc, camera);
+  const hit = embryoRay.intersectObjects(mdl.meshes, false)[0];
+  if (!hit) return;
+  const mv = hit.object.geometry.attributes._move;
+  const part = mv ? Math.round(mv.getX(hit.face.a)) : 0;
+  const weight = mv ? mv.getY(hit.face.a) : 0;
+  if (part && weight > 0.2) moveEmbryoPart(part, 1);
+  else motion.hiccup = { t0: elapsed, n: 1, period: 0.85, amp: 0.7 };
+  if (!embryoToastShown) {
+    embryoToastShown = true;
+    const [title, text] = t().scenes.embryo;
+    toast(`${title}: ${text}`);
+  }
+}
+
+// the moving part's turn this frame: a quick lift that settles back, with a little give
+function updateEmbryoMotion(now, reduce) {
+  const m = motion.embryo;
+  let angle = 0;
+  if (m && !reduce) {
+    const x = (now - m.t0) / m.dur;
+    if (x >= 0 && x < 1) angle = m.amp * Math.sin(Math.PI * Math.pow(x, 0.7)) * (1 + 0.18 * Math.sin(x * Math.PI * 5));
+  }
+  embryoMove.uMoveAngle.value = angle;
+  if (angle) {
+    embryoMove.uMovePart.value = m.part;
+    embryoMove.uMovePivot.value.fromArray(m.pivot);
+    embryoMove.uMoveAxis.value.fromArray(m.axis);
+  }
+}
 
 /* ---------- Views: the camera moves to the face, hands or feet and follows them ---------- */
 const VIEWS = ['close', 'whole', 'face', 'hands', 'feet'];
@@ -4165,11 +4253,12 @@ const camRight = new THREE.Vector3();
 const camUp = new THREE.Vector3();
 const camBack = new THREE.Vector3();
 
-// The embryo is lit like a film set instead: the lights stay put beside it (key at its left
-// front, a faint rim behind its right shoulder) and the camera moves round. From the lit side the
+// The embryo is lit like a film set instead: the lights stay put beside it (all from its right:
+// the key in front of its right side, a faint rim behind its right shoulder) and the camera moves
+// round. From the lit side the
 // skin is peach; from the far side the light comes through it, deep red, with the organs and the
 // spine dark inside
-const EMBRYO_KEY = new THREE.Vector3(-0.75, 0.55, 0.3).normalize();
+const EMBRYO_KEY = new THREE.Vector3(0.75, 0.55, 0.3).normalize();
 const EMBRYO_RIM = new THREE.Vector3(0.5, 0.45, -0.74).normalize();
 const embryoQuat = new THREE.Quaternion();
 const lightDir = new THREE.Vector3();
@@ -4237,6 +4326,14 @@ const frameLoop = (timestamp) => {
   const ga = gaOf(state.days);
   const S = sceneSize(ga);
   const m = MODES[state.mode];
+
+  if (embryoActive) {
+    if (!reduce && !m.moon && now > motion.nextSpontaneous) {
+      moveEmbryoPart(1 + Math.floor(Math.random() * 5), 0.55);
+      motion.nextSpontaneous = now + 10 + Math.random() * 10;
+    }
+    updateEmbryoMotion(now, reduce);
+  }
 
   // Spontaneous little movements from the second trimester on
   if (!reduce && !m.moon && ga >= 12 && now > motion.nextSpontaneous) {

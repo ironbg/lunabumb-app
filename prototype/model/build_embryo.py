@@ -8,6 +8,10 @@ the two dark eyes, with per-vertex data for the skin shader:
   _VESSEL   where the fine surface vessels of the head may show (the shader draws them)
   _PALE     how much paler the skin is: the hand and foot plates and, less, the limb buds have
             little blood in them yet and look almost white-pink next to the red body
+  _MOVE     x: which part a vertex belongs to (1 left arm, 2 right arm, 3 left leg, 4 right leg,
+            5 head), y: how much it follows that part when it moves (0 at the joint, 1 beyond);
+            the page swings a part round its joint (in the rig) when it is touched. The eyes carry
+            it too, so they nod with the head
 
 The organs that block the light coming through the body (heart, liver, spinal cord, vertebrae and
 ribs) are not painted on the skin: they are baked into a small 3D texture that goes in the rig, and
@@ -36,7 +40,7 @@ import time
 import numpy as np
 
 from build_fetus import (Chain, Ellipsoid, GlbWriter, Op, RoundCone, Sculpt, adjacency, ambient_occlusion,
-                         blender_mesh, eval_sdf, gradient, marching_cubes, project, read_mesh, rotation_between,
+                         blender_mesh, eval_group, eval_sdf, gradient, marching_cubes, project, read_mesh, rotation_between,
                          sculpt_grid, skin_thickness, smoothstep, unit, vec, vertex_normals)
 
 
@@ -155,29 +159,35 @@ class Week8:
 
         # ---- limbs: short, thick, soft buds with no elbow or knee yet. The arm leaves the side of the
         # body high up near the back and reaches straight forwards and a little down, beside the jaw;
-        # the hand is a thin, broad, rounded plate carried on in line with it (no bend at the wrist),
-        # turned so that its flat side faces out: from the side it shows whole, a pale plate in front of
-        # the chin with a softly scalloped edge. The leg leaves the rump and reaches forwards; the foot
-        # is a smooth flattened paddle carried on from it under the cord, its sole turned in
+        # the hand is a thin, broad, rounded plate carried on in line with it, flat side out, so from
+        # the side it shows whole, a pale plate in front of the chin with a softly scalloped edge. The
+        # leg leaves the rump and reaches forwards under the cord; the foot is a smaller, narrower plate
+        # of the same kind in line with it, its sole turned in, so from the front or behind it shows
+        # edge-on as a thin, leaf-like blade. Each limb can swing a little at its root when touched (the
+        # joints below go in the rig)
+        self.joints = {}
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
             sh = vec(0.125 * s, -0.12, -0.13)
             reach = unit(vec(0.22 * s, -0.1, 0.97))
-            wr = sh + reach * 0.16
-            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.04)]), 0.03, arm)
-            self.hand_plate(add, f"hand{side}", arm, wrist=wr, reach=reach, normal=vec(1.0 * s, 0.0, 0.0),
-                            length=0.13, width=0.07, thick=0.011, fingers=5, spread=2.3)
-            hand_c = wr + reach * 0.07
+            wr = sh + reach * 0.15
+            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.042)]), 0.03, arm)
+            self.limb_plate(add, f"hand{side}", arm, root=wr, axis=reach, normal=vec(1.0 * s, 0.0, 0.0),
+                            length=0.15, width=0.078, thick=0.011, root_r=0.042, lobes=5, spread=2.3)
+            hand_c = wr + reach * 0.09
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
-            an = vec(0.12 * s, -0.46, 0.23)
-            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.06, 0.042)]), 0.03, leg)
-            axis = unit(vec(0.12 * s, 0.18, 1.0))
-            self.foot_paddle(add, f"foot{side}", leg, ankle=an - axis * 0.02, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
-                             length=0.12, width=0.05, thick=0.036)
-            foot_c = an + axis * 0.05
+            an = vec(0.12 * s, -0.465, 0.25)
+            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.062, 0.046)]), 0.03, leg)
+            axis = unit(an - hip)
+            self.limb_plate(add, f"foot{side}", leg, root=an, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
+                            length=0.12, width=0.052, thick=0.012, root_r=0.046, lobes=5, spread=1.7)
+            foot_c = an + axis * 0.07
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
+            up = vec(0, 1, 0)
+            self.joints[arm] = {"pivot": sh, "axis": unit(np.cross(reach, up)), "dir": reach, "plate": wr}
+            self.joints[leg] = {"pivot": hip, "axis": unit(np.cross(axis, up)), "dir": axis, "plate": an}
             self.anchors[f"knee{side}"] = 0.5 * (hip + an) + vec(0.04 * s, 0, 0)
 
         # ---- what blocks the light inside the body (baked into a small 3D texture, see main()): the
@@ -221,6 +231,9 @@ class Week8:
                     d = vec(s_ * math.sin(th), 0, -math.cos(th))
                     self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.012, 0.018)), 60.0))
 
+        # the head nods forwards round the neck
+        self.joints["head"] = {"pivot": vec(0, -0.03, -0.12), "axis": vec(1, 0, 0), "dir": unit(vec(0, 0.23, 0.18))}
+
         # ---- anchors for the page
         self.anchors.update({
             "head": vec(0.1, 0.42, 0.1),
@@ -239,36 +252,31 @@ class Week8:
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def hand_plate(self, add, name, group, wrist, reach, normal, length, width, thick, fingers, spread):
-        """An open hand plate carried on from the arm (no bend at the wrist): thin, broad and rounded,
-        wider across than it is long, a little narrower where it leaves the arm. Its far edge is made of
-        soft, flat, overlapping lobes where the fingers are starting, so the outline is only gently
-        wavy; nothing stands out as a finger yet."""
+    def limb_plate(self, add, name, group, root, axis, normal, length, width, thick, root_r, lobes, spread):
+        """A hand or foot plate carried on from its limb in line with it (no bend at the wrist or
+        ankle). The round limb flattens and widens gradually into a thin, broad plate (there is no
+        narrowing at the wrist), whose far edge is made of soft, flat, overlapping lobes where the
+        fingers or toes are starting, so the outline is gently scalloped and nothing stands out as a
+        finger yet. root_r is the limb's radius where the plate begins."""
         n = np.asarray(normal, float)
-        n = unit(n - reach * (n @ reach))
-        R = frame(n, -reach)
+        n = unit(n - axis * (n @ axis))
+        R = frame(n, -axis)
         u, v = R[:, 0], R[:, 1]
-        for i, (t, w) in enumerate(((0.16, 0.55), (0.4, 0.8), (0.62, 0.96))):
-            add(f"{name}Palm{i}", Ellipsoid(wrist + reach * length * t, vec(width * w, length * 0.22, thick), R), 0.02, group)
-        far = wrist + reach * length * 0.66
+        # the flattening: from the limb's own round section to the plate's
+        for i, (t, w, th) in enumerate(((0.0, 0.0, 1.0), (0.16, 0.35, 0.55), (0.34, 0.7, 0.25), (0.52, 0.92, 0.0))):
+            ru = root_r + (width - root_r) * w
+            rn = thick + (root_r * 0.9 - thick) * th
+            add(f"{name}Palm{i}", Ellipsoid(root + axis * length * t, vec(ru, length * 0.2, rn), R), 0.025, group)
+        far = root + axis * length * 0.68
         add(f"{name}Far", Ellipsoid(far, vec(width, length * 0.26, thick), R), 0.02, group)
-        lobe = 0.46 * width * spread / (fingers - 1)
-        # (a little uneven, as a real hand plate is: the middle lobes reach a touch further)
-        for i, (k, r) in enumerate(((0.96, 0.9), (1.02, 1.0), (1.04, 1.05), (1.01, 0.95), (0.95, 0.85))[:fingers]):
-            a = -math.pi / 2 + (i - (fingers - 1) / 2) * spread / (fingers - 1)
+        lobe = 0.46 * width * spread / (lobes - 1)
+        # (a little uneven, as a real plate is: the middle lobes reach a touch further)
+        for i, (k, r) in enumerate(((0.96, 0.9), (1.02, 1.0), (1.04, 1.05), (1.01, 0.95), (0.95, 0.85))[:lobes]):
+            a = -math.pi / 2 + (i - (lobes - 1) / 2) * spread / (lobes - 1)
             d = math.cos(a) * u + math.sin(a) * v
             rim = math.hypot(math.cos(a) * width, math.sin(a) * length * 0.26)
             c = far + d * (rim - 0.55 * lobe) * k
             add(f"{name}Lobe{i}", Ellipsoid(c, vec(lobe * r, lobe * r, thick * 0.65), R), 0.01, group)
-
-    def foot_paddle(self, add, name, group, ankle, axis, normal, length, width, thick):
-        """A foot at this age: a smooth, flattened, oblong paddle carried on from the leg, slightly
-        broader than the leg towards its rounded end, with the sole turned in. No toes show yet."""
-        n = np.asarray(normal, float)
-        n = unit(n - axis * (n @ axis))
-        R = frame(n, -axis)
-        for i, (t, w, th) in enumerate(((0.22, 0.72, 0.95), (0.5, 0.94, 0.9), (0.74, 1.0, 0.85))):
-            add(f"{name}{i}", Ellipsoid(ankle + axis * length * t, vec(width * w, length * 0.3, thick * th), R), 0.04, group)
 
 
 def organ_volume(organs, h=0.012, blur=1.0):
@@ -341,6 +349,8 @@ def write_glb(path, skin, eyes):
         if extra:
             attrs["_VESSEL"] = out.dense(m["vessel"].astype(np.float32)[:, None], {"componentType": 5126, "type": "SCALAR", "count": n})
             attrs["_PALE"] = out.dense(m["pale"].astype(np.float32)[:, None], {"componentType": 5126, "type": "SCALAR", "count": n})
+        if "move" in m:
+            attrs["_MOVE"] = out.dense(m["move"].astype(np.float32), {"componentType": 5126, "type": "VEC2", "count": n})
         kind, dtype = (5123, np.uint16) if n < 65536 else (5125, np.uint32)
         idx = out.dense(m["tris"].astype(dtype).ravel()[:, None], {"componentType": kind, "type": "SCALAR",
                                                                    "count": int(m["tris"].size)}, indices=True)
@@ -433,13 +443,53 @@ def main():
     vessel = on_head * away_from_face
     for _ in range(3):
         vessel = 0.5 * vessel + 0.5 * (A @ vessel) / deg
-    # ---- the paler hands and feet: full on the plates, fading up the limb buds
-    plates = [op for op in ops if op.name.startswith(("hand", "foot")) and op.mode == "add"]
-    buds = [op for op in ops if op.name.startswith(("armBud", "legBud"))]
-    d_plate = np.min([op.shape.sdf(pos) for op in plates], axis=0)
-    d_bud = np.min([op.shape.sdf(pos) for op in buds], axis=0)
-    pale = np.maximum(np.exp(-np.maximum(d_plate, 0) / 0.012), 0.45 * np.exp(-np.maximum(d_bud, 0) / 0.01))
-    for _ in range(3):
+    # ---- which part each vertex moves with, and how much (see _MOVE)
+    parts = {"armL": 1, "armR": 2, "legL": 3, "legR": 4, "head": 5}
+    groups = ["torso"] + list(parts)
+    gd = np.stack([eval_group([op for op in ops if op.group == g], pos) for g in groups], axis=1)
+    owner = np.argmin(gd, axis=1)
+    move = np.zeros((len(pos), 2))
+    # a part's vertices next to the body (where its surface meets another part's) must not move at
+    # all, or the skin there would tear: each part's ramp starts just beyond where it leaves the body
+    other = np.zeros(len(pos), bool)
+    cross = owner[edges[:, 0]] != owner[edges[:, 1]]
+    other[edges[cross, 0]] = True
+    other[edges[cross, 1]] = True
+    for gi, g in enumerate(groups[1:], start=1):
+        j = emb.joints[g]
+        sel = owner == gi
+        along = (pos - j["pivot"]) @ j["dir"]
+        start = np.percentile(along[sel & other], 97) if (sel & other).any() else 0.0
+        length = 0.12 if g == "head" else 0.07
+        t = np.clip((along - start) / length, 0, 1)
+        move[sel, 0] = parts[g]
+        move[sel, 1] = (t * t * (3 - 2 * t))[sel]
+    for _ in range(3):   # soften the bend a little more
+        lim = move[:, 0] > 0
+        move[:, 1] = np.where(lim, 0.5 * move[:, 1] + 0.5 * (A @ move[:, 1]) / deg, 0)
+        move[other, 1] = 0
+    print("moving parts: " + ", ".join(f"{g} {int((move[:, 0] == parts[g]).sum())}" for g in parts))
+
+    # ---- the paler hands and feet. The colour runs gradually along each limb: from the body (where
+    # the limb leaves it, nothing) through a paler bud to the full pale of the plate, reached at the
+    # wrist, so the plate (wider than the arm, in front of it) doesn't stand out against it
+    pale = np.zeros(len(pos))
+    for gi, g in enumerate(groups[1:], start=1):
+        if g == "head":
+            continue
+        j = emb.joints[g]
+        sel = owner == gi
+        along = (pos[sel] - j["plate"]) @ j["dir"]
+        t = np.clip((along + 0.2) / 0.2, 0, 1)
+        t = t * t * (3 - 2 * t)
+        w = move[sel, 1]
+        pale[sel] = w * (0.25 + 0.75 * t)
+        # and the thickness the light comes through: the plate is much thinner than the bud, so it
+        # glows far more; let that change follow the same long ramp instead of stepping at the wrist
+        a_bud = np.median(alpha[sel][along < -0.16]) if (along < -0.16).any() else alpha[sel].max()
+        a_plate = np.median(alpha[sel][along > 0.06]) if (along > 0.06).any() else alpha[sel].min()
+        alpha[sel] = alpha[sel] * (1 - w) + (a_bud + (a_plate - a_bud) * t) * w
+    for _ in range(16):
         pale = 0.5 * pale + 0.5 * (A @ pale) / deg
 
     # ---- the organs inside, as a 3D texture
@@ -453,6 +503,7 @@ def main():
         "color": np.round(np.clip(np.concatenate([rgb, alpha[:, None]], axis=1), 0, 1) * 255).astype(np.uint8),
         "vessel": np.clip(vessel, 0, 1).round(3),
         "pale": np.clip(pale, 0, 1).round(3),
+        "move": move.round(3),
         "tris": tris,
     }
     ev, en, et, ec = [], [], [], []
@@ -465,11 +516,15 @@ def main():
         ec.append(eye_colours(n_, unit(vec(np.sign(c[0]), 0.0, 0.45))))
     eyes = {"position": np.concatenate(ev), "normal": np.concatenate(en), "tris": np.concatenate(et),
             "color": np.concatenate(ec)}
+    eyes["move"] = np.tile([5.0, 1.0], (len(eyes["position"]), 1))
     write_glb(args.out, skin, eyes)
 
     import base64
     rig = {"week": args.week, "center": center.round(5).tolist(),
            "anchors": {k: (v - center).round(5).tolist() for k, v in emb.anchors.items()},
+           # what each part swings round when touched: the joint, and the axis it turns about
+           "joints": {g: {"part": parts[g], "pivot": (j["pivot"] - center).round(5).tolist(),
+                          "axis": np.asarray(j["axis"]).round(4).tolist()} for g, j in emb.joints.items()},
            # x varies fastest, then y, then z; "scale" is the absorbance per CRL at a texel of 255
            "organs": {"min": (vol_lo - center).round(5).tolist(), "size": vol_size.round(5).tolist(),
                       "dims": list(vol.shape[::-1]), "scale": round(vol_scale, 2),
