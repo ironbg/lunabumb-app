@@ -82,8 +82,8 @@ class Week8:
         ops = self.ops
         ops.junctions = {
             "head": (vec(0, -0.03, -0.1), 0.2, 0.07),
-            "armL": (vec(-0.13, -0.14, -0.15), 0.07, 0.045),
-            "armR": (vec(0.13, -0.14, -0.15), 0.07, 0.045),
+            "armL": (vec(-0.13, -0.12, -0.13), 0.07, 0.045),
+            "armR": (vec(0.13, -0.12, -0.13), 0.07, 0.045),
             "legL": (vec(-0.09, -0.49, 0.07), 0.07, 0.045),
             "legR": (vec(0.09, -0.49, 0.07), 0.07, 0.045),
         }
@@ -152,19 +152,20 @@ class Week8:
                 for y in np.arange(-0.03, -0.45, -0.05)]
 
         # ---- limbs: short, thick, soft buds with no elbow or knee yet. The arm leaves the side of the
-        # body high up near the back and reaches forwards under the ear towards the face; the hand is an
-        # open plate (not curled) carried on forwards and a little down from it, in front of the chin,
-        # with rounded finger lobes round its edge. The leg leaves the rump and reaches forwards, the
-        # foot a thick rounded bud under the cord
+        # body high up near the back and reaches straight forwards and a little down past the chest;
+        # the hand is an open plate fanning out in line with it (no bend at the wrist), with rounded
+        # finger lobes round its far edge. The leg leaves the rump and reaches forwards, the foot a
+        # thick rounded bud under the cord
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
-            sh = vec(0.115 * s, -0.14, -0.15)
-            wr = vec(0.185 * s, -0.09, 0.02)
-            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.044)]), 0.03, arm)
-            reach = unit(vec(-0.05 * s, -0.55, 0.83))
+            sh = vec(0.125 * s, -0.12, -0.13)
+            reach = unit(vec(0.2 * s, -0.3, 0.93))
+            wr = sh + reach * 0.16
+            add(f"armBud{side}", Chain([RoundCone(sh, wr, 0.052, 0.04)]), 0.03, arm)
+            # the plate is turned so that from the side it shows nearly edge-on, a pale wedge
+            self.hand_plate(add, f"hand{side}", arm, wrist=wr, reach=reach, normal=vec(0.75 * s, 0.66, 0.0),
+                            length=0.12, width=0.058, thick=0.012, fingers=5, spread=1.9)
             hand_c = wr + reach * 0.07
-            self.hand_plate(add, f"hand{side}", arm, centre=hand_c, normal=vec(1.0 * s, 0.0, 0.25),
-                            reach=reach, r=(0.056, 0.07), thick=0.012, fingers=5, spread=1.8)
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
             an = vec(0.12 * s, -0.46, 0.23)
@@ -186,21 +187,36 @@ class Week8:
             # the medulla, running down from the brain into the spinal cord
             (RoundCone(vec(0, 0.12, -0.16), vec(0, -0.01, -0.2), 0.042, 0.032), 14.0),
         ]
-        # the brain: against the light it shows as one large, soft dark mass in the back half of the
-        # head, behind and above the eye, fading out towards a lighter rim (nested shells give the
-        # soft edge); the front of the head stays lighter
-        for k, absorb in ((1.0, 3.0), (0.8, 3.5), (0.6, 4.0), (0.4, 4.0)):
-            self.organs.append((Ellipsoid(vec(0, 0.19, -0.11), vec(0.11, 0.125, 0.135) * k), absorb))
+        # the brain: against the light the big forebrain shows as a large, soft dark mass in the front
+        # of the head, in front of and above the eye, fading out towards a lighter rim (nested shells
+        # give the soft edge); the midbrain and hindbrain behind it are only faint
+        for c in (vec(0.07, 0.19, 0.19), vec(-0.07, 0.19, 0.19)):
+            for k, absorb in ((1.0, 2.5), (0.75, 3.0), (0.5, 3.5)):
+                self.organs.append((Ellipsoid(c, vec(0.085, 0.11, 0.12) * k), absorb))
+        self.organs.append((Ellipsoid(vec(0, 0.29, 0.03), vec(0.09, 0.08, 0.1)), 2.5))
+        self.organs.append((Ellipsoid(vec(0, 0.17, -0.13), vec(0.08, 0.09, 0.08)), 3.0))
         # the spinal cord: one tube along the back from the medulla to the tail
         cord_pts = [vec(0, -0.01, -0.2)] + [vec(0, y, line[len(line) // 2][1] + 0.06) for y, line in back]
         for a_, b_ in zip(cord_pts[:-1], cord_pts[1:]):
-            self.organs.append((RoundCone(a_, b_, 0.03, 0.03), 30.0))
-        for y, line in back:
-            if -0.36 < y < -0.05:
-                # a vertebra and its ribs: a bar across the back, fading out to the sides
-                for x, z in line:
-                    self.organs.append((Ellipsoid(vec(x, y, z + 0.055), vec(0.022, 0.015, 0.02)),
-                                        60.0 * (1.0 - 0.45 * abs(x) / 0.1)))
+            self.organs.append((RoundCone(a_, b_, 0.025, 0.025), 30.0))
+        # four ribs low on the trunk: each an arc under the skin from beside the spine round the back
+        # and the side of the body, so against the light they show as four separate dark bars on the
+        # flank. Bisect for the skin along rays out from the middle of the trunk
+        def skin_along(c, d):
+            lo_t, hi_t = 0.0, 0.45
+            for _ in range(30):
+                mid = 0.5 * (lo_t + hi_t)
+                if eval_sdf(ops, (c + d * mid)[None])[0] < 0:
+                    lo_t = mid
+                else:
+                    hi_t = mid
+            return lo_t
+        for y in (-0.2, -0.245, -0.29, -0.335):
+            c = vec(0, y, -0.03)
+            for s_ in (1, -1):
+                for th in np.linspace(0.3, 1.75, 9):
+                    d = vec(s_ * math.sin(th), 0, -math.cos(th))
+                    self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.012, 0.018)), 60.0))
 
         # ---- anchors for the page
         self.anchors.update({
@@ -220,18 +236,21 @@ class Week8:
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def hand_plate(self, add, name, group, centre, normal, reach, r, thick, fingers, spread):
-        """An open hand plate: a broad, thin, soft oval carried on from the arm, with flat rounded
-        finger lobes standing a little out of its far edge, so the outline is scalloped (the fingers
-        are only rays yet). Nothing is curled."""
-        R = frame(normal, -reach)
-        add(name, Ellipsoid(centre, vec(r[0], r[1], thick), R), 0.03, group)
+    def hand_plate(self, add, name, group, wrist, reach, normal, length, width, thick, fingers, spread):
+        """An open hand plate fanning out from the wrist in line with the arm: narrow where it leaves
+        the arm, broad at the far end, thin and soft, with flat rounded finger lobes round the far edge
+        so the outline is scalloped (the fingers are only rays yet). Nothing is bent or curled."""
+        n = np.asarray(normal, float)
+        n = unit(n - reach * (n @ reach))
+        R = frame(n, -reach)
         u, v = R[:, 0], R[:, 1]
+        for i, (t, w) in enumerate(((0.2, 0.6), (0.5, 0.82), (0.78, 1.0))):
+            add(f"{name}Palm{i}", Ellipsoid(wrist + reach * length * t, vec(width * w, length * 0.3, thick), R), 0.02, group)
+        far = wrist + reach * length * 0.78
         for i in range(fingers):
             a = -math.pi / 2 + (i - (fingers - 1) / 2) * spread / (fingers - 1)
-            d = math.cos(a) * u + math.sin(a) * v
-            rim = math.hypot(math.cos(a) * r[0], math.sin(a) * r[1])
-            add(f"{name}Finger{i}", Ellipsoid(centre + d * 0.9 * rim, vec(0.018, 0.018, thick * 0.85), R), 0.01, group)
+            c = far + u * (math.cos(a) * width * 0.88) + v * (math.sin(a) * length * 0.3 * 0.88)
+            add(f"{name}Finger{i}", Ellipsoid(c, vec(0.017, 0.017, thick * 0.85), R), 0.01, group)
 
     def mitten(self, add, name, group, centre, normal, up, r, thick, lobes, spread):
         """A hand or foot at this age: a thick, rounded bud, only a little flattened, with soft lobes
