@@ -394,7 +394,6 @@
     text-overflow: ellipsis;
   }
   .modes button[aria-checked="true"] { background: var(--violet); color: var(--ink); }
-  .disclaimer { margin: -4px 0 0; font-size: 11px; color: var(--muted); text-align: center; opacity: 0.85; }
 
   /* ---------- Hotspots ---------- */
   .hotspots { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
@@ -807,7 +806,6 @@
     <button type="button" role="radio" data-mode="realistic" aria-checked="false">Realistic</button>
     <button type="button" role="radio" data-mode="moon" aria-checked="false">Moon</button>
   </div>
-  <p class="disclaimer" id="disclaimer">Artistic visualisation for a prototype. Not a medical image.</p>
 </footer>
 
 <div class="toast fade" id="toast" role="status" aria-live="polite"></div>
@@ -957,7 +955,6 @@ const STR = {
     tiers: ['Lite', 'Standard', 'High', 'Ultra'],
     auto: (name) => `Auto · ${name}`,
     brandView: 'Luna View · Prototype',
-    disclaimer: 'Artistic visualisation for a prototype. Not a medical image.',
     timeline: 'Pregnancy week',
     timelineValue: (w, d) => `Week ${w}, day ${d}`,
     toastKick: (n) => `Kick logged · ${n} today`,
@@ -1065,7 +1062,6 @@ const STR = {
     tiers: ['Лек', 'Стандартен', 'Висок', 'Ултра'],
     auto: (name) => `Авто · ${name}`,
     brandView: 'Luna View · Прототип',
-    disclaimer: 'Художествена визуализация за прототип. Не е медицинско изображение.',
     timeline: 'Седмица на бременността',
     timelineValue: (w, d) => `Седмица ${w}, ден ${d}`,
     toastKick: (n) => `Ритникът е записан · ${n} днес`,
@@ -3532,7 +3528,6 @@ function updateStaticCopy() {
   $('tri-2').textContent = s.triShort[1];
   $('tri-3').textContent = s.triShort[2];
   $('timeline').setAttribute('aria-label', s.timeline);
-  $('disclaimer').textContent = s.disclaimer;
   $('portrait-hint').textContent = s.portraitHint;
   $('modal-title').textContent = s.portraitTitle;
   $('info-close').setAttribute('aria-label', s.close);

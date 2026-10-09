@@ -183,15 +183,14 @@ class Week8:
         self.organs = [
             (Ellipsoid(vec(0, -0.15, 0.06), vec(0.08, 0.07, 0.08)), 3.0),     # heart
             (Ellipsoid(vec(0, -0.3, 0.06), vec(0.12, 0.09, 0.11)), 2.5),      # liver
-            # the brain, inside a rim of thinner tissue: the forebrain's two halves in front, the
-            # midbrain under the dome, the hindbrain at the back (the darkest) and the medulla
-            # running down into the spinal cord
-            (Ellipsoid(vec(0.065, 0.17, 0.17), vec(0.085, 0.1, 0.12)), 7.0),
-            (Ellipsoid(vec(-0.065, 0.17, 0.17), vec(0.085, 0.1, 0.12)), 7.0),
-            (Ellipsoid(vec(0, 0.27, 0.06), vec(0.1, 0.1, 0.13)), 9.0),
-            (Ellipsoid(vec(0, 0.18, -0.12), vec(0.1, 0.11, 0.09)), 14.0),
-            (RoundCone(vec(0, 0.13, -0.16), vec(0, -0.01, -0.2), 0.045, 0.034), 18.0),
+            # the medulla, running down from the brain into the spinal cord
+            (RoundCone(vec(0, 0.12, -0.16), vec(0, -0.01, -0.2), 0.042, 0.032), 14.0),
         ]
+        # the brain: against the light it shows as one large, soft dark mass in the back half of the
+        # head, behind and above the eye, fading out towards a lighter rim (nested shells give the
+        # soft edge); the front of the head stays lighter
+        for k, absorb in ((1.0, 3.0), (0.8, 3.5), (0.6, 4.0), (0.4, 4.0)):
+            self.organs.append((Ellipsoid(vec(0, 0.19, -0.11), vec(0.11, 0.125, 0.135) * k), absorb))
         # the spinal cord: one tube along the back from the medulla to the tail
         cord_pts = [vec(0, -0.01, -0.2)] + [vec(0, y, line[len(line) // 2][1] + 0.06) for y, line in back]
         for a_, b_ in zip(cord_pts[:-1], cord_pts[1:]):
@@ -394,6 +393,12 @@ def main():
     thick = skin_thickness(ops, pos, nrm, A, deg)
     print(f"thickness: min {thick.min():.3f}, median {np.median(thick):.3f}, max {thick.max():.3f}")
     alpha = np.array([smoothstep(0.02, 0.5, x) for x in thick])
+    # the root of the cord takes the same value the cord tube is shaded with in the page (0.3), so the
+    # two meet without a change of colour; it blends into the belly's own value where they join
+    rest = np.min([op.shape.sdf(pos) for op in ops if op.group == "torso" and op.mode == "add" and op.name != "cordRoot"], axis=0)
+    t = np.clip(rest / 0.03, 0.0, 1.0)
+    w = np.clip(1.0 - by["cordRoot"].shape.sdf(pos) / 0.012, 0.0, 1.0) * t * t * (3 - 2 * t)
+    alpha = alpha * (1 - w) + 0.3 * w
 
     # ---- where the head's surface vessels run
     head_ops = [by[n] for n in ("cranium", "forebrain", "midbrain", "hindbrain")]
