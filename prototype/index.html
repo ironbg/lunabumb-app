@@ -2107,7 +2107,7 @@ function embryoShading(shader) {
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
-  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.2, 7.5, 9.5) };
+  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
       attribute float _vessel;
@@ -3957,6 +3957,7 @@ const CLOSE_FRAME = 0.36;
 const viewCam = { flip: 0, active: false, foot: 'footL', home: new THREE.Vector3(0, 0.15, 1), t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), anchor: new THREE.Vector3(), dir: new THREE.Vector3(), dist: 0 };
 const viewTmp = new THREE.Vector3();
 const viewTmp2 = new THREE.Vector3();
+const viewQuat = new THREE.Quaternion();
 const viewCenter = new THREE.Vector3();
 
 const hasFace = () => (embryoActive ? !!embryo.rig.anchors.face : gltfBaby.ready && gltfBaby.rig.anchors.face);
@@ -3993,8 +3994,10 @@ function viewDirection(view, anchor, out) {
     const side = viewTmp.crossVectors(out, yAxis).normalize();
     if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
     if (embryoActive) {
-      // from the side the cord doesn't cross
-      if (side.dot(viewTmp2.subVectors(cordCurve.points[2], anchor)) > 0) side.negate();
+      // from the embryo's right, the side the light falls on, so the face and the cord are on the
+      // left of the picture
+      side.set(1, 0, 0).applyQuaternion(embryo.group.getWorldQuaternion(viewQuat));
+      side.addScaledVector(out, -side.dot(out)).normalize();
       return out.multiplyScalar(0.16).addScaledVector(side, 0.98).addScaledVector(yAxis, 0.06).normalize();
     }
     return out.multiplyScalar(0.78).addScaledVector(side, 0.62).addScaledVector(yAxis, -0.08).normalize();
