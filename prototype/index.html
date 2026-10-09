@@ -845,10 +845,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -1168,7 +1168,7 @@ const MODES = {
   // thin edges (and the whole body when the camera turns into it), a beige wall with faint vessels
   // that sits out of focus behind the baby
   realistic: {
-    bg: '#2a1b16', exposure: 1.0,
+    bg: '#2a1b16', exposure: 1.0, dof: true,
     bloom: { strength: 0.22, radius: 0.7, threshold: 0.82 },
     wall: { center: '#dcc2a8', edge: '#7e5a44', caustic: '#ffcba3', amount: 0, vessel: 0.3, vesselColor: '#c47a68', focus: 1 },
     shell: { rim: '#f2c4ae', glow: '#ffe6d4', intensity: 0.25 },
@@ -2864,7 +2864,102 @@ const FinishShader = {
   `,
 };
 
+// Depth of field, as through a macro lens: the baby is in focus, the cord, the particles and the
+// wall in front of and behind it go soft. One pass gathers a disc of samples whose size follows
+// each sample's own distance from the focus, so a sharp edge never spreads over the blur behind it
+// and a blurred cord in front still spills over the sharp baby.
+const DofShader = {
+  uniforms: {
+    tColor: { value: null }, tDepth: { value: null }, uNear: { value: 0.05 }, uFar: { value: 220 },
+    uFocus: { value: 3 }, uRange: { value: 0.2 }, uRamp: { value: 0.6 }, uMaxBlur: { value: 9 }, uTexel: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    #include <packing>
+    uniform sampler2D tColor;
+    uniform sampler2D tDepth;
+    uniform float uNear;
+    uniform float uFar;
+    uniform float uFocus;
+    uniform float uRange;
+    uniform float uRamp;
+    uniform float uMaxBlur;
+    uniform vec2 uTexel;
+    varying vec2 vUv;
+    float viewDist(float d) { return -perspectiveDepthToViewZ(d, uNear, uFar); }
+    float blurPx(float z) { return clamp((abs(z - uFocus) - uRange) / uRamp, 0.0, 1.0) * uMaxBlur; }
+    void main() {
+      vec4 base = texture2D(tColor, vUv);
+      float zc = viewDist(texture2D(tDepth, vUv).x);
+      float cc = blurPx(zc);
+      vec3 acc = base.rgb;
+      float wsum = 1.0;
+      // a different turn of the sample spiral for each pixel turns banding into fine noise
+      float rot = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+      for (int i = 0; i < 32; i++) {
+        float fi = float(i);
+        float r = sqrt((fi + 0.5) / 32.0) * uMaxBlur;
+        float a = fi * 2.3999632 + rot;
+        vec2 tc = vUv + vec2(cos(a), sin(a)) * r * uTexel;
+        float zs = viewDist(texture2D(tDepth, tc).x);
+        float ss = blurPx(zs);
+        if (zs > zc) ss = min(ss, cc * 2.0);
+        float w = smoothstep(r - 1.5, r + 1.5, ss);
+        acc += texture2D(tColor, tc).rgb * w;
+        wsum += w;
+      }
+      gl_FragColor = vec4(acc / wsum, base.a);
+    }
+  `,
+};
+
+// Renders the scene, then (when depth of field is on) blurs it by depth into the composer's chain
+class SceneDofPass extends Pass {
+  constructor(sceneRef, cameraRef, samples) {
+    super();
+    this.scene = sceneRef;
+    this.camera = cameraRef;
+    this.needsSwap = false;
+    this.dof = false;
+    this.target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples, depthTexture: new THREE.DepthTexture(1, 1) });
+    this.material = new THREE.ShaderMaterial({ ...DofShader, uniforms: THREE.UniformsUtils.clone(DofShader.uniforms), depthTest: false, depthWrite: false });
+    this.quad = new FullScreenQuad(this.material);
+  }
+
+  setSize(width, height) {
+    this.target.setSize(width, height);
+    this.material.uniforms.uTexel.value.set(1 / width, 1 / height);
+  }
+
+  render(renderer, writeBuffer, readBuffer) {
+    if (!this.dof) {
+      renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
+      renderer.render(this.scene, this.camera);
+      return;
+    }
+    renderer.setRenderTarget(this.target);
+    renderer.render(this.scene, this.camera);
+    const u = this.material.uniforms;
+    u.tColor.value = this.target.texture;
+    u.tDepth.value = this.target.depthTexture;
+    u.uNear.value = this.camera.near;
+    u.uFar.value = this.camera.far;
+    renderer.setRenderTarget(this.renderToScreen ? null : readBuffer);
+    this.quad.render(renderer);
+  }
+
+  dispose() {
+    this.target.dispose();
+    this.material.dispose();
+    this.quad.dispose();
+  }
+}
+
 let composer;
+let scenePass;
 let bloomPass;
 let finishPass;
 
@@ -2873,13 +2968,15 @@ function buildComposer(tier) {
     composer.renderTarget1.dispose();
     composer.renderTarget2.dispose();
     bloomPass.dispose();
+    scenePass.dispose();
   }
   // No MSAA at a pixel ratio of 2 or more: the edges are already fine there, and on a phone the
   // multisampled half-float target costs four times the memory of the frame itself
   const samples = renderer.getPixelRatio() >= 2 ? 0 : TIERS[tier].msaa;
   const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples });
   composer = new EffectComposer(renderer, rt);
-  composer.addPass(new RenderPass(scene, camera));
+  scenePass = new SceneDofPass(scene, camera, samples);
+  composer.addPass(scenePass);
   bloomPass = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.75, 0.6, 0.6);
   const highPass = bloomPass.materialHighPassFilter;
   highPass.fragmentShader = highPass.fragmentShader
@@ -3011,6 +3108,7 @@ function applyMode(mode) {
     bloomPass.radius = m.bloom.radius;
     bloomPass.threshold = m.bloom.threshold;
   }
+  scenePass.dof = !!m.dof && state.tier >= 1;
   finishPass.uniforms.uVignette.value = m.vignette;
   finishPass.uniforms.uLift.value.set(m.grade.lift);
   finishPass.uniforms.uGain.value.set(m.grade.gain);
@@ -4074,6 +4172,13 @@ const frameLoop = (timestamp) => {
   if (!m.moon && frame % TIERS[state.tier].cordEvery === 0) updateCord(reduce ? 0 : now, S);
   updateSparks(dt);
 
+  if (scenePass.dof) {
+    const u = scenePass.material.uniforms;
+    u.uFocus.value = camera.position.distanceTo(controls.target);
+    u.uRange.value = 0.12 * S;
+    u.uRamp.value = 0.45 * S;
+    u.uMaxBlur.value = 11 * renderer.getPixelRatio();
+  }
   composer.render(dt);
   updateHotspotAnchors();
   updateHotspots();
