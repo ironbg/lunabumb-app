@@ -471,26 +471,31 @@ def main():
     print("moving parts: " + ", ".join(f"{g} {int((move[:, 0] == parts[g]).sum())}" for g in parts))
 
     # ---- the paler hands and feet. The colour runs gradually along each limb: from the body (where
-    # the limb leaves it, nothing) through a paler bud to the full pale of the plate, reached at the
-    # wrist, so the plate (wider than the arm, in front of it) doesn't stand out against it
+    # the limb leaves it, nothing) through a paler bud to the full pale a little way into the plate,
+    # on a long, soft curve, so the plate (wider than the arm, in front of it) doesn't stand out
     pale = np.zeros(len(pos))
+    limb = np.zeros(len(pos), bool)
     for gi, g in enumerate(groups[1:], start=1):
         if g == "head":
             continue
         j = emb.joints[g]
         sel = owner == gi
+        limb |= sel
         along = (pos[sel] - j["plate"]) @ j["dir"]
-        t = np.clip((along + 0.2) / 0.2, 0, 1)
-        t = t * t * (3 - 2 * t)
+        t = np.clip((along + 0.22) / 0.3, 0, 1)
+        t = t * t * t * (t * (6 * t - 15) + 10)
         w = move[sel, 1]
-        pale[sel] = w * (0.25 + 0.75 * t)
-        # and the thickness the light comes through: the plate is much thinner than the bud, so it
-        # glows far more; let that change follow the same long ramp instead of stepping at the wrist
+        pale[sel] = w * (0.2 + 0.8 * t)
+        # and the thickness the light comes through: the plate is much thinner than the bud and would
+        # glow far more. It follows the same curve, and the plate keeps more than half the bud's
+        # thickness, so the hands and feet are only a little more see-through than the limbs
         a_bud = np.median(alpha[sel][along < -0.16]) if (along < -0.16).any() else alpha[sel].max()
         a_plate = np.median(alpha[sel][along > 0.06]) if (along > 0.06).any() else alpha[sel].min()
+        a_plate = a_bud + (a_plate - a_bud) * 0.4
         alpha[sel] = alpha[sel] * (1 - w) + (a_bud + (a_plate - a_bud) * t) * w
-    for _ in range(16):
+    for _ in range(32):
         pale = 0.5 * pale + 0.5 * (A @ pale) / deg
+        alpha = np.where(limb, 0.5 * alpha + 0.5 * (A @ alpha) / deg, alpha)
 
     # ---- the organs inside, as a 3D texture
     vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs)

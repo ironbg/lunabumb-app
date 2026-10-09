@@ -2231,7 +2231,7 @@ function embryoShading(shader) {
       #ifndef EMBRYO_CORD
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.52);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, smoothstep(0.0, 1.0, clamp(vPale, 0.0, 1.0)) * 0.46);
       #endif`)
     // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
