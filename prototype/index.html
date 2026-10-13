@@ -2042,8 +2042,11 @@ async function fetchModel(base = 'models/fetus.glb') {
    soft occlusion (rgb) and thickness (a); _DETAIL holds how much the organs inside (heart, liver,
    spine, ribs) block the light through the skin, and where the fine vessels of the head run. */
 const EMBRYO_WEEKS = [8, 9];
-// the embryo's thin skin reads a little more orange than the fetus'
-const EMBRYO_TINT = new THREE.Color(1.0, 0.86, 0.8);
+// the embryo's skin is a light peach, paler than the fetus' (the reference clips): lit, it is
+// almost cream; only where the light comes through it does it go red. The light from all round is
+// stronger than at first, so the side away from the key is not dark either
+const EMBRYO_TINT = new THREE.Color(1.18, 1.45, 1.55);
+const EMBRYO_AMBIENT = { hemi: 1.0, indirect: 1.0 };
 const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.Group(), material: null, eyeMaterial: null };
 embryo.group.visible = false;
 babyRoot.add(embryo.group);
@@ -2107,7 +2110,7 @@ function embryoShading(shader) {
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
-  shader.uniforms.uBoneTint = { value: new THREE.Color('#9c5249') };
+  shader.uniforms.uBoneTint = { value: new THREE.Color('#6a3532') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
@@ -2274,12 +2277,13 @@ function embryoShading(shader) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * 0.82);
         #ifdef EMBRYO_BONES
           // the small bones of the fingers and toes, starting to harden: dark red dots
-          diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.7);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.8);
         #endif
       #endif`)
-    // less light from all round than the fetus gets: the side away from the key goes dark red, not grey
+    // the light from all round (EMBRYO_AMBIENT: as much as the fetus gets, so the side away from the key
+    // stays light, as in the clips)
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-      reflectedLight.indirectDiffuse *= 0.4;
+      reflectedLight.indirectDiffuse *= ${EMBRYO_AMBIENT.indirect.toFixed(3)};
       reflectedLight.indirectSpecular *= 0.6;`)
     // The whole embryo lets light through, not only its thin edges. Seen from the side away from
     // the light it glows softly: deep red where the body is thick, paler where it is thin (the hands
@@ -4335,7 +4339,7 @@ function placeLights(m) {
     keyLight.intensity = lights.key * 1.2;
     backLight.intensity = lights.back * 0.08;
     headLight.intensity = lights.head * 0.15;
-    hemi.intensity = lights.hemi * 0.45;
+    hemi.intensity = lights.hemi * EMBRYO_AMBIENT.hemi;
     return;
   }
   keyLight.position.copy(t).addScaledVector(camBack, 4).addScaledVector(camUp, 5).addScaledVector(camRight, 2.5);

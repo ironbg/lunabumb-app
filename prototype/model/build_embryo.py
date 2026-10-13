@@ -331,8 +331,9 @@ class Week8:
 class Week9(Week8):
     """Carnegie stage 20-21: about 7 weeks after conception, crown-rump length about 18-23 mm."""
 
-    # the eye: height and depth on the side of the face
-    EYE = (0.09, 0.225)
+    # the eye: height and depth on the side of the face (from the front view of the clip: the eyes are
+    # two thirds of the way out from the middle of the head)
+    EYE = (0.09, 0.26)
     EYE_SQUASH = 1.0
     DETAILS = ((("ear",), 0.01, 0.6), (("hand", "foot"), 0.01, 0.85),
                (("nose", "nostril", "mouth", "lip", "jaw", "eyeSocket"), 0.012, 0.75))
@@ -346,14 +347,16 @@ class Week9(Week8):
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
 
     def eye_dir(self, s):
-        """The eyes have moved round towards the front: half way between sideways and forwards."""
-        return unit(vec(s, 0.0, 1.0))
+        """The way the face looks there (the skin round the eye faces out, forwards and down, the face
+        being tucked under the forehead), turned a little further forwards: so the eye lies flush in
+        the skin, and from the side only a narrow almond shows (as in the clip)."""
+        return self.eye_out[s]
 
     def place_eyes(self):
         for s in (1, -1):
             # its front just under the skin round the hollow
-            r = 0.039
-            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r - 0.002), r))
+            r = 0.032
+            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r + 0.002), r))
 
     def eye_colours(self, normals, outward):
         """A grey iris round a black pupil, dark round the iris where the lids shade it."""
@@ -423,13 +426,16 @@ class Week9(Week8):
         # (both found before either hollow is cut: surface_x looks along +x only)
         sx = self.surface_x(y, z)
         self.eye_at = {1: vec(sx, y, z), -1: vec(-sx, y, z)}
+        n = unit(gradient(ops, self.eye_at[1][None], eps=0.002)[0])
+        n = unit(n + vec(0, 0.08, 0.3))
+        self.eye_out = {1: n, -1: n * vec(-1, 1, 1)}
         for s, side in ((1, "R"), (-1, "L")):
             out = self.eye_dir(s)
             skin = self.eye_at[s]
             # an almond-shaped hollow, wider than tall: the eye ball fills it, and its soft rim is
             # where the lids are starting
             R = frame(out, vec(0, 1, 0))
-            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.03, 0.016, 0.02), R), 0.008, "head")
+            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.026, 0.0145, 0.016), R), 0.007, "head")
 
         # ---- the outer ear: a small rounded rim, open to the front, level with the eye and well
         # behind it
@@ -472,8 +478,8 @@ class Week9(Week8):
             axis = unit(vec(-0.5 * s, -0.12, 0.86))
             back_of_hand = vec(0.7 * s, 1.0, 0.1)
             tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=vec(-s, 0, -0.4), hand=True,
-                               palm=(0.035, 0.03, 0.015), reach=0.042,
-                               lengths=(0.022, 0.026, 0.028, 0.027, 0.023), r=(0.0098, 0.0092), spread=1.45)
+                               palm=(0.032, 0.03, 0.014), reach=0.04, web=0.01,
+                               lengths=(0.026, 0.032, 0.035, 0.033, 0.028), r=(0.0078, 0.0086), spread=1.3)
             self.bones += [(RoundCone(sh + (el - sh) * 0.2, el - (el - sh) * 0.12, 0.009, 0.008), 40.0)]
             fa = unit(np.cross(wr - el, up)) * 0.007
             self.bones += [(RoundCone(el + (wr - el) * 0.12 + d, wr - (wr - el) * 0.1 + d, 0.006, 0.0055), 40.0) for d in (fa, -fa)]
@@ -487,8 +493,8 @@ class Week9(Week8):
             dorsum = unit(dorsum - faxis * (dorsum @ faxis))
             add(f"heel{side}", Ellipsoid(an - faxis * 0.006 - dorsum * 0.006, vec(0.02, 0.022, 0.018)), 0.014, leg)
             ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(0, 1, 0), hand=False,
-                                palm=(0.034, 0.04, 0.012), reach=0.062,
-                                lengths=(0.024, 0.022, 0.021, 0.019, 0.017), r=(0.0096, 0.009), spread=1.5, rows=2)
+                                palm=(0.036, 0.04, 0.012), reach=0.06, web=0.007,
+                                lengths=(0.021, 0.018, 0.017, 0.016, 0.014), r=(0.0072, 0.0084), spread=2.0, rows=2)
             self.bones += [(RoundCone(hip + (kn - hip) * 0.2, kn - (kn - hip) * 0.12, 0.01, 0.009), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.008
             self.bones += [(RoundCone(kn + (an - kn) * 0.12 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
@@ -551,7 +557,7 @@ class Week9(Week8):
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r, spread=1.0, rows=1):
+    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r, spread=1.0, rows=1, web=0.012):
         """A hand or foot: a flat palm (or sole) on the end of the limb and five short, separate
         digits fanned out from its far edge, webbed together only at their roots. back points out
         of the back of the hand or the top of the foot, first towards the side the thumb or the big
@@ -566,7 +572,7 @@ class Week9(Week8):
         pu, pa, pn = palm
         add(f"{name}Palm", Ellipsoid(root + a * pa * 0.85, vec(pu, pa, pn), R), 0.015, group)
         far = root + a * reach
-        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, 0.012, pn * 0.75), R), 0.006, group)
+        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, web, pn * 0.75), R), 0.006, group)
         r0, r1 = r
         if hand:
             row = lengths[1:]
@@ -583,8 +589,8 @@ class Week9(Week8):
             d = math.cos(ang) * a + math.sin(ang) * u
             base = far + u * off - a * 0.004
             tip = base + d * L - n * 0.12 * L
-            rr = r0 * (1.12 if (not hand and i == 0) else 1.0)
-            add(f"{name}Digit{i}", RoundCone(base, tip, rr, r1), 0.006, group)
+            big = 1.15 if (not hand and i == 0) else 1.0
+            add(f"{name}Digit{i}", RoundCone(base, tip, r0 * big, r1 * big), 0.005, group)
             tips.append(tip)
             for t in ((0.25, 0.62, 0.9) if L > 0.022 else (0.35, 0.85)):
                 self.dots.append((base + (tip - base) * t, 0.0042, n))
@@ -594,7 +600,7 @@ class Week9(Week8):
             L = lengths[0]
             tb = root + a * 0.014 + u * (pu * 0.85)
             tt = tb + unit(a * 0.55 + u * 0.75 - n * 0.35) * L
-            add(f"{name}Thumb", RoundCone(tb, tt, r0 * 1.05, r1), 0.008, group)
+            add(f"{name}Thumb", RoundCone(tb, tt, r0 * 1.12, r1 * 1.05), 0.007, group)
             for t in (0.45, 0.85):
                 self.dots.append((tb + (tt - tb) * t, 0.0042, n))
         return tips[len(tips) // 2]
