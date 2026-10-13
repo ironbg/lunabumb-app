@@ -87,6 +87,8 @@ class Week8:
     VESSEL_Y = (0.02, 0.12)
     # small hollows (op name prefixes) whose skin takes the thickness round them, so they don't glow
     CREASES = ()
+    # the face's own, wider soft shadows (under the nose, round the mouth and the eyes), by op name
+    FACE_AO = ()
     # darker tints in small hollows: (op name prefixes, rgb multiplier, falloff)
     LIPS = ()
     # the eye ball's mesh: rings round its own axis, so the iris and pupil are round
@@ -333,33 +335,35 @@ class Week9(Week8):
     EYE = (0.09, 0.225)
     EYE_SQUASH = 1.0
     DETAILS = ((("ear",), 0.01, 0.6), (("hand", "foot"), 0.01, 0.85),
-               (("nose", "nostril", "mouth", "lip", "jaw", "lid"), 0.01, 0.6))
+               (("nose", "nostril", "mouth", "lip", "jaw", "eyeSocket"), 0.012, 0.75))
     WARM = ("lip", "nose", "midface")
     HEAD_OPS = ("cranium", "forebrain", "hindbrain")
     VESSEL_Y = (0.1, 0.2)
-    CREASES = ("mouth", "nostril", "earBowl")
-    LIPS = ((("mouth",), (0.97, 0.86, 0.88), 0.012), (("mouth",), (0.7, 0.45, 0.48), 0.003),
-            (("nostril",), (0.88, 0.8, 0.8), 0.003))
+    CREASES = ("mouth", "nostril", "earBowl", "eyeSocket")
+    LIPS = ((("mouth",), (0.97, 0.84, 0.86), 0.01), (("mouth",), (0.72, 0.46, 0.5), 0.0025),
+            (("nostril",), (0.85, 0.74, 0.74), 0.0035), (("eyeSocket",), (0.82, 0.7, 0.7), 0.0025))
     EYE_ROUND = True
+    FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
 
     def eye_dir(self, s):
-        """The eyes have moved round towards the front a little."""
-        return unit(vec(s, 0.0, 0.8))
+        """The eyes have moved round towards the front: half way between sideways and forwards."""
+        return unit(vec(s, 0.0, 1.0))
 
     def place_eyes(self):
         for s in (1, -1):
-            r = 0.034
-            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * 0.8 * r, r))
+            # its front just under the skin round the hollow
+            r = 0.039
+            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r - 0.002), r))
 
     def eye_colours(self, normals, outward):
         """A grey iris round a black pupil, dark round the iris where the lids shade it."""
         c = normals @ outward
         ramp = lambda e0, e1: np.clip((c - e0) / (e1 - e0), 0, 1) ** 2 * (3 - 2 * np.clip((c - e0) / (e1 - e0), 0, 1))
-        iris = ramp(0.84, 0.87)
-        pupil = ramp(0.962, 0.972)
+        iris = ramp(0.865, 0.885)
+        pupil = ramp(0.974, 0.98)
         # the iris is lighter towards the pupil, with a darker ring round its edge
-        grey = 0.24 + 0.18 * ramp(0.87, 0.95)
-        shade = 0.05 + (grey - 0.05) * iris
+        grey = 0.22 + 0.18 * ramp(0.885, 0.96)
+        shade = 0.035 + (grey - 0.035) * iris
         shade = shade + (0.025 - shade) * pupil
         return np.round(np.clip(np.stack([shade * 0.98, shade, shade * 1.04], axis=1), 0, 1) * 255).astype(np.uint8)
 
@@ -380,18 +384,24 @@ class Week9(Week8):
         # The forehead bulges forward over a small face that now has a nose, lips and a chin; the
         # back of the head runs straight on into the back. Proportions follow the side view of the
         # reference clip (measured in model units)
-        add("cranium", Ellipsoid(vec(0, 0.2, 0.075), vec(0.185, 0.25, 0.25)), 0.1, "head")
+        # (the dome sits high, so that low down on the face the sides of the head fall back on either
+        # side of the nose; the forehead in front is the forebrain's)
+        add("cranium", Ellipsoid(vec(0, 0.22, 0.07), vec(0.185, 0.23, 0.25)), 0.1, "head")
         add("hindbrain", Ellipsoid(vec(0, 0.09, -0.08), vec(0.16, 0.18, 0.15)), 0.1, "head")
-        add("forebrain", Ellipsoid(vec(0, 0.17, 0.185), vec(0.16, 0.13, 0.14)), 0.08, "head")
-        # the face: a broad nose with a rounded tip, the upper lip under it, a small chin
-        add("midface", Ellipsoid(vec(0, 0.045, 0.15), vec(0.13, 0.07, 0.085)), 0.05, "head")
-        add("nose", Ellipsoid(vec(0, 0.042, 0.245), vec(0.05, 0.034, 0.04)), 0.014, "head")
-        add("lip", Ellipsoid(vec(0, -0.002, 0.19), vec(0.066, 0.026, 0.034)), 0.03, "head")
-        add("jaw", Ellipsoid(vec(0, -0.032, 0.16), vec(0.08, 0.028, 0.045)), 0.03, "head")
-        sub("mouth", Ellipsoid(vec(0, -0.022, 0.226), vec(0.032, 0.0025, 0.007)), 0.004, "head")
+        add("forebrain", Ellipsoid(vec(0, 0.15, 0.185), vec(0.15, 0.12, 0.148)), 0.08, "head")
+        # the face, small and low under the forehead. The nose is its biggest feature: a broad, soft,
+        # rounded snout below and between the eyes, running up into the brow, with the nostrils
+        # under its tip. Under it the face steps back to a broad upper lip, a small mouth (no wider
+        # than the nose) and a small chin that slopes back into the neck
+        add("midface", Ellipsoid(vec(0, 0.03, 0.15), vec(0.1, 0.07, 0.085)), 0.05, "head")
+        add("noseBridge", Ellipsoid(vec(0, 0.085, 0.256), vec(0.036, 0.042, 0.044)), 0.03, "head")
+        add("nose", Ellipsoid(vec(0, 0.045, 0.248), vec(0.052, 0.032, 0.044)), 0.02, "head")
+        add("lip", Ellipsoid(vec(0, -0.005, 0.2), vec(0.05, 0.024, 0.037)), 0.03, "head")
+        add("jaw", Ellipsoid(vec(0, -0.036, 0.174), vec(0.04, 0.025, 0.036)), 0.035, "head")
+        sub("mouth", Ellipsoid(vec(0, -0.023, 0.233), vec(0.022, 0.0025, 0.007)), 0.004, "head")
         for s, side in ((1, "R"), (-1, "L")):
-            sub(f"nostril{side}", Ellipsoid(vec(0.018 * s, 0.017, 0.266), vec(0.006, 0.004, 0.005)), 0.004, "head")
-            add(f"cheek{side}", Ellipsoid(vec(0.085 * s, 0.025, 0.13), vec(0.07, 0.055, 0.075)), 0.06, "head")
+            sub(f"nostril{side}", Ellipsoid(vec(0.024 * s, 0.022, 0.266), vec(0.008, 0.005, 0.007)), 0.004, "head")
+            add(f"cheek{side}", Ellipsoid(vec(0.078 * s, 0.02, 0.135), vec(0.065, 0.055, 0.07)), 0.06, "head")
 
         # ---- trunk: an upright, egg-shaped body, a smooth curve down the back; the liver makes the
         # belly bulge under the arms and the gut still loops into the base of the cord
@@ -407,19 +417,19 @@ class Week9(Week8):
         cord_a, cord_b = vec(0, -0.3, 0.17), vec(0, -0.31, 0.3)
         add("cordRoot", RoundCone(cord_a, cord_b, 0.07, 0.052), 0.05, "torso")
 
-        # ---- the eyes: set into the side of the face, looking out sideways and forwards, with the
-        # lids starting above and below them so the eye shows as an almond (the eye itself is placed
-        # on the finished surface in place_eyes())
-        self.eye_at = {}
+        # ---- the eyes: set into the side of the face, looking out sideways and forwards, each in an
+        # almond-shaped opening (the eye itself is placed in place_eyes())
         y, z = self.EYE
+        # (both found before either hollow is cut: surface_x looks along +x only)
+        sx = self.surface_x(y, z)
+        self.eye_at = {1: vec(sx, y, z), -1: vec(-sx, y, z)}
         for s, side in ((1, "R"), (-1, "L")):
             out = self.eye_dir(s)
-            skin = vec(self.surface_x(y, z) * s, y, z)
-            self.eye_at[s] = skin
+            skin = self.eye_at[s]
+            # an almond-shaped hollow, wider than tall: the eye ball fills it, and its soft rim is
+            # where the lids are starting
             R = frame(out, vec(0, 1, 0))
-            v = R[:, 1]
-            add(f"lidU{side}", Ellipsoid(skin + v * 0.024, vec(0.037, 0.014, 0.012), R), 0.02, "head")
-            add(f"lidD{side}", Ellipsoid(skin - v * 0.022 - out * 0.006, vec(0.03, 0.011, 0.009), R), 0.026, "head")
+            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.03, 0.016, 0.02), R), 0.008, "head")
 
         # ---- the outer ear: a small rounded rim, open to the front, level with the eye and well
         # behind it
@@ -458,12 +468,12 @@ class Week9(Week8):
             sh = vec(0.15 * s, -0.07, -0.01)
             el = vec(0.21 * s, -0.16, 0.1)
             wr = vec(0.11 * s, -0.115, 0.215)
-            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.046, 0.034), RoundCone(el, wr, 0.034, 0.024)]), 0.02, arm)
+            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.047, 0.036), RoundCone(el, wr, 0.036, 0.028)]), 0.02, arm)
             axis = unit(vec(-0.5 * s, -0.12, 0.86))
             back_of_hand = vec(0.7 * s, 1.0, 0.1)
             tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=vec(-s, 0, -0.4), hand=True,
-                               palm=(0.031, 0.028, 0.013), reach=0.04,
-                               lengths=(0.022, 0.027, 0.03, 0.028, 0.024), r=(0.0092, 0.0082))
+                               palm=(0.035, 0.03, 0.015), reach=0.042,
+                               lengths=(0.022, 0.026, 0.028, 0.027, 0.023), r=(0.0098, 0.0092), spread=1.45)
             self.bones += [(RoundCone(sh + (el - sh) * 0.2, el - (el - sh) * 0.12, 0.009, 0.008), 40.0)]
             fa = unit(np.cross(wr - el, up)) * 0.007
             self.bones += [(RoundCone(el + (wr - el) * 0.12 + d, wr - (wr - el) * 0.1 + d, 0.006, 0.0055), 40.0) for d in (fa, -fa)]
@@ -471,13 +481,14 @@ class Week9(Week8):
             hip = vec(0.09 * s, -0.44, 0.05)
             kn = vec(0.2 * s, -0.41, 0.2)
             an = vec(0.12 * s, -0.47, 0.31)
-            add(f"legBud{side}", Chain([RoundCone(hip, kn, 0.056, 0.042), RoundCone(kn, an, 0.042, 0.028)]), 0.02, leg)
-            add(f"heel{side}", Ellipsoid(an + vec(0.004 * s, -0.014, -0.008), vec(0.024, 0.02, 0.024)), 0.012, leg)
-            faxis = unit(vec(-0.2 * s, 0.7, 0.68))
-            dorsum = vec(0.8 * s, -0.1, -0.5)
+            add(f"legBud{side}", Chain([RoundCone(hip, kn, 0.057, 0.042), RoundCone(kn, an, 0.042, 0.026)]), 0.02, leg)
+            faxis = unit(vec(-0.45 * s, 0.1, 0.89))
+            dorsum = vec(0.85 * s, 0.25, -0.35)
+            dorsum = unit(dorsum - faxis * (dorsum @ faxis))
+            add(f"heel{side}", Ellipsoid(an - faxis * 0.006 - dorsum * 0.006, vec(0.02, 0.022, 0.018)), 0.014, leg)
             ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(0, 1, 0), hand=False,
-                                palm=(0.027, 0.034, 0.013), reach=0.05,
-                                lengths=(0.022, 0.02, 0.019, 0.017, 0.015), r=(0.0088, 0.0078))
+                                palm=(0.034, 0.04, 0.012), reach=0.062,
+                                lengths=(0.024, 0.022, 0.021, 0.019, 0.017), r=(0.0096, 0.009), spread=1.5, rows=2)
             self.bones += [(RoundCone(hip + (kn - hip) * 0.2, kn - (kn - hip) * 0.12, 0.01, 0.009), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.008
             self.bones += [(RoundCone(kn + (an - kn) * 0.12 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
@@ -540,32 +551,33 @@ class Week9(Week8):
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r):
+    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r, spread=1.0, rows=1):
         """A hand or foot: a flat palm (or sole) on the end of the limb and five short, separate
         digits fanned out from its far edge, webbed together only at their roots. back points out
         of the back of the hand or the top of the foot, first towards the side the thumb or the big
         toe is on. The thumb sets off from the side of the palm near the wrist; the big toe is the
         first of the row. Notes where the small bones are (the shader dots them in) and returns the
         tip of the middle digit."""
-        R = frame(back, -axis)
+        back = np.asarray(back, float)
+        R = frame(back - axis * (back @ axis), -axis)
         if R[:, 0] @ first < 0:
             R[:, 0] *= -1
         u, a, n = R[:, 0], -R[:, 1], R[:, 2]
         pu, pa, pn = palm
         add(f"{name}Palm", Ellipsoid(root + a * pa * 0.85, vec(pu, pa, pn), R), 0.015, group)
         far = root + a * reach
-        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, 0.011, pn * 0.75), R), 0.006, group)
+        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, 0.012, pn * 0.75), R), 0.006, group)
         r0, r1 = r
         if hand:
             row = lengths[1:]
             spacing = (2 * pu - 2 * r0) / 3
             offs = [1.5 * spacing, 0.5 * spacing, -0.5 * spacing, -1.5 * spacing]
-            angles = [0.3, 0.1, -0.1, -0.3]
+            angles = [0.3 * spread, 0.1 * spread, -0.1 * spread, -0.3 * spread]
         else:
             row = lengths
             spacing = (2 * pu - 2 * r0) / 4
             offs = [2 * spacing, spacing, 0.0, -spacing, -2 * spacing]
-            angles = [0.18, 0.08, 0.0, -0.08, -0.16]
+            angles = [0.18 * spread, 0.08 * spread, 0.0, -0.08 * spread, -0.16 * spread]
         tips = []
         for i, (L, off, ang) in enumerate(zip(row, offs, angles)):
             d = math.cos(ang) * a + math.sin(ang) * u
@@ -576,10 +588,11 @@ class Week9(Week8):
             tips.append(tip)
             for t in ((0.25, 0.62, 0.9) if L > 0.022 else (0.35, 0.85)):
                 self.dots.append((base + (tip - base) * t, 0.0042, n))
-            self.dots.append((base - a * 0.016 - u * off * 0.15, 0.0045, n))
+            for k in range(rows):
+                self.dots.append((base - a * (0.016 + 0.016 * k) - u * off * (0.15 + 0.1 * k), 0.0045, n))
         if hand:
             L = lengths[0]
-            tb = root + a * 0.012 + u * (pu * 0.85)
+            tb = root + a * 0.014 + u * (pu * 0.85)
             tt = tb + unit(a * 0.55 + u * 0.75 - n * 0.35) * L
             add(f"{name}Thumb", RoundCone(tb, tt, r0 * 1.05, r1), 0.008, group)
             for t in (0.45, 0.85):
@@ -752,6 +765,13 @@ def main():
         warm = np.maximum(warm, 0.5 * np.exp(-np.maximum(by[name].shape.sdf(pos), 0) / 0.01))
     shade = (0.6 + 0.4 * ao) * (1 - 0.25 * lid)
     rgb = np.stack([shade, shade * (1 - 0.08 * warm), shade * (1 - 0.1 * warm)], axis=1)
+    if emb.FACE_AO:
+        face = near(emb.FACE_AO, 0.03)(pos)
+        ao2 = np.ones(len(pos))
+        ao2[face] = ambient_occlusion(ops, pos[face], nrm[face], dist=0.02)
+        for _ in range(4):
+            ao2 = 0.5 * ao2 + 0.5 * (A @ ao2) / deg
+        rgb *= (0.72 + 0.28 * ao2)[:, None]
     if emb.LIPS:
         # the mouth: a darker, pinker line between the lips, and the nostrils a little darker
         for names, tint, dist in emb.LIPS:
