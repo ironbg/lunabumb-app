@@ -215,9 +215,10 @@ class Week8:
         # body high up near the back and reaches straight forwards and a little down, beside the jaw;
         # the hand is a thin, broad, rounded plate carried on in line with it, flat side out, so from
         # the side it shows whole, a pale plate in front of the chin with a softly scalloped edge. The
-        # leg leaves the rump and reaches forwards under the cord; the foot is a smaller, narrower plate
-        # of the same kind in line with it, its sole turned in, so from the front or behind it shows
-        # edge-on as a thin, leaf-like blade. Each limb can swing a little at its root when touched (the
+        # leg is a short bud from the rump forwards under the cord, slimming to the ankle; the foot is a
+        # broad, flat paddle of the same kind, nearly as big as the hand, pointing a little down from the
+        # line of the leg with its sole turned in: from the side it shows whole, from the front as a
+        # narrow plate (as in the clip). Each limb can swing a little at its root when touched (the
         # joints below go in the rig)
         self.joints = {}
         for s, side in ((1, "R"), (-1, "L")):
@@ -231,11 +232,12 @@ class Week8:
             hand_c = wr + reach * 0.09
             leg = f"leg{side}"
             hip = vec(0.08 * s, -0.49, 0.07)
-            an = vec(0.12 * s, -0.465, 0.25)
-            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.062, 0.046)]), 0.03, leg)
-            axis = unit(an - hip)
+            an = vec(0.11 * s, -0.495, 0.2)
+            add(f"legBud{side}", Chain([RoundCone(hip, an, 0.056, 0.038)]), 0.03, leg)
+            # (the foot points a little down from the line of the leg, as in the clip)
+            axis = unit(unit(an - hip) + vec(0, -0.4, 0))
             self.limb_plate(add, f"foot{side}", leg, root=an, axis=axis, normal=vec(1.0 * s, 0.0, 0.0),
-                            length=0.12, width=0.05, thick=0.026, root_r=0.046, lobes=5, spread=1.7)
+                            length=0.15, width=0.072, thick=0.021, root_r=0.038, lobes=5, spread=1.7)
             foot_c = an + axis * 0.07
             self.anchors[f"hand{side}"] = hand_c
             self.anchors[f"foot{side}"] = foot_c
