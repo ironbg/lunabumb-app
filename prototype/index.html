@@ -2047,7 +2047,11 @@ const EMBRYO_WEEKS = [8, 9];
 // stronger than at first, so the side away from the key is not dark either
 const EMBRYO_TINT = new THREE.Color(1.18, 1.45, 1.55);
 const EMBRYO_AMBIENT = { hemi: 1.0, indirect: 1.0 };
-const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.Group(), material: null, eyeMaterial: null };
+const embryo = { models: {}, loading: {}, week: 0, rig: null, group: new THREE.Group(), material: null, eyeMaterial: null, lidMaterial: null };
+// the see-through lids' colour against the skin's own (pink) tone: they have no light through them, so
+// they take the plain skin colour rather than the embryo's lighter tint, a little deeper and pinker
+// (over the grey eye they would otherwise look grey)
+const EMBRYO_LID_SHADE = new THREE.Color(0.85, 0.7, 0.66);
 embryo.group.visible = false;
 babyRoot.add(embryo.group);
 let embryoActive = false;
@@ -2364,6 +2368,11 @@ function embryoMaterials() {
   // (they nod with the head)
   embryo.eyeMaterial.onBeforeCompile = embryoMoveShading;
   embryo.eyeMaterial.customProgramCacheKey = () => 'luna-embryo-eye';
+  // from week 9: thin see-through upper lids over the eyes (their vertex alpha is how much skin
+  // covers the eye there), in the skin's colour, drawn over the eye without hiding what is behind
+  embryo.lidMaterial = new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, transparent: true, depthWrite: false, roughness: 0.65, specularIntensity: 0.15, envMapIntensity: 0.4 });
+  embryo.lidMaterial.onBeforeCompile = embryoMoveShading;
+  embryo.lidMaterial.customProgramCacheKey = () => 'luna-embryo-lid';
 }
 
 async function loadEmbryo(week) {
@@ -2381,10 +2390,10 @@ async function loadEmbryo(week) {
     embryoMaterials();
     gltf.scene.traverse((o) => {
       if (!o.isMesh) return;
-      o.material = o.name === 'Eyes' ? embryo.eyeMaterial : o.geometry.attributes._bone ? embryo.boneMaterial : embryo.material;
+      o.material = o.name === 'Eyes' ? embryo.eyeMaterial : o.name === 'Lids' ? embryo.lidMaterial : o.geometry.attributes._bone ? embryo.boneMaterial : embryo.material;
       o.frustumCulled = false;
       // where the camera is in the model's own space, for looking into the organs
-      if (o.name !== 'Eyes') o.onBeforeRender = (r, s, cam) => o.worldToLocal(embryoUniforms.uCamObj.value.setFromMatrixPosition(cam.matrixWorld));
+      if (o.name !== 'Eyes' && o.name !== 'Lids') o.onBeforeRender = (r, s, cam) => o.worldToLocal(embryoUniforms.uCamObj.value.setFromMatrixPosition(cam.matrixWorld));
     });
     gltf.scene.visible = false;
     embryo.group.add(gltf.scene);
@@ -4520,6 +4529,7 @@ const frameLoop = (timestamp) => {
       embryo.material.color.multiply(EMBRYO_TINT);
       embryo.cordMaterial.color.copy(embryo.material.color);
       embryo.boneMaterial.color.copy(embryo.material.color);
+      embryo.lidMaterial.color.copy(babyBaseColor).multiply(skinMul).multiply(EMBRYO_LID_SHADE);
     }
     babyUniforms.uTranslucency.value = interpTable(TRANSLUCENCY, ga) * m.baby.translucency * (1 - tone[3] * toneK);
     babyUniforms.uEarly.value = 1 - THREE.MathUtils.smoothstep(ga, 8, 20);

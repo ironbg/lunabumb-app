@@ -96,6 +96,8 @@ class Week8:
     EYE_ROUND = False
     # the root of the cord loses its baked shading towards its end, as the page's cord tube has none
     CORD_TONE = False
+    # thin see-through upper lids over the eyes (a third mesh, "Lids")
+    LIDS = False
 
     def eye_dir(self, s):
         """The way the eye looks out: sideways and a little forwards."""
@@ -356,6 +358,7 @@ class Week9(Week8):
     EYE_ROUND = True
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
     CORD_TONE = True
+    LIDS = True
 
     def eye_dir(self, s):
         """The way the face looks there (the skin round the eye faces out, forwards and down, the face
@@ -383,9 +386,31 @@ class Week9(Week8):
         rgb = outer + (grey - outer) * iris[:, None]
         rgb = rgb + (0.012 - rgb) * pupil[:, None]
         up = unit(vec(0, 1, 0) - outward * outward[1])
-        glint = ramp(normals @ unit(outward + up * 0.3), 0.9935, 0.9965)
+        glint = ramp(normals @ unit(outward + up * 0.22), 0.9935, 0.9965)
         rgb = rgb + (0.92 - rgb) * glint[:, None]
         return np.round(np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+
+    def lid(self, c, r, outward):
+        """The upper lid as the clip shows it: a thin, see-through fold of skin coming down over the
+        top of the eye, just above the pupil, its edge arched (highest over the pupil, lower towards
+        the corners) and soft, so the iris shows through it and it thickens into the skin above. A
+        cap of a sphere a little bigger than the eye; returns positions, normals, triangles and the
+        opacity at each vertex. Its far part lies under the skin round the opening, where it is hidden."""
+        def ramp(x, e0, e1):
+            t = np.clip((x - e0) / (e1 - e0), 0, 1)
+            return t * t * (3 - 2 * t)
+        v_, n_, t_ = sphere(c, r + 0.0012, rings=72, segs=64, axis=outward)
+        up = unit(vec(0, 1, 0) - outward * outward[1])
+        fwd = unit(vec(0, 0, 1) - outward * outward[2])
+        e, f = n_ @ up, n_ @ fwd
+        edge = 0.15 - 0.5 * f * f
+        # (mostly over the front of the eye, towards the nose: behind, the opening keeps a clean edge)
+        alpha = 0.85 * ramp(e, edge - 0.07, edge + 0.22) * (0.2 + 0.8 * ramp(f, -0.6, 0.3)) * (n_ @ outward > 0.3)
+        keep = alpha[t_].max(axis=1) > 0.004
+        used = np.unique(t_[keep])
+        remap = -np.ones(len(v_), int)
+        remap[used] = np.arange(len(used))
+        return v_[used], n_[used], remap[t_[keep]], alpha[used]
 
     def build(self):
         add, sub = self.add, self.sub
@@ -711,9 +736,10 @@ def eye_colours(normals, outward):
     return np.round(np.clip(np.stack([shade, shade * 0.97, shade], axis=1), 0, 1) * 255).astype(np.uint8)
 
 
-def write_glb(path, skin, eyes):
+def write_glb(path, skin, eyes, lids=None):
     """skin: dict(position, normal, color (uint8 RGBA), vessel (float), tris); eyes the same with
-    an RGB colour and no vessel mask. Plain floats: the file is small enough without quantization."""
+    an RGB colour and no vessel mask; lids (optional) with an RGBA colour whose alpha is the opacity.
+    Plain floats: the file is small enough without quantization."""
     out = GlbWriter()
 
     def prim(m, extra=True):
@@ -746,6 +772,10 @@ def write_glb(path, skin, eyes):
         "nodes": [{"name": "Skin", "mesh": 0}, {"name": "Eyes", "mesh": 1}],
         "meshes": [{"name": "Skin", "primitives": [prim(skin)]}, {"name": "Eyes", "primitives": [prim(eyes, False)]}],
     }
+    if lids is not None:
+        gltf["scenes"][0]["nodes"].append(2)
+        gltf["nodes"].append({"name": "Lids", "mesh": 2})
+        gltf["meshes"].append({"name": "Lids", "primitives": [prim(lids, False)]})
     out.save(gltf, path)
 
 
@@ -948,7 +978,20 @@ def main():
     eyes = {"position": np.concatenate(ev), "normal": np.concatenate(en), "tris": np.concatenate(et),
             "color": np.concatenate(ec)}
     eyes["move"] = np.tile([5.0, 1.0], (len(eyes["position"]), 1))
-    write_glb(args.out, skin, eyes)
+    lids = None
+    if emb.LIDS:
+        lv, ln, lt, la = [], [], [], []
+        for c, r in emb.eyes:
+            v_, n_, t_, a_ = emb.lid(c - center, r, emb.eye_dir(np.sign(c[0])))
+            lt.append(t_ + sum(len(x) for x in lv))
+            lv.append(v_)
+            ln.append(n_)
+            la.append(a_)
+        alpha = np.concatenate(la)
+        lids = {"position": np.concatenate(lv), "normal": np.concatenate(ln), "tris": np.concatenate(lt),
+                "color": np.concatenate([np.full((len(alpha), 3), 255, np.uint8), np.round(alpha * 255).astype(np.uint8)[:, None]], axis=1)}
+        lids["move"] = np.tile([5.0, 1.0], (len(alpha), 1))
+    write_glb(args.out, skin, eyes, lids)
 
     import base64
     rig = {"week": args.week, "center": center.round(5).tolist(),
