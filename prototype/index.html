@@ -2069,10 +2069,12 @@ Object.assign(embryoUniforms, {
   uOrgans: { value: noOrgans }, uOrgMin: { value: new THREE.Vector3() }, uOrgSize: { value: new THREE.Vector3(1, 1, 1) },
   uOrgScale: { value: 0 }, uCamObj: { value: new THREE.Vector3() },
 });
-// From week 9 the heart shows through the thin skin of the upper chest as a dark oval that beats
-// (rig.heart: its centre and radii; uHeartBeat follows the heart rate, 0 between beats)
+// The heart shows through the thin skin of the upper chest as a soft, brownish shade that beats: only
+// faintly in week 8, clearly from week 9 (rig.heart: its centre, radii and strength; uHeartBeat follows
+// the heart rate, 0 between beats)
 Object.assign(embryoUniforms, {
   uEmbHeartC: { value: new THREE.Vector3() }, uEmbHeartR: { value: new THREE.Vector3() }, uHeartBeat: { value: 0 },
+  uHeartAmount: { value: 0 },
 });
 
 // A touched part of the embryo (an arm, a leg, the head) swings a little round its joint: the
@@ -2116,7 +2118,8 @@ function embryoShading(shader) {
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
   shader.uniforms.uBoneTint = { value: new THREE.Color('#6a3532') };
-  shader.uniforms.uHeartTint = { value: new THREE.Color('#6c4a47') };
+  // (what the heart's shade multiplies the skin by: a little darker, browner and less blue, as in the clip)
+  shader.uniforms.uHeartTint = { value: new THREE.Color().setRGB(0.72, 0.6, 0.54) };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
@@ -2152,11 +2155,12 @@ function embryoShading(shader) {
         // x: the small bones of the fingers and toes, y: none of the organs' shadow (the cord's root)
         varying vec2 vBone;
         uniform vec3 uBoneTint;
-        uniform vec3 uEmbHeartC;
-        uniform vec3 uEmbHeartR;
-        uniform float uHeartBeat;
-        uniform vec3 uHeartTint;
       #endif
+      uniform vec3 uEmbHeartC;
+      uniform vec3 uEmbHeartR;
+      uniform float uHeartBeat;
+      uniform float uHeartAmount;
+      uniform vec3 uHeartTint;
       uniform vec3 uVesselTint;
       uniform vec3 uPaleTint;
       uniform sampler3D uOrgans;
@@ -2238,19 +2242,20 @@ function embryoShading(shader) {
           }
           return 1.0 - exp(-sum * uOrgScale * 0.026);
         }
-        // the heart under the skin of the chest: how close the line of sight passes to it (in its own
-        // ellipsoid's units, a little bigger at each beat), within the first part of the way in
-        float eHeart(vec3 p) {
-          if (uEmbHeartR.x <= 0.0) return 0.0;
-          vec3 dir = normalize(p - uCamObj);
-          vec3 r = uEmbHeartR * (1.0 + 0.07 * uHeartBeat);
-          vec3 o = (p - uEmbHeartC) / r;
-          vec3 d = dir / r;
-          float t = max(-dot(o, d) / dot(d, d), 0.0);
-          float m = length(o + d * t);
-          return (1.0 - smoothstep(0.5, 1.05, m)) * (1.0 - smoothstep(0.12, 0.2, t));
-        }
       #endif
+      // the heart under the skin of the chest: how close the line of sight passes to it (in its own
+      // ellipsoid's units, a little bigger at each beat), within the first part of the way in; soft
+      // all the way out to its edge, so it reads as a shade under the skin, not a spot on it
+      float eHeart(vec3 p) {
+        if (uEmbHeartR.x <= 0.0) return 0.0;
+        vec3 dir = normalize(p - uCamObj);
+        vec3 r = uEmbHeartR * (1.0 + 0.06 * uHeartBeat);
+        vec3 o = (p - uEmbHeartC) / r;
+        vec3 d = dir / r;
+        float t = max(-dot(o, d) / dot(d, d), 0.0);
+        float m = length(o + d * t);
+        return (1.0 - smoothstep(0.3, 1.25, m)) * (1.0 - smoothstep(0.12, 0.2, t));
+      }
       // fine bumps of the skin, faded out where they would be smaller than a pixel
       float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
       vec3 ePerturb(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDir) {
@@ -2300,12 +2305,13 @@ function embryoShading(shader) {
         #ifdef EMBRYO_BONES
           // the small bones of the fingers and toes, starting to harden: dark red dots
           diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.8);
-          // the beating heart: a soft dark oval, darker at each beat (not on a hand in front of it); it
-          // also holds back the light coming through the chest, as the other organs do
-          float eH = eHeart(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
-          diffuseColor.rgb = mix(diffuseColor.rgb, uHeartTint, eH * (0.5 + 0.2 * uHeartBeat));
-          eInside = max(eInside, eH * (0.55 + 0.25 * uHeartBeat));
         #endif
+        // the beating heart: a soft brownish shade, a little deeper at each beat (not on a hand in
+        // front of it); it also holds back some of the light coming through the chest, as the other
+        // organs do
+        float eH = eHeart(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) ) * uHeartAmount;
+        diffuseColor.rgb *= mix(vec3(1.0), uHeartTint, eH * (0.85 + 0.15 * uHeartBeat));
+        eInside = max(eInside, eH * (0.55 + 0.2 * uHeartBeat));
       #endif`)
     // the light from all round (EMBRYO_AMBIENT: as much as the fetus gets, so the side away from the key
     // stays light, as in the clips)
@@ -2407,6 +2413,7 @@ function syncBabyModel(ga, moon) {
     const heart = active ? embryo.rig.heart : null;
     embryoUniforms.uEmbHeartC.value.fromArray(heart ? heart.center : [0, 0, 0]);
     embryoUniforms.uEmbHeartR.value.fromArray(heart ? heart.radii : [0, 0, 0]);
+    embryoUniforms.uHeartAmount.value = heart ? heart.strength ?? 1 : 0;
     const organs = active ? embryo.models[week].organs : null;
     embryoUniforms.uOrgans.value = organs || noOrgans;
     embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
@@ -2668,7 +2675,7 @@ const cordMaterial = new THREE.MeshPhysicalMaterial({
   vertexColors: true, roughness: 0.38, sheen: 0.25, sheenColor: new THREE.Color('#dfe8ff'), clearcoat: 0.5, clearcoatRoughness: 0.25,
 });
 const CORD_SEG = 140;       // rings along the cord
-const CORD_RAD = 14;        // vertices round each ring
+const CORD_RAD = 32;        // vertices round each ring
 const CORD_TWISTS = 9;      // turns of the vessels from navel to placenta (on average)
 const cordJelly = new THREE.Color('#d5dbe5');
 const cordVein = new THREE.Color('#5e2a3c');
@@ -2777,8 +2784,9 @@ function updateCord(now, S) {
   const rooted = embryoActive && embryo.rig.anchors.cordBase;
   const out = rooted ? v2.copy(navel).sub(babyAnchor('cordBase', cordBaseW)).normalize() : v2.copy(navel).sub(babyCenter).normalize();
   const emUnit = embryoActive ? embryo.group.getWorldScale(cordBaseW).x : 0;
-  // both ends sink a little into the body and the placenta, so the tube's open rims never show
-  pts[0].copy(navel).addScaledVector(out, rooted ? -0.06 * emUnit : -0.02 * S);
+  // both ends sink a little into the body and the placenta, so the tube's open rims never show (the
+  // embryo's well back into its root, where the root is clearly thicker than the tube)
+  pts[0].copy(navel).addScaledVector(out, rooted ? -0.1 * emUnit : -0.02 * S);
   pts[1].copy(navel).addScaledVector(out, 0.45 * S);
   pts[4].copy(cordEnd).addScaledVector(placentaNormal, 0.06);
   pts[3].copy(cordEnd).addScaledVector(placentaNormal, -0.7);
@@ -2794,9 +2802,17 @@ function updateCord(now, S) {
   // which never moves: the vessel spirals stay put instead of crawling round as the cord sways
   // (the embryo's in its own units: about a leg's thickness, as in the reference)
   const radius = embryoActive ? 0.05 * emUnit : 0.022 * S + 0.012;
+  // the embryo's starts exactly as thick as the end of its root, which it starts inside: the two
+  // surfaces then cross only at the root's tip, at the root's own slight taper, so no ragged line
+  // shows there (further out it slims to its own thickness)
+  const rootK = embryoActive ? (embryo.rig.cordRadius ?? 0.056) / 0.05 : 1;
   // its cord is smooth skin: the vessels inside don't show as lumps yet
   const lumps = embryoActive ? 0 : 1;
   cordCurve.updateArcLengths();
+  // (held until well past the root's tip, then over the next stretch, in the embryo's own units)
+  const cordLen = cordCurve.getLength();
+  const hold = embryoActive ? Math.min(0.4, (0.16 * emUnit) / cordLen) : 0;
+  const slim = embryoActive ? Math.min(0.4, (0.4 * emUnit) / cordLen) : 0.05;
   for (let i = 0; i <= CORD_SEG; i++) cordCurve.getPointAt(i / CORD_SEG, cordPts[i]);
   // keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
   // would fold through itself (or through a leg), and the fold changes every frame as it sways
@@ -2821,8 +2837,7 @@ function updateCord(now, S) {
     const flare = 1 + 0.45 * THREE.MathUtils.smoothstep(u, 0.9, 1);
     // smooth ends: where it meets the body and the placenta the gel's lumps would show as a ragged rim
     const ends = THREE.MathUtils.smoothstep(u, 0, 0.06) * (1 - THREE.MathUtils.smoothstep(u, 0.88, 0.97)) * lumps;
-    // the embryo's widens a little into its root
-    const root = embryoActive ? 1 + 0.12 * (1 - THREE.MathUtils.smoothstep(u, 0, 0.05)) : 1;
+    const root = 1 + (rootK - 1) * (1 - THREE.MathUtils.smoothstep(u, hold, hold + slim));
     for (let j = 0; j <= CORD_RAD; j++) {
       const k = i * (CORD_RAD + 1) + j;
       const a = (j / CORD_RAD) * Math.PI * 2;

@@ -35,7 +35,8 @@ the base of the cord (physiological herniation); a short tail is left at the bot
 Week 9 (Week9) is Carnegie stage 20 to 21, about 7 weeks after conception, crown-rump length about
 18-23 mm: an upright, egg-shaped body with a rounder head held higher, a nose, lips and almond eyes
 with a grey iris, a small outer ear, arms bent at the elbow with the hands flat in front of the chest,
-legs bent at the knee, short separate fingers and toes, and only a small point left of the tail.
+thick legs with no knee showing yet, broad hands and feet with short, thick, separate fingers and
+toes, and only a small point left of the tail.
 Week 8's output is unchanged by it (the per-week values are class attributes).
 
 Run (needs Blender's `bpy` module, numpy, scipy and scikit-image):
@@ -93,6 +94,8 @@ class Week8:
     LIPS = ()
     # the eye ball's mesh: rings round its own axis, so the iris and pupil are round
     EYE_ROUND = False
+    # the root of the cord loses its baked shading towards its end, as the page's cord tube has none
+    CORD_TONE = False
 
     def eye_dir(self, s):
         """The way the eye looks out: sideways and a little forwards."""
@@ -173,6 +176,8 @@ class Week8:
         # the root of the cord, swollen by the loop of gut in it at this age
         cord_a, cord_b = vec(0, -0.29, 0.15), vec(0, -0.3, 0.27)
         add("cordRoot", RoundCone(cord_a, cord_b, 0.065, 0.056), 0.05, "torso")
+        # (the page's cord tube carries on from its end at the same thickness)
+        self.cord_r = 0.056
 
         # the ear: a small rounded knob level with the eye and well behind it, where the head meets
         # the neck (the outer ear only starts to fold later)
@@ -280,6 +285,9 @@ class Week8:
 
         # the head nods forwards round the neck
         self.joints["head"] = {"pivot": vec(0, -0.03, -0.12), "axis": vec(1, 0, 0), "dir": unit(vec(0, 0.23, 0.18))}
+        # the heart as the page shows it: only a faint, soft shade under the chest at this age, beating
+        # (centre, radii, how strongly it shows)
+        self.heart = (vec(0, -0.15, 0.13), vec(0.075, 0.05, 0.045), 0.4)
 
         # ---- anchors for the page
         self.anchors.update({
@@ -342,11 +350,12 @@ class Week9(Week8):
     VESSEL_Y = (0.1, 0.2)
     CREASES = ("mouth", "nostril", "earBowl", "eyeSocket")
     LIPS = ((("mouth",), (0.96, 0.74, 0.76), 0.007), (("mouth",), (0.62, 0.36, 0.4), 0.0025),
-            (("nostril",), (0.85, 0.74, 0.74), 0.0035), (("eyeSocket",), (0.82, 0.7, 0.7), 0.0025),
-            # (and a soft greyish shade on the lids all round the eye, as in the clip)
-            (("eyeSocket",), (0.9, 0.85, 0.89), 0.01))
+            (("nostril",), (0.94, 0.88, 0.88), 0.0025), (("eyeSocket",), (0.76, 0.66, 0.64), 0.003),
+            # (and a soft greyish-brown shade on the lids all round the eye, as in the clip)
+            (("eyeSocket",), (0.72, 0.62, 0.62), 0.02))
     EYE_ROUND = True
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
+    CORD_TONE = True
 
     def eye_dir(self, s):
         """The way the face looks there (the skin round the eye faces out, forwards and down, the face
@@ -361,22 +370,22 @@ class Week9(Week8):
             self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r + 0.002), r))
 
     def eye_colours(self, normals, outward):
-        """As in the clip: a light grey iris with a darker ring round its edge, a big black pupil, the
-        eye black all round the iris, and a small bright catchlight up and out from the pupil."""
+        """As in the clip: a broad, light grey iris, a big black pupil that darkens into it softly, a
+        dark warm grey all round the iris (not black), and a small bright catchlight up from the pupil."""
         def ramp(x, e0, e1):
             t = np.clip((x - e0) / (e1 - e0), 0, 1)
             return t * t * (3 - 2 * t)
         c = normals @ outward
-        iris = ramp(c, 0.905, 0.925)
-        pupil = ramp(c, 0.98, 0.985)
-        # (the iris is lighter towards the pupil, with a darker ring round its edge)
-        grey = 0.2 + 0.26 * ramp(c, 0.925, 0.975)
-        shade = 0.02 + (grey - 0.02) * iris
-        shade = shade + (0.015 - shade) * pupil
+        iris = ramp(c, 0.862, 0.878)
+        pupil = ramp(c, 0.935, 0.97)
+        outer = np.array([0.15, 0.125, 0.105])
+        grey = np.array([0.5, 0.47, 0.44])
+        rgb = outer + (grey - outer) * iris[:, None]
+        rgb = rgb + (0.012 - rgb) * pupil[:, None]
         up = unit(vec(0, 1, 0) - outward * outward[1])
         glint = ramp(normals @ unit(outward + up * 0.3), 0.9935, 0.9965)
-        shade = shade + (0.92 - shade) * glint
-        return np.round(np.clip(np.stack([shade * 0.98, shade, shade * 1.04], axis=1), 0, 1) * 255).astype(np.uint8)
+        rgb = rgb + (0.92 - rgb) * glint[:, None]
+        return np.round(np.clip(rgb, 0, 1) * 255).astype(np.uint8)
 
     def build(self):
         add, sub = self.add, self.sub
@@ -404,15 +413,16 @@ class Week9(Week8):
         # rounded snout below and between the eyes, running up into the brow, with the nostrils
         # under its tip. Under it the face steps back to a broad upper lip, a small mouth (no wider
         # than the nose) and a small chin that slopes back into the neck
-        add("midface", Ellipsoid(vec(0, 0.03, 0.15), vec(0.1, 0.07, 0.085)), 0.05, "head")
+        add("midface", Ellipsoid(vec(0, 0.03, 0.15), vec(0.088, 0.066, 0.085)), 0.05, "head")
+        add("lowerFace", Ellipsoid(vec(0, -0.005, 0.11), vec(0.1, 0.06, 0.1)), 0.06, "head")
         add("noseBridge", Ellipsoid(vec(0, 0.085, 0.256), vec(0.036, 0.042, 0.044)), 0.03, "head")
         add("nose", Ellipsoid(vec(0, 0.045, 0.248), vec(0.052, 0.032, 0.044)), 0.02, "head")
         add("lip", Ellipsoid(vec(0, -0.005, 0.2), vec(0.05, 0.024, 0.037)), 0.03, "head")
         add("jaw", Ellipsoid(vec(0, -0.036, 0.174), vec(0.04, 0.025, 0.036)), 0.035, "head")
         sub("mouth", Ellipsoid(vec(0, -0.023, 0.233), vec(0.022, 0.0025, 0.007)), 0.004, "head")
         for s, side in ((1, "R"), (-1, "L")):
-            sub(f"nostril{side}", Ellipsoid(vec(0.024 * s, 0.022, 0.266), vec(0.008, 0.005, 0.007)), 0.004, "head")
-            add(f"cheek{side}", Ellipsoid(vec(0.078 * s, 0.02, 0.135), vec(0.065, 0.055, 0.07)), 0.06, "head")
+            sub(f"nostril{side}", Ellipsoid(vec(0.024 * s, 0.02, 0.27), vec(0.0065, 0.0032, 0.004)), 0.004, "head")
+            add(f"cheek{side}", Ellipsoid(vec(0.065 * s, 0.045, 0.19), vec(0.045, 0.045, 0.055)), 0.06, "head")
 
         # ---- trunk: an upright, egg-shaped body, a smooth curve down the back; the liver makes the
         # belly bulge under the arms and the gut still loops into the base of the cord
@@ -427,6 +437,7 @@ class Week9(Week8):
         add("tail", RoundCone(vec(0, -0.515, 0.1), vec(0, -0.552, 0.135), 0.022, 0.008), 0.02, "torso")
         cord_a, cord_b = vec(0, -0.3, 0.17), vec(0, -0.31, 0.3)
         add("cordRoot", RoundCone(cord_a, cord_b, 0.07, 0.052), 0.05, "torso")
+        self.cord_r = 0.052
 
         # ---- the eyes: set into the side of the face, looking out sideways and forwards, each in an
         # almond-shaped opening (the eye itself is placed in place_eyes())
@@ -447,7 +458,10 @@ class Week9(Week8):
             a = 0.18 * s
             u_, v_ = R[:, 0].copy(), R[:, 1].copy()
             R[:, 0], R[:, 1] = math.cos(a) * u_ - math.sin(a) * v_, math.sin(a) * u_ + math.cos(a) * v_
-            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.03, 0.0155, 0.017), R), 0.007, "head")
+            # (its middle a little back from the eye's axis, towards the ear: the eye looks forwards in
+            # it, so more of the dark shows behind the iris than in front, as in the clip)
+            back = unit(vec(0, 0, -1) - out * (-out[2]))
+            sub(f"eyeSocket{side}", Ellipsoid(skin + back * 0.004, vec(0.034, 0.016, 0.017), R), 0.007, "head")
 
         # ---- the outer ear: a small rounded rim, open to the front, level with the eye and well
         # behind it
@@ -475,10 +489,10 @@ class Week9(Week8):
 
         # ---- limbs: the arm now bends at the elbow. It hangs from the shoulder along the side of the
         # chest, the forearm comes forwards and in, and the hand lies flat in front of the chest, palm
-        # down, the fingers pointing in towards the other hand. The leg bends at the knee: the thigh
-        # reaches forwards and out from the rump, the shin comes down and in, and the foot points
-        # forwards with its sole turned in. Fingers and toes are short and separate now, webbed only
-        # at their roots
+        # down, the fingers pointing in towards the other hand. The leg shows no knee yet (as in the
+        # clip): one thick, softly curved limb from the rump forwards under the belly, carried on into a
+        # broad foot with its sole turned in. Hands and feet are broad and thick, the fingers and toes
+        # short, thick and separate now, webbed only at their roots
         self.joints = {}
         up = vec(0, 1, 0)
         for s, side in ((1, "R"), (-1, "L")):
@@ -486,30 +500,29 @@ class Week9(Week8):
             sh = vec(0.15 * s, -0.07, -0.01)
             el = vec(0.21 * s, -0.16, 0.1)
             wr = vec(0.11 * s, -0.115, 0.215)
-            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.047, 0.036), RoundCone(el, wr, 0.036, 0.028)]), 0.02, arm)
+            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.05, 0.041), RoundCone(el, wr, 0.041, 0.034)]), 0.02, arm)
             axis = unit(vec(-0.5 * s, -0.12, 0.86))
             back_of_hand = vec(0.7 * s, 1.0, 0.1)
             tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=vec(-s, 0, -0.4), hand=True,
-                               palm=(0.032, 0.03, 0.014), reach=0.04, web=0.01,
-                               lengths=(0.026, 0.032, 0.035, 0.033, 0.028), r=(0.0078, 0.0086), spread=1.3)
+                               palm=(0.042, 0.032, 0.019), reach=0.042, web=0.016,
+                               lengths=(0.024, 0.027, 0.029, 0.028, 0.024), r=(0.0098, 0.0106), spread=0.8)
             self.bones += [(RoundCone(sh + (el - sh) * 0.2, el - (el - sh) * 0.12, 0.009, 0.008), 40.0)]
             fa = unit(np.cross(wr - el, up)) * 0.007
             self.bones += [(RoundCone(el + (wr - el) * 0.12 + d, wr - (wr - el) * 0.1 + d, 0.006, 0.0055), 40.0) for d in (fa, -fa)]
             leg = f"leg{side}"
-            hip = vec(0.09 * s, -0.44, 0.05)
-            kn = vec(0.2 * s, -0.41, 0.2)
-            an = vec(0.12 * s, -0.47, 0.31)
-            add(f"legBud{side}", Chain([RoundCone(hip, kn, 0.057, 0.042), RoundCone(kn, an, 0.042, 0.026)]), 0.02, leg)
-            faxis = unit(vec(-0.45 * s, 0.1, 0.89))
+            hip = vec(0.095 * s, -0.44, 0.05)
+            kn = vec(0.135 * s, -0.455, 0.175)
+            an = vec(0.12 * s, -0.475, 0.29)
+            add(f"legBud{side}", Chain([RoundCone(hip, kn, 0.06, 0.05), RoundCone(kn, an, 0.05, 0.038)]), 0.03, leg)
+            faxis = unit(vec(-0.4 * s, 0.05, 0.92))
             dorsum = vec(0.85 * s, 0.25, -0.35)
             dorsum = unit(dorsum - faxis * (dorsum @ faxis))
-            add(f"heel{side}", Ellipsoid(an - faxis * 0.006 - dorsum * 0.006, vec(0.02, 0.022, 0.018)), 0.014, leg)
             ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(0, 1, 0), hand=False,
-                                palm=(0.036, 0.04, 0.012), reach=0.06, web=0.007,
-                                lengths=(0.021, 0.018, 0.017, 0.016, 0.014), r=(0.0072, 0.0084), spread=2.0, rows=2)
-            self.bones += [(RoundCone(hip + (kn - hip) * 0.2, kn - (kn - hip) * 0.12, 0.01, 0.009), 40.0)]
+                                palm=(0.046, 0.042, 0.02), reach=0.064, web=0.012,
+                                lengths=(0.02, 0.018, 0.017, 0.016, 0.015), r=(0.0088, 0.0098), spread=1.6, rows=2)
+            self.bones += [(RoundCone(hip + (kn - hip) * 0.25, kn + (an - kn) * 0.1, 0.01, 0.009), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.008
-            self.bones += [(RoundCone(kn + (an - kn) * 0.12 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
+            self.bones += [(RoundCone(kn + (an - kn) * 0.3 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
             self.anchors[f"hand{side}"] = wr + axis * 0.04
             self.anchors[f"foot{side}"] = an + faxis * 0.04
             self.anchors[f"knee{side}"] = kn + vec(0.03 * s, 0.0, 0.01)
@@ -552,9 +565,9 @@ class Week9(Week8):
                     self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.012, 0.018)), 60.0))
 
         self.joints["head"] = {"pivot": vec(0, -0.05, -0.1), "axis": vec(1, 0, 0), "dir": unit(vec(0, 0.25, 0.2))}
-        # the heart as the page shows it: a dark oval under the thin skin of the upper chest, just under
-        # the chin and between the hands, beating (as in the clip)
-        self.heart = (vec(0, -0.128, 0.15), vec(0.064, 0.032, 0.035))
+        # the heart as the page shows it: a soft, wide, brownish shade under the thin skin of the upper
+        # chest, just under the chin and between the hands, beating (as in the clip)
+        self.heart = (vec(0, -0.155, 0.15), vec(0.095, 0.042, 0.04), 1.0)
 
         self.anchors.update({
             "head": vec(0.1, 0.42, 0.12),
@@ -811,6 +824,10 @@ def main():
     w = np.clip(1.0 - by["cordRoot"].shape.sdf(pos) / 0.012, 0.0, 1.0) * t * t * (3 - 2 * t)
     alpha = alpha * (1 - w) + 0.3 * w
     on_cord = w
+    if emb.CORD_TONE:
+        # (and the colour: without this the shading baked on the root ends in a light band where the
+        # tube carries on from it)
+        rgb = rgb * (1 - w[:, None]) + w[:, None]
     if emb.CREASES:
         from scipy.spatial import cKDTree
         crease = near(emb.CREASES, 0.008)(pos)
@@ -946,8 +963,12 @@ def main():
     if vol.ndim == 4:
         # (the second channel, interleaved: the long bones of the limbs)
         rig["organs"]["channels"] = 2
+    # the cord tube's thickness where it leaves the root (it sinks into the root at that thickness, so
+    # the two surfaces meet only at the root's tip, at a slight angle, and not along a ragged line)
+    rig["cordRadius"] = emb.cord_r
     if getattr(emb, "heart", None):
-        rig["heart"] = {"center": (emb.heart[0] - center).round(5).tolist(), "radii": np.asarray(emb.heart[1]).round(4).tolist()}
+        rig["heart"] = {"center": (emb.heart[0] - center).round(5).tolist(), "radii": np.asarray(emb.heart[1]).round(4).tolist(),
+                        "strength": emb.heart[2]}
     with open(args.rig, "w") as fh:
         json.dump(rig, fh, separators=(",", ":"))
     import os
