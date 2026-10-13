@@ -98,6 +98,11 @@ class Week8:
     CORD_TONE = False
     # thin see-through upper lids over the eyes (a third mesh, "Lids")
     LIDS = False
+    # how far the hands and feet pale towards the tips in the page (None: the page's own, nearly white)
+    PALE = None
+    # how far towards their own thinness the tips of the fingers and toes go (the rest of the way from
+    # the thickness where the limb leaves the body): how much light comes through them
+    TIP_THIN = 0.85
 
     def eye_dir(self, s):
         """The way the eye looks out: sideways and a little forwards."""
@@ -361,6 +366,8 @@ class Week9(Week8):
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
     CORD_TONE = True
     LIDS = True
+    PALE = 0.38
+    TIP_THIN = 0.55
 
     def eye_dir(self, s):
         """The way the face looks there (the skin round the eye faces out, forwards and down, the face
@@ -531,8 +538,8 @@ class Week9(Week8):
             axis = unit(vec(-0.5 * s, -0.12, 0.86))
             back_of_hand = vec(0.7 * s, 1.0, 0.1)
             tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=vec(-s, 0, -0.4), hand=True,
-                               palm=(0.042, 0.032, 0.019), reach=0.042, web=0.016,
-                               lengths=(0.024, 0.027, 0.029, 0.028, 0.024), r=(0.0098, 0.0106), spread=0.8)
+                               palm=(0.042, 0.029, 0.019), reach=0.04, web=0.018,
+                               lengths=(0.019, 0.041, 0.044, 0.042, 0.037), r=(0.0106, 0.0066), spread=0.55)
             self.bones += [(RoundCone(sh + (el - sh) * 0.2, el - (el - sh) * 0.12, 0.009, 0.008), 40.0)]
             fa = unit(np.cross(wr - el, up)) * 0.007
             self.bones += [(RoundCone(el + (wr - el) * 0.12 + d, wr - (wr - el) * 0.1 + d, 0.006, 0.0055), 40.0) for d in (fa, -fa)]
@@ -545,8 +552,8 @@ class Week9(Week8):
             dorsum = vec(0.85 * s, 0.25, -0.35)
             dorsum = unit(dorsum - faxis * (dorsum @ faxis))
             ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(0, 1, 0), hand=False,
-                                palm=(0.046, 0.042, 0.02), reach=0.064, web=0.012,
-                                lengths=(0.02, 0.018, 0.017, 0.016, 0.015), r=(0.0088, 0.0098), spread=1.6, rows=2)
+                                palm=(0.048, 0.036, 0.021), reach=0.06, web=0.009,
+                                lengths=(0.024, 0.021, 0.02, 0.019, 0.017), r=(0.0088, 0.0068), spread=1.2, rows=2)
             self.bones += [(RoundCone(hip + (kn - hip) * 0.25, kn + (an - kn) * 0.1, 0.01, 0.009), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.008
             self.bones += [(RoundCone(kn + (an - kn) * 0.3 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
@@ -617,8 +624,10 @@ class Week9(Week8):
         digits fanned out from its far edge, webbed together only at their roots. back points out
         of the back of the hand or the top of the foot, first towards the side the thumb or the big
         toe is on. The thumb sets off from the side of the palm near the wrist; the big toe is the
-        first of the row. Notes where the small bones are (the shader dots them in) and returns the
-        tip of the middle digit."""
+        first of the row. r is a digit's half width and half thickness: as in the clip the digits are
+        flat, soft and a little tapered to a rounded tip (each one a flattened ellipsoid), not round
+        rods with knobs on the end. Notes where the small bones are (the shader dots them in, as short
+        dashes along the digit) and returns the tip of the middle digit."""
         back = np.asarray(back, float)
         R = frame(back - axis * (back @ axis), -axis)
         if R[:, 0] @ first < 0:
@@ -628,36 +637,45 @@ class Week9(Week8):
         add(f"{name}Palm", Ellipsoid(root + a * pa * 0.85, vec(pu, pa, pn), R), 0.015, group)
         far = root + a * reach
         add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, web, pn * 0.75), R), 0.006, group)
-        r0, r1 = r
+        rw, rt = r
+
+        def digit(dname, base, d, L, w, t):
+            # (curled a little towards the palm or sole) a flat body of nearly even width, and a
+            # rounded, hardly narrower tip
+            d = unit(d - n * 0.12)
+            side = unit(np.cross(n, d))
+            Rd = np.stack([side, d, unit(np.cross(side, d))], axis=1)
+            add(dname, Ellipsoid(base + d * (L * 0.45), vec(w, L * 0.5, t), Rd), 0.006, group)
+            add(f"{dname}Tip", Ellipsoid(base + d * (L - w * 0.85), vec(w * 0.88, w * 0.88, t * 0.92), Rd), 0.004, group)
+            return base + d * L, d
+
         if hand:
             row = lengths[1:]
-            spacing = (2 * pu - 2 * r0) / 3
+            spacing = (2 * pu - 2 * rw) / 3
             offs = [1.5 * spacing, 0.5 * spacing, -0.5 * spacing, -1.5 * spacing]
             angles = [0.3 * spread, 0.1 * spread, -0.1 * spread, -0.3 * spread]
         else:
             row = lengths
-            spacing = (2 * pu - 2 * r0) / 4
+            spacing = (2 * pu - 2 * rw) / 4
             offs = [2 * spacing, spacing, 0.0, -spacing, -2 * spacing]
             angles = [0.18 * spread, 0.08 * spread, 0.0, -0.08 * spread, -0.16 * spread]
         tips = []
         for i, (L, off, ang) in enumerate(zip(row, offs, angles)):
-            d = math.cos(ang) * a + math.sin(ang) * u
             base = far + u * off - a * 0.004
-            tip = base + d * L - n * 0.12 * L
-            big = 1.15 if (not hand and i == 0) else 1.0
-            add(f"{name}Digit{i}", RoundCone(base, tip, r0 * big, r1 * big), 0.005, group)
+            big = 1.08 if (not hand and i == 0) else 1.0
+            tip, d = digit(f"{name}Digit{i}", base, math.cos(ang) * a + math.sin(ang) * u, L, rw * big, rt * big)
             tips.append(tip)
-            for t in ((0.25, 0.62, 0.9) if L > 0.022 else (0.35, 0.85)):
-                self.dots.append((base + (tip - base) * t, 0.0042, n))
+            for t in ((0.3, 0.68) if hand else (0.45,)):
+                self.dots.append((base + (tip - base) * t, 0.0042, n, d))
             for k in range(rows):
-                self.dots.append((base - a * (0.016 + 0.016 * k) - u * off * (0.15 + 0.1 * k), 0.0045, n))
+                self.dots.append((base - a * (0.017 + 0.017 * k) - u * off * (0.15 + 0.1 * k), 0.0046, n, d))
         if hand:
             L = lengths[0]
             tb = root + a * 0.014 + u * (pu * 0.85)
-            tt = tb + unit(a * 0.55 + u * 0.75 - n * 0.35) * L
-            add(f"{name}Thumb", RoundCone(tb, tt, r0 * 1.12, r1 * 1.05), 0.007, group)
-            for t in (0.45, 0.85):
-                self.dots.append((tb + (tt - tb) * t, 0.0042, n))
+            # (short, along the side of the hand, as in the clip)
+            tt, d = digit(f"{name}Thumb", tb, a * 0.9 + u * 0.35 - n * 0.3, L, rw * 1.2, rt * 1.15)
+            for t in (0.4, 0.78):
+                self.dots.append((tb + (tt - tb) * t, 0.0042, n, d))
         return tips[len(tips) // 2]
 
 def organ_volume(organs, h=0.012, blur=1.0, second=None):
@@ -929,7 +947,7 @@ def main():
         a_root = np.median(alpha[body_rim][near]) if near.any() else alpha[sel].max()
         tip = along > end - 0.04
         a_tip = np.median(alpha[sel][tip]) if tip.any() else alpha[sel].min()
-        a_tip = a_root + (a_tip - a_root) * 0.85
+        a_tip = a_root + (a_tip - a_root) * emb.TIP_THIN
         alpha[sel] = a_root + (a_tip - a_root) * t
     # soften both over the surface, the thickness also a little way into the body round each limb
     near_limb = limb.astype(float)
@@ -942,11 +960,19 @@ def main():
 
     # ---- the small bones of the fingers and toes: dots seen on the back and the palm side alike
     bone = np.zeros(len(pos))
-    for c, r, n in emb.dots:
+    for dot in emb.dots:
+        c, r, n = dot[:3]
         d = pos - c
         dn = d @ n
-        dp = np.linalg.norm(d - dn[:, None] * n, axis=1)
-        bone = np.maximum(bone, np.exp(-(dp / r) ** 2) * np.exp(-(dn / 0.025) ** 2))
+        if len(dot) > 3:
+            # a short, soft-cornered dash along the digit (as the clip draws them)
+            along = unit(dot[3] - n * (dot[3] @ n))
+            across = np.cross(n, along)
+            x, y = np.abs(d @ along) / (r * 1.45), np.abs(d @ across) / (r * 0.95)
+            bone = np.maximum(bone, np.exp(-(x ** 3 + y ** 3)) * np.exp(-(dn / 0.025) ** 2))
+        else:
+            dp = np.linalg.norm(d - dn[:, None] * n, axis=1)
+            bone = np.maximum(bone, np.exp(-(dp / r) ** 2) * np.exp(-(dn / 0.025) ** 2))
     bone = np.clip(bone / 0.8, 0, 1)
 
     # ---- the organs inside, as a 3D texture (and the limbs' long bones in a second channel)
@@ -1011,6 +1037,8 @@ def main():
     # the cord tube's thickness where it leaves the root (it sinks into the root at that thickness, so
     # the two surfaces meet only at the root's tip, at a slight angle, and not along a ragged line)
     rig["cordRadius"] = emb.cord_r
+    if emb.PALE is not None:
+        rig["pale"] = emb.PALE
     if getattr(emb, "heart", None):
         rig["heart"] = {"center": (emb.heart[0] - center).round(5).tolist(), "radii": np.asarray(emb.heart[1]).round(4).tolist(),
                         "strength": emb.heart[2]}

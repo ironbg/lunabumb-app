@@ -846,6 +846,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -2063,6 +2064,9 @@ const embryoWeekAt = (ga) => (!embryoEnabled || ga >= 10 ? 0 : ga < 9 ? 8 : 9);
 
 // where the head's vessels fan out from, and the middle of the skull (from the model's rig)
 const embryoUniforms = { uVesselC: { value: new THREE.Vector3(0.2, 0.3, -0.1) }, uSkullC: { value: new THREE.Vector3(0, 0.27, 0) } };
+// how far the hands and feet pale towards the tips (rig.pale; week 8's plates are nearly white, from
+// week 9 they keep most of the skin's own pink, as in the clip)
+embryoUniforms.uPaleAmount = { value: 0.82 };
 // The organs inside (heart, liver, spinal cord, vertebrae and ribs) as a small 3D texture of how much
 // light they absorb, from the rig: the shader looks into it along the line of sight (uCamObj is the
 // camera in the model's own space), so they sit deep and soft inside rather than on the skin
@@ -2121,7 +2125,8 @@ function embryoShading(shader) {
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
-  shader.uniforms.uBoneTint = { value: new THREE.Color('#6a3532') };
+  // (the small bones of the fingers and toes: soft, greyish purple-brown dashes, as in the clip)
+  shader.uniforms.uBoneTint = { value: new THREE.Color('#6b5257') };
   // (what the heart's shade multiplies the skin by: a little darker, browner and less blue, as in the clip)
   shader.uniforms.uHeartTint = { value: new THREE.Color().setRGB(0.72, 0.6, 0.54) };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
@@ -2167,6 +2172,7 @@ function embryoShading(shader) {
       uniform vec3 uHeartTint;
       uniform vec3 uVesselTint;
       uniform vec3 uPaleTint;
+      uniform float uPaleAmount;
       uniform sampler3D uOrgans;
       uniform vec3 uOrgMin;
       uniform vec3 uOrgSize;
@@ -2305,10 +2311,10 @@ function embryoShading(shader) {
         float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
         diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
         // the limbs lighten gradually from the body out to the tips of the fingers and toes
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * 0.82);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * uPaleAmount);
         #ifdef EMBRYO_BONES
           // the small bones of the fingers and toes, starting to harden: dark red dots
-          diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.8);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.72);
         #endif
         // the beating heart: a soft brownish shade, a little deeper at each beat (not on a hand in
         // front of it); it also holds back some of the light coming through the chest, as the other
@@ -2423,6 +2429,7 @@ function syncBabyModel(ga, moon) {
     embryoUniforms.uEmbHeartC.value.fromArray(heart ? heart.center : [0, 0, 0]);
     embryoUniforms.uEmbHeartR.value.fromArray(heart ? heart.radii : [0, 0, 0]);
     embryoUniforms.uHeartAmount.value = heart ? heart.strength ?? 1 : 0;
+    embryoUniforms.uPaleAmount.value = embryo.rig?.pale ?? 0.82;
     const organs = active ? embryo.models[week].organs : null;
     embryoUniforms.uOrgans.value = organs || noOrgans;
     embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
@@ -3263,6 +3270,13 @@ function buildComposer(tier) {
   finishPass = new ShaderPass(FinishShader);
   composer.addPass(finishPass);
   composer.addPass(new OutputPass());
+  // With no multisampling and a low pixel ratio (the light tier on a phone) the edges stair-step
+  // visibly, the pale hand and foot plates most of all: smooth them once the colour is final
+  if (!samples && renderer.getPixelRatio() < 2) {
+    const fxaa = new ShaderPass(FXAAShader);
+    fxaa.setSize = (w, h) => fxaa.material.uniforms.resolution.value.set(1 / w, 1 / h);
+    composer.addPass(fxaa);
+  }
 }
 
 /* =========================================================================
