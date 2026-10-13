@@ -366,8 +366,8 @@ class Week9(Week8):
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
     CORD_TONE = True
     LIDS = True
-    PALE = 0.38
-    TIP_THIN = 0.55
+    PALE = 0.25
+    TIP_THIN = 0.5
 
     def eye_dir(self, s):
         """The way the face looks there (the skin round the eye faces out, forwards and down, the face

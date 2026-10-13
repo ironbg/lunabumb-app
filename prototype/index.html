@@ -2336,7 +2336,8 @@ function embryoShading(shader) {
         #ifndef EMBRYO_CORD
           // along the limbs the round bud turns into a flat plate, and the light through them would
           // change with that turn of the surface; there it depends far less on which way the skin faces
-          eBehind = mix( eBehind, 0.35 + 0.4 * saturate( dot( -geometryNormal, directLight.direction ) * 0.5 + 0.5 ), clamp( vPale, 0.0, 1.0 ) * 0.8 );
+          // (as much less from week 9 as its plates pale less, rig.pale)
+          eBehind = mix( eBehind, 0.35 + 0.4 * saturate( dot( -geometryNormal, directLight.direction ) * 0.5 + 0.5 ), clamp( vPale, 0.0, 1.0 ) * 0.8 * uPaleAmount / 0.82 );
         #endif
         // the path through is shorter towards the outline, so the edges glow brighter (the hand and
         // foot plates are the thinnest of all, but still lose some light: no white glow)
