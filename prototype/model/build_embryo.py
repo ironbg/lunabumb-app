@@ -341,8 +341,10 @@ class Week9(Week8):
     HEAD_OPS = ("cranium", "forebrain", "hindbrain")
     VESSEL_Y = (0.1, 0.2)
     CREASES = ("mouth", "nostril", "earBowl", "eyeSocket")
-    LIPS = ((("mouth",), (0.97, 0.84, 0.86), 0.01), (("mouth",), (0.72, 0.46, 0.5), 0.0025),
-            (("nostril",), (0.85, 0.74, 0.74), 0.0035), (("eyeSocket",), (0.82, 0.7, 0.7), 0.0025))
+    LIPS = ((("mouth",), (0.96, 0.74, 0.76), 0.007), (("mouth",), (0.62, 0.36, 0.4), 0.0025),
+            (("nostril",), (0.85, 0.74, 0.74), 0.0035), (("eyeSocket",), (0.82, 0.7, 0.7), 0.0025),
+            # (and a soft greyish shade on the lids all round the eye, as in the clip)
+            (("eyeSocket",), (0.9, 0.85, 0.89), 0.01))
     EYE_ROUND = True
     FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
 
@@ -355,19 +357,25 @@ class Week9(Week8):
     def place_eyes(self):
         for s in (1, -1):
             # its front just under the skin round the hollow
-            r = 0.032
+            r = 0.034
             self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r + 0.002), r))
 
     def eye_colours(self, normals, outward):
-        """A grey iris round a black pupil, dark round the iris where the lids shade it."""
+        """As in the clip: a light grey iris with a darker ring round its edge, a big black pupil, the
+        eye black all round the iris, and a small bright catchlight up and out from the pupil."""
+        def ramp(x, e0, e1):
+            t = np.clip((x - e0) / (e1 - e0), 0, 1)
+            return t * t * (3 - 2 * t)
         c = normals @ outward
-        ramp = lambda e0, e1: np.clip((c - e0) / (e1 - e0), 0, 1) ** 2 * (3 - 2 * np.clip((c - e0) / (e1 - e0), 0, 1))
-        iris = ramp(0.865, 0.885)
-        pupil = ramp(0.974, 0.98)
-        # the iris is lighter towards the pupil, with a darker ring round its edge
-        grey = 0.22 + 0.18 * ramp(0.885, 0.96)
-        shade = 0.035 + (grey - 0.035) * iris
-        shade = shade + (0.025 - shade) * pupil
+        iris = ramp(c, 0.905, 0.925)
+        pupil = ramp(c, 0.98, 0.985)
+        # (the iris is lighter towards the pupil, with a darker ring round its edge)
+        grey = 0.2 + 0.26 * ramp(c, 0.925, 0.975)
+        shade = 0.02 + (grey - 0.02) * iris
+        shade = shade + (0.015 - shade) * pupil
+        up = unit(vec(0, 1, 0) - outward * outward[1])
+        glint = ramp(normals @ unit(outward + up * 0.3), 0.9935, 0.9965)
+        shade = shade + (0.92 - shade) * glint
         return np.round(np.clip(np.stack([shade * 0.98, shade, shade * 1.04], axis=1), 0, 1) * 255).astype(np.uint8)
 
     def build(self):
@@ -427,7 +435,7 @@ class Week9(Week8):
         sx = self.surface_x(y, z)
         self.eye_at = {1: vec(sx, y, z), -1: vec(-sx, y, z)}
         n = unit(gradient(ops, self.eye_at[1][None], eps=0.002)[0])
-        n = unit(n + vec(0, 0.08, 0.3))
+        n = unit(n + vec(0, 0.12, 0.42))
         self.eye_out = {1: n, -1: n * vec(-1, 1, 1)}
         for s, side in ((1, "R"), (-1, "L")):
             out = self.eye_dir(s)
@@ -435,7 +443,11 @@ class Week9(Week8):
             # an almond-shaped hollow, wider than tall: the eye ball fills it, and its soft rim is
             # where the lids are starting
             R = frame(out, vec(0, 1, 0))
-            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.026, 0.0145, 0.016), R), 0.007, "head")
+            # (tilted a little, the outer corner lower)
+            a = 0.18 * s
+            u_, v_ = R[:, 0].copy(), R[:, 1].copy()
+            R[:, 0], R[:, 1] = math.cos(a) * u_ - math.sin(a) * v_, math.sin(a) * u_ + math.cos(a) * v_
+            sub(f"eyeSocket{side}", Ellipsoid(skin, vec(0.03, 0.0155, 0.017), R), 0.007, "head")
 
         # ---- the outer ear: a small rounded rim, open to the front, level with the eye and well
         # behind it
@@ -540,6 +552,9 @@ class Week9(Week8):
                     self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.012, 0.018)), 60.0))
 
         self.joints["head"] = {"pivot": vec(0, -0.05, -0.1), "axis": vec(1, 0, 0), "dir": unit(vec(0, 0.25, 0.2))}
+        # the heart as the page shows it: a dark oval under the thin skin of the upper chest, just under
+        # the chin and between the hands, beating (as in the clip)
+        self.heart = (vec(0, -0.128, 0.15), vec(0.064, 0.032, 0.035))
 
         self.anchors.update({
             "head": vec(0.1, 0.42, 0.12),
@@ -931,6 +946,8 @@ def main():
     if vol.ndim == 4:
         # (the second channel, interleaved: the long bones of the limbs)
         rig["organs"]["channels"] = 2
+    if getattr(emb, "heart", None):
+        rig["heart"] = {"center": (emb.heart[0] - center).round(5).tolist(), "radii": np.asarray(emb.heart[1]).round(4).tolist()}
     with open(args.rig, "w") as fh:
         json.dump(rig, fh, separators=(",", ":"))
     import os

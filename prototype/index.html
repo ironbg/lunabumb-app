@@ -2069,6 +2069,11 @@ Object.assign(embryoUniforms, {
   uOrgans: { value: noOrgans }, uOrgMin: { value: new THREE.Vector3() }, uOrgSize: { value: new THREE.Vector3(1, 1, 1) },
   uOrgScale: { value: 0 }, uCamObj: { value: new THREE.Vector3() },
 });
+// From week 9 the heart shows through the thin skin of the upper chest as a dark oval that beats
+// (rig.heart: its centre and radii; uHeartBeat follows the heart rate, 0 between beats)
+Object.assign(embryoUniforms, {
+  uEmbHeartC: { value: new THREE.Vector3() }, uEmbHeartR: { value: new THREE.Vector3() }, uHeartBeat: { value: 0 },
+});
 
 // A touched part of the embryo (an arm, a leg, the head) swings a little round its joint: the
 // vertex shader turns the vertices marked for that part (_MOVE, baked in build_embryo.py) about the
@@ -2111,6 +2116,7 @@ function embryoShading(shader) {
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
   shader.uniforms.uBoneTint = { value: new THREE.Color('#6a3532') };
+  shader.uniforms.uHeartTint = { value: new THREE.Color('#6c4a47') };
   // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
   // blue and green are soaked up first, so what comes through thick parts is deep red
   shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
@@ -2146,6 +2152,10 @@ function embryoShading(shader) {
         // x: the small bones of the fingers and toes, y: none of the organs' shadow (the cord's root)
         varying vec2 vBone;
         uniform vec3 uBoneTint;
+        uniform vec3 uEmbHeartC;
+        uniform vec3 uEmbHeartR;
+        uniform float uHeartBeat;
+        uniform vec3 uHeartTint;
       #endif
       uniform vec3 uVesselTint;
       uniform vec3 uPaleTint;
@@ -2228,6 +2238,18 @@ function embryoShading(shader) {
           }
           return 1.0 - exp(-sum * uOrgScale * 0.026);
         }
+        // the heart under the skin of the chest: how close the line of sight passes to it (in its own
+        // ellipsoid's units, a little bigger at each beat), within the first part of the way in
+        float eHeart(vec3 p) {
+          if (uEmbHeartR.x <= 0.0) return 0.0;
+          vec3 dir = normalize(p - uCamObj);
+          vec3 r = uEmbHeartR * (1.0 + 0.07 * uHeartBeat);
+          vec3 o = (p - uEmbHeartC) / r;
+          vec3 d = dir / r;
+          float t = max(-dot(o, d) / dot(d, d), 0.0);
+          float m = length(o + d * t);
+          return (1.0 - smoothstep(0.5, 1.05, m)) * (1.0 - smoothstep(0.12, 0.2, t));
+        }
       #endif
       // fine bumps of the skin, faded out where they would be smaller than a pixel
       float eSkinHeight(vec3 p) { return eNoise(p * 140.0) * 0.6 + eNoise(p * 55.0) * 0.4; }
@@ -2278,6 +2300,11 @@ function embryoShading(shader) {
         #ifdef EMBRYO_BONES
           // the small bones of the fingers and toes, starting to harden: dark red dots
           diffuseColor.rgb = mix(diffuseColor.rgb, uBoneTint, clamp(vBone.x, 0.0, 1.0) * 0.8);
+          // the beating heart: a soft dark oval, darker at each beat (not on a hand in front of it); it
+          // also holds back the light coming through the chest, as the other organs do
+          float eH = eHeart(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
+          diffuseColor.rgb = mix(diffuseColor.rgb, uHeartTint, eH * (0.5 + 0.2 * uHeartBeat));
+          eInside = max(eInside, eH * (0.55 + 0.25 * uHeartBeat));
         #endif
       #endif`)
     // the light from all round (EMBRYO_AMBIENT: as much as the fetus gets, so the side away from the key
@@ -2377,6 +2404,9 @@ function syncBabyModel(ga, moon) {
     const anchors = embryo.rig?.anchors;
     if (anchors?.vessels) embryoUniforms.uVesselC.value.fromArray(anchors.vessels);
     if (anchors?.skull) embryoUniforms.uSkullC.value.fromArray(anchors.skull);
+    const heart = active ? embryo.rig.heart : null;
+    embryoUniforms.uEmbHeartC.value.fromArray(heart ? heart.center : [0, 0, 0]);
+    embryoUniforms.uEmbHeartR.value.fromArray(heart ? heart.radii : [0, 0, 0]);
     const organs = active ? embryo.models[week].organs : null;
     embryoUniforms.uOrgans.value = organs || noOrgans;
     embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
@@ -4483,6 +4513,7 @@ const frameLoop = (timestamp) => {
     babyUniforms.uHeartR.value = 0.13 * S;
     // a soft pulse with the beat; almost nothing in between, so it doesn't read as a spot on the chest
     babyUniforms.uPulse.value = (0.03 + pulse) * m.baby.heartStrength;
+    embryoUniforms.uHeartBeat.value = pulse;
   }
 
   if (!m.moon && frame % TIERS[state.tier].cordEvery === 0) updateCord(reduce ? 0 : now, S);
