@@ -2123,6 +2123,8 @@ function organTexture(o) {
 function embryoShading(shader) {
   Object.assign(shader.uniforms, embryoUniforms);
   shader.uniforms.uVesselTint = { value: new THREE.Color('#e0524a') };
+  // (from week 9 finer and pinker, as in the clip)
+  shader.uniforms.uVesselTint9 = { value: new THREE.Color('#d0646f') };
   // the hand and foot plates have little blood in them yet: they look almost white-pink
   shader.uniforms.uPaleTint = { value: new THREE.Color('#f7dacd') };
   // (the small bones of the fingers and toes: soft, greyish purple-brown dashes, as in the clip)
@@ -2171,6 +2173,7 @@ function embryoShading(shader) {
       uniform float uHeartAmount;
       uniform vec3 uHeartTint;
       uniform vec3 uVesselTint;
+      uniform vec3 uVesselTint9;
       uniform vec3 uPaleTint;
       uniform float uPaleAmount;
       uniform sampler3D uOrgans;
@@ -2230,6 +2233,51 @@ function embryoShading(shader) {
         // where they meet: a small red knot
         return max(m, 1.0 - smoothstep(0.004, 0.009, r));
       }
+      #ifdef EMBRYO_BONES
+        // from week 9 they are as the clip draws them: many fine, pinkish lines fanning out from a point
+        // high on each side of the head, most of them up and back over the skull, the ones going back
+        // and forwards round the side the longest, a few short ones down towards the ear; straight near
+        // where they start, meandering and forking further out. No knot where they meet, only a faint
+        // flush (widths in model units: thinner than a pixel, they fade rather than flicker)
+        float eFan9(vec3 p) {
+          vec3 c = vec3(sign(p.x) * abs(uVesselC.x), uVesselC.yz);
+          vec3 n = normalize(c - uSkullC);
+          vec3 up = normalize(vec3(0.0, 1.0, 0.0) - n * n.y);
+          vec3 fw = normalize(cross(n, up)) * sign(p.x);
+          vec3 d = p - c;
+          float r = length(d);
+          // 0 straight up, positive forwards, negative backwards
+          float a = atan(dot(d, fw), dot(d, up));
+          float m = 0.0;
+          for (int i = 0; i < 2; i++) {
+            float fi = float(i);
+            float k = mix(22.0, 46.0, fi);
+            float bend = smoothstep(0.0, 0.08, r);
+            float drift = (eNoise(p * mix(14.0, 26.0, fi) + fi * 5.0 + sign(p.x) * 2.0) - 0.5) * mix(0.45, 0.4, fi) * bend;
+            float u = (a + drift) * k / 6.2831853;
+            float j = floor(u + 0.5);
+            float h = eHash(vec3(j, sign(p.x) + 3.0, fi + 1.0));
+            // (not evenly spaced: each one set off a little to one side)
+            float jit = (eHash(vec3(j, sign(p.x) + 7.0, fi + 4.0)) - 0.5) * 0.6;
+            float dist = r * abs(sin((u - j - jit) * 3.1415927)) * 6.2831853 / (k * 3.1415927);
+            // how far each one reaches, by where it points: furthest back and forwards round the side,
+            // only a few short ones down towards the ear and none further round
+            float aj = abs((j + jit) * 6.2831853 / k);
+            float len = mix(0.14, 0.25, h) + 0.07 * smoothstep(1.1, 1.7, aj);
+            len *= 1.0 - 0.7 * smoothstep(1.8, 2.1, aj);
+            float keep = 1.0 - step(2.0 + 0.6 * h, aj);
+            float w = mix(0.0011, 0.0008, fi) * (1.0 - 0.4 * smoothstep(0.0, len, r));
+            float aa = fwidth(dist) + 1e-5;
+            float line = 1.0 - smoothstep(w - aa, w + aa, dist);
+            // the branches only further out; some lines start late or stop early
+            float start = mix(0.004, 0.05 + 0.05 * h, fi);
+            line *= smoothstep(start, start + 0.02, r) * (1.0 - smoothstep(len * 0.7, len, r));
+            line *= smoothstep(0.2, 0.42, eNoise(p * 24.0 + fi * 11.0 + h * 7.0));
+            m = max(m, line * keep * mix(0.85, 0.55, fi) * mix(0.75, 1.0, h));
+          }
+          return max(m, 0.28 * (1.0 - smoothstep(0.0, 0.012, r)));
+        }
+      #endif
       // the organs on the line of sight, from the skin a little way into the body
       float eOrgans(vec3 p) {
         vec3 dir = normalize(p - uCamObj);
@@ -2301,15 +2349,29 @@ function embryoShading(shader) {
           eInside = eOrgans(vObjPos) * ( 1.0 - clamp( vLimb, 0.0, 1.0 ) );
         #endif
         // light scattered under the skin reaches them too: where it is lit they show as soft, deep red
-        // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin)
-        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.46);
+        // shapes some way under the surface (they shift as the camera moves, unlike a mark on the skin).
+        // From week 9 they show much less where the skin is lit: the ribs and the spine stand out in
+        // the light coming through the back, as in the clip, not on the lit side
+        #ifdef EMBRYO_BONES
+          diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.18);
+        #else
+          diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.24, 0.22), eInside * 0.46);
+        #endif
       #endif
       // soft mottling of the thin skin: blood showing through unevenly
       float mottle = eNoise(vObjPos * 38.0) * 0.6 + eNoise(vObjPos * 90.0) * 0.4;
       diffuseColor.rgb *= mix(vec3(1.008, 1.0, 1.0), vec3(0.988, 0.97, 0.97), mottle);
       #ifndef EMBRYO_CORD
-        float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
-        diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
+        #ifdef EMBRYO_BONES
+          float eVes = max(eFan9(vObjPos), 0.2 * clamp(eVessels(vObjPos), 0.0, 1.0));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint9, eVes * vVessel * 0.62);
+          // the skin's fine grain (as in the clip), gone where it would be smaller than a pixel
+          vec3 gq = vObjPos * 260.0;
+          diffuseColor.rgb *= 1.0 + (eNoise(gq) - 0.5) * 0.07 * (1.0 - smoothstep(0.25, 0.5, length(fwidth(gq))));
+        #else
+          float eVes = max(eFan(vObjPos), 0.35 * clamp(eVessels(vObjPos), 0.0, 1.0));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uVesselTint, eVes * vVessel * 0.8);
+        #endif
         // the limbs lighten gradually from the body out to the tips of the fingers and toes
         diffuseColor.rgb = mix(diffuseColor.rgb, uPaleTint, pow(clamp(vPale, 0.0, 1.0), 1.3) * uPaleAmount);
         #ifdef EMBRYO_BONES

@@ -103,6 +103,8 @@ class Week8:
     # how far towards their own thinness the tips of the fingers and toes go (the rest of the way from
     # the thickness where the limb leaves the body): how much light comes through them
     TIP_THIN = 0.85
+    # how much the organs' 3D texture is blurred (in texels): the softer, the more they merge
+    ORGAN_BLUR = 1.0
 
     def eye_dir(self, s):
         """The way the eye looks out: sideways and a little forwards."""
@@ -133,6 +135,17 @@ class Week8:
         for _ in range(40):
             mid = 0.5 * (lo + hi)
             if eval_sdf(self.ops, np.array([[mid, y, z]]))[0] < 0:
+                lo = mid
+            else:
+                hi = mid
+        return lo
+
+    def surface_z(self, x, y, hi=0.45):
+        """How far forward along +z the skin is at side x and height y (the sculpt so far)."""
+        lo = 0.0
+        for _ in range(40):
+            mid = 0.5 * (lo + hi)
+            if eval_sdf(self.ops, np.array([[x, y, mid]]))[0] < 0:
                 lo = mid
             else:
                 hi = mid
@@ -353,21 +366,24 @@ class Week9(Week8):
     EYE = (0.09, 0.26)
     EYE_SQUASH = 1.0
     DETAILS = ((("ear",), 0.01, 0.6), (("hand", "foot"), 0.01, 0.85),
-               (("nose", "nostril", "mouth", "lip", "jaw", "eyeSocket"), 0.012, 0.75))
-    WARM = ("lip", "nose", "midface")
+               (("nose", "ala", "nostril", "mouth", "lip", "jaw", "eyeSocket"), 0.012, 0.75))
+    # (only the lips: in the clip the nose and the skin round the mouth are as pale as the rest)
+    WARM = ("lip",)
     HEAD_OPS = ("cranium", "forebrain", "hindbrain")
     VESSEL_Y = (0.1, 0.2)
     CREASES = ("mouth", "nostril", "earBowl", "eyeSocket")
     LIPS = ((("mouth",), (0.96, 0.74, 0.76), 0.007), (("mouth",), (0.62, 0.36, 0.4), 0.0025),
-            (("nostril",), (0.94, 0.88, 0.88), 0.0025), (("eyeSocket",), (0.76, 0.66, 0.64), 0.003),
+            (("nostril",), (0.86, 0.76, 0.76), 0.0025), (("eyeSocket",), (0.76, 0.66, 0.64), 0.003),
             # (and a soft greyish-brown shade on the lids all round the eye, as in the clip)
             (("eyeSocket",), (0.72, 0.62, 0.62), 0.02))
     EYE_ROUND = True
-    FACE_AO = ("nose", "lip", "jaw", "cheek", "midface", "eyeSocket")
+    FACE_AO = ("nose", "ala", "lip", "jaw", "cheek", "midface", "eyeSocket")
     CORD_TONE = True
     LIDS = True
     PALE = 0.25
     TIP_THIN = 0.5
+    # (sharper, so the ribs stay separate bars in the light through the back, as in the clip)
+    ORGAN_BLUR = 0.6
 
     def eye_dir(self, s):
         """The way the face looks there (the skin round the eye faces out, forwards and down, the face
@@ -450,13 +466,24 @@ class Week9(Week8):
         add("midface", Ellipsoid(vec(0, 0.03, 0.15), vec(0.088, 0.066, 0.085)), 0.05, "head")
         add("lowerFace", Ellipsoid(vec(0, -0.005, 0.11), vec(0.1, 0.06, 0.1)), 0.06, "head")
         add("noseBridge", Ellipsoid(vec(0, 0.085, 0.256), vec(0.036, 0.042, 0.044)), 0.03, "head")
-        add("nose", Ellipsoid(vec(0, 0.045, 0.248), vec(0.052, 0.032, 0.044)), 0.02, "head")
-        add("lip", Ellipsoid(vec(0, -0.005, 0.2), vec(0.05, 0.024, 0.037)), 0.03, "head")
-        add("jaw", Ellipsoid(vec(0, -0.036, 0.174), vec(0.04, 0.025, 0.036)), 0.035, "head")
-        sub("mouth", Ellipsoid(vec(0, -0.023, 0.233), vec(0.022, 0.0025, 0.007)), 0.004, "head")
+        # (its tip level with the bottom of the eyes and its underside turning back sharply to the lip,
+        # as the side view of the clip has it: the lip and the chin sit back under it)
+        add("nose", Ellipsoid(vec(0, 0.053, 0.246), vec(0.06, 0.026, 0.04)), 0.016, "head")
+        add("lip", Ellipsoid(vec(0, -0.005, 0.19), vec(0.05, 0.024, 0.037)), 0.026, "head")
+        add("jaw", Ellipsoid(vec(0, -0.036, 0.152), vec(0.04, 0.025, 0.036)), 0.035, "head")
         for s, side in ((1, "R"), (-1, "L")):
-            sub(f"nostril{side}", Ellipsoid(vec(0.024 * s, 0.02, 0.27), vec(0.0065, 0.0032, 0.004)), 0.004, "head")
             add(f"cheek{side}", Ellipsoid(vec(0.065 * s, 0.045, 0.19), vec(0.045, 0.045, 0.055)), 0.06, "head")
+        # the wings of the nose: a small round swelling low on each side of it, a soft groove between
+        # it and the cheek (from the front the nose is a broad, rounded button, as in the clip)
+        az = self.surface_z(0.04, 0.036)
+        for s, side in ((1, "R"), (-1, "L")):
+            add(f"ala{side}", Ellipsoid(vec(0.04 * s, 0.036, az - 0.011), vec(0.016, 0.012, 0.0135)), 0.008, "head")
+        # the mouth and the nostrils cut just under the skin where it is, so they stay shallow; the
+        # nostrils well apart, low on the front of the wings
+        sub("mouth", Ellipsoid(vec(0, -0.023, self.surface_z(0.0, -0.023) - 0.004), vec(0.022, 0.0025, 0.007)), 0.004, "head")
+        nz = self.surface_z(0.034, 0.029)
+        for s, side in ((1, "R"), (-1, "L")):
+            sub(f"nostril{side}", Ellipsoid(vec(0.034 * s, 0.029, nz - 0.001), vec(0.0055, 0.003, 0.0035)), 0.004, "head")
 
         # ---- trunk: an upright, egg-shaped body, a smooth curve down the back; the liver makes the
         # belly bulge under the arms and the gut still loops into the base of the cord
@@ -497,16 +524,20 @@ class Week9(Week8):
             back = unit(vec(0, 0, -1) - out * (-out[2]))
             sub(f"eyeSocket{side}", Ellipsoid(skin + back * 0.004, vec(0.034, 0.016, 0.017), R), 0.007, "head")
 
-        # ---- the outer ear: a small rounded rim, open to the front, level with the eye and well
-        # behind it
+        # ---- the outer ear: a small oval rim, taller than it is wide and leaning back a little at the
+        # top, level with the eye and well behind it. Its hollow is set forwards, so the rim is thick
+        # and raised behind and over it and thin in front, where it opens (as in the clip)
         ear_y, ear_z = 0.125, 0.07
         ear_x = self.surface_x(ear_y, ear_z)
+        lean = -0.17
+        Rx = np.array([[1, 0, 0], [0, math.cos(lean), -math.sin(lean)], [0, math.sin(lean), math.cos(lean)]])
         for s, side in ((1, "R"), (-1, "L")):
             c = vec((ear_x - 0.002) * s, ear_y, ear_z)
-            add(f"ear{side}", Ellipsoid(c, vec(0.013, 0.034, 0.024)), 0.008, "head")
-            sub(f"earBowl{side}", Ellipsoid(c + vec(0.011 * s, -0.002, 0.008), vec(0.008, 0.022, 0.014)), 0.004, "head")
+            add(f"ear{side}", Ellipsoid(c, vec(0.013, 0.039, 0.022), Rx), 0.008, "head")
+            sub(f"earBowl{side}", Ellipsoid(c + vec(0.011 * s, -0.002, 0.007), vec(0.008, 0.027, 0.0125), Rx), 0.004, "head")
         self.anchors["ear"] = vec(ear_x + 0.02, ear_y, ear_z)
-        vy, vz = 0.24, 0.09
+        # (the vessels of the head fan out from a point well above the ear and a little in front of it)
+        vy, vz = 0.27, 0.105
         self.anchors["vessels"] = vec(self.surface_x(vy, vz), vy, vz)
         self.anchors["skull"] = vec(0, 0.2, 0.08)
 
@@ -526,7 +557,8 @@ class Week9(Week8):
         # down, the fingers pointing in towards the other hand. The leg shows no knee yet (as in the
         # clip): one thick, softly curved limb from the rump forwards under the belly, carried on into a
         # broad foot with its sole turned in. Hands and feet are broad and thick, the fingers and toes
-        # short, thick and separate now, webbed only at their roots
+        # short, thick and separate now, webbed only at their roots. The arms are slender beside the
+        # head and the trunk (as in the side view of the clip)
         self.joints = {}
         up = vec(0, 1, 0)
         for s, side in ((1, "R"), (-1, "L")):
@@ -534,7 +566,7 @@ class Week9(Week8):
             sh = vec(0.15 * s, -0.07, -0.01)
             el = vec(0.21 * s, -0.16, 0.1)
             wr = vec(0.11 * s, -0.115, 0.215)
-            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.05, 0.041), RoundCone(el, wr, 0.041, 0.034)]), 0.02, arm)
+            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.044, 0.035), RoundCone(el, wr, 0.035, 0.029)]), 0.02, arm)
             axis = unit(vec(-0.5 * s, -0.12, 0.86))
             back_of_hand = vec(0.7 * s, 1.0, 0.1)
             tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=vec(-s, 0, -0.4), hand=True,
@@ -597,7 +629,8 @@ class Week9(Week8):
             for s_ in (1, -1):
                 for th in np.linspace(0.3, 1.75, 9):
                     d = vec(s_ * math.sin(th), 0, -math.cos(th))
-                    self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.012, 0.018)), 60.0))
+                    # (narrow bars with clear gaps between them)
+                    self.organs.append((Ellipsoid(c + d * (skin_along(c, d) - 0.04), vec(0.018, 0.0085, 0.018)), 55.0))
 
         self.joints["head"] = {"pivot": vec(0, -0.05, -0.1), "axis": vec(1, 0, 0), "dir": unit(vec(0, 0.25, 0.2))}
         # the heart as the page shows it: a soft, wide, brownish shade under the thin skin of the upper
@@ -981,7 +1014,7 @@ def main():
     bone = np.clip(bone / 0.8, 0, 1)
 
     # ---- the organs inside, as a 3D texture (and the limbs' long bones in a second channel)
-    vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs, second=emb.bones or None)
+    vol_lo, vol_size, vol, vol_scale = organ_volume(emb.organs, blur=emb.ORGAN_BLUR, second=emb.bones or None)
     print(f"organ volume {vol.shape[:3][::-1]} ({vol.size / 1e3:.0f} kB), absorbance up to {vol_scale:.0f}")
 
     center = (pos.min(axis=0) + pos.max(axis=0)) / 2
