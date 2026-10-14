@@ -1,6 +1,6 @@
 # Third-party skills
 
-These project skills are copied unchanged from open-source repositories. Each is MIT-licensed; the license texts follow.
+These project skills are copied unchanged from public repositories. All except the kevinbadi/blender-skills ones are MIT-licensed; the license texts follow.
 
 | Skills | Source | Commit |
 |---|---|---|
@@ -8,6 +8,7 @@ These project skills are copied unchanged from open-source repositories. Each is
 | blender-web-pipeline | https://github.com/freshtechbro/claudedesignskills | 1da73fe |
 | threejs-impl-webgpu, threejs-impl-react-three-fiber, threejs-agents-model-optimizer, threejs-errors-performance | https://github.com/OpenAEC-Foundation/Three.js-Claude-Skill-Package | 6c190f0 |
 | new-parent-logistics | https://github.com/mohitagw15856/pm-claude-skills | see new-parent-logistics/LICENSE |
+| image-to-3d, multi-image-to-3d, turntable, slow-zoom, dolly-rotate, crane-shot, dynamic-full-loop, perfect-loop, product-polish, threejs-export, polyhaven-hdri-showcase, polyhaven-texture-apply, polyhaven-studio-setup, polyhaven-scene-builder, polyhaven-material-swap | https://github.com/kevinbadi/blender-skills | b2f0f81 |
 
 ## cloudai-x/threejs-skills
 
@@ -64,3 +65,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## kevinbadi/blender-skills
+
+The repository has no license file and its README names no license, so the author keeps all rights. Check with the author before sharing these skills outside this project.
+
+The repository's `blender-toolkit` skill was not copied: it needs a config file and scripts from a separate plugin that the repository does not include.
+
+These skills drive a running Blender through the [blender-mcp](https://github.com/ahujasid/blender-mcp) addon on `localhost:9876`. The image-to-3D skills also need a Meshy API key (`MESHY_API_KEY`), and the video skills need ffmpeg. Some examples use the author's macOS paths (`/Users/kevinbahrabadi/...`, `~/Desktop/Blender Videos/`); change them to a local folder before use.
