@@ -476,7 +476,7 @@ class Week9(Week8):
         add("nose", Ellipsoid(vec(0, 0.012, 0.19), vec(0.058, 0.036, 0.051)), 0.01, "head")
         add("lip", Ellipsoid(vec(0, -0.029, 0.18), vec(0.04, 0.013, 0.03)), 0.014, "head")
         add("lipLower", Ellipsoid(vec(0, -0.048, 0.167), vec(0.028, 0.011, 0.03)), 0.01, "head")
-        add("chin", Ellipsoid(vec(0, -0.07, 0.146), vec(0.034, 0.02, 0.03)), 0.014, "head")
+        add("chin", Ellipsoid(vec(0, -0.068, 0.142), vec(0.04, 0.022, 0.028)), 0.03, "head")
         for s, side in ((1, "R"), (-1, "L")):
             add(f"cheek{side}", Ellipsoid(vec(0.075 * s, 0.035, 0.145), vec(0.04, 0.04, 0.045)), 0.035, "head")
         # the mouth and the nostrils cut just under the skin where it is, so they stay shallow
@@ -500,9 +500,10 @@ class Week9(Week8):
         add("cordRoot", RoundCone(cord_a, cord_b, 0.07, 0.052), 0.05, "torso")
         self.cord_r = 0.052
         # the neck crease: a soft groove in the trunk just under the jaw, along the line where the
-        # head meets it (found from the two surfaces), deepest under the chin and fading out below
-        # the ears; the jaw overhangs it a little, as in the clip
-        seam = [(0.0, -0.088, 0.148, 0.005), (0.032, -0.071, 0.13, 0.0075), (0.054, -0.047, 0.095, 0.0078),
+        # head meets it (found from the two surfaces), fading out below the ears; the jaw overhangs it
+        # a little, as in the clip. Under the chin itself it is only a shallow fold, so the chin
+        # runs smoothly into the neck and does not stand out as a ring
+        seam = [(0.0, -0.09, 0.145, 0.003), (0.032, -0.073, 0.128, 0.005), (0.054, -0.047, 0.095, 0.0078),
                 (0.073, -0.03, 0.072, 0.0072), (0.09, -0.014, 0.05, 0.0062), (0.109, -0.003, 0.028, 0.005),
                 (0.128, 0.006, 0.001, 0.003)]
         for s in (1, -1):
