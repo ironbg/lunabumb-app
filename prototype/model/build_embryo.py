@@ -553,7 +553,8 @@ class Week9(Week8):
             dorsum = unit(dorsum - faxis * (dorsum @ faxis))
             ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(0, 1, 0), hand=False,
                                 palm=(0.048, 0.036, 0.021), reach=0.06, web=0.009,
-                                lengths=(0.024, 0.021, 0.02, 0.019, 0.017), r=(0.0088, 0.0068), spread=1.2, rows=2)
+                                lengths=(0.024, 0.021, 0.02, 0.019, 0.017), r=(0.0086, 0.0092), spread=1.25, rows=2,
+                                blend=0.013)
             self.bones += [(RoundCone(hip + (kn - hip) * 0.25, kn + (an - kn) * 0.1, 0.01, 0.009), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.008
             self.bones += [(RoundCone(kn + (an - kn) * 0.3 + d, an - (an - kn) * 0.1 + d, 0.0065, 0.006), 40.0) for d in (fl, -fl * 0.6)]
@@ -619,15 +620,17 @@ class Week9(Week8):
         self.anchors["footR"] = self.anchors.pop("footR")
         return self
 
-    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r, spread=1.0, rows=1, web=0.012):
+    def digits(self, add, name, group, root, axis, back, first, hand, palm, reach, lengths, r, spread=1.0, rows=1, web=0.012, blend=0.006):
         """A hand or foot: a flat palm (or sole) on the end of the limb and five short, separate
         digits fanned out from its far edge, webbed together only at their roots. back points out
         of the back of the hand or the top of the foot, first towards the side the thumb or the big
         toe is on. The thumb sets off from the side of the palm near the wrist; the big toe is the
         first of the row. r is a digit's half width and half thickness: as in the clip the digits are
         flat, soft and a little tapered to a rounded tip (each one a flattened ellipsoid), not round
-        rods with knobs on the end. Notes where the small bones are (the shader dots them in, as short
-        dashes along the digit) and returns the tip of the middle digit."""
+        rods with knobs on the end. blend is how softly they grow out of the palm or sole (the smooth
+        union's radius): wide for the toes, which would otherwise look stuck on. Notes where the small
+        bones are (the shader dots them in, as short dashes along the digit) and returns the tip of the
+        middle digit."""
         back = np.asarray(back, float)
         R = frame(back - axis * (back @ axis), -axis)
         if R[:, 0] @ first < 0:
@@ -636,7 +639,9 @@ class Week9(Week8):
         pu, pa, pn = palm
         add(f"{name}Palm", Ellipsoid(root + a * pa * 0.85, vec(pu, pa, pn), R), 0.015, group)
         far = root + a * reach
-        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, web, pn * 0.75), R), 0.006, group)
+        # (for the toes no thicker than they are, so they carry on from it without a step)
+        web_t = pn * 0.75 if hand else min(pn * 0.75, r[1] * 1.3)
+        add(f"{name}Web", Ellipsoid(far, vec(pu * 0.95, web, web_t), R), max(0.006, blend * 0.8), group)
         rw, rt = r
 
         def digit(dname, base, d, L, w, t):
@@ -645,7 +650,7 @@ class Week9(Week8):
             d = unit(d - n * 0.12)
             side = unit(np.cross(n, d))
             Rd = np.stack([side, d, unit(np.cross(side, d))], axis=1)
-            add(dname, Ellipsoid(base + d * (L * 0.45), vec(w, L * 0.5, t), Rd), 0.006, group)
+            add(dname, Ellipsoid(base + d * (L * 0.45), vec(w, L * 0.5, t), Rd), blend, group)
             add(f"{dname}Tip", Ellipsoid(base + d * (L - w * 0.85), vec(w * 0.88, w * 0.88, t * 0.92), Rd), 0.004, group)
             return base + d * L, d
 
