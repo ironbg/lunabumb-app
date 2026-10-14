@@ -2039,10 +2039,11 @@ async function fetchModel(base = 'models/fetus.glb') {
 }
 
 /* ---------- The embryo: an early week gets its own sculpt instead of the fetus morph ----------
-   Built offline by model/build_embryo.py: a still skin mesh and the two dark eyes. COLOR_0 holds
+   Built offline by model/build_embryo.py: a still skin mesh and the two dark eyes (from week 10
+   the eyes are shut and the lids are part of the skin, so there are none). COLOR_0 holds
    soft occlusion (rgb) and thickness (a); _DETAIL holds how much the organs inside (heart, liver,
    spine, ribs) block the light through the skin, and where the fine vessels of the head run. */
-const EMBRYO_WEEKS = [8, 9];
+const EMBRYO_WEEKS = [8, 9, 10];
 // the embryo's skin is a light peach, paler than the fetus' (the reference clips): lit, it is
 // almost cream; only where the light comes through it does it go red. The light from all round is
 // stronger than at first, so the side away from the key is not dark either
@@ -2060,7 +2061,7 @@ let embryoActive = false;
 // While the new models are being tested they only show with ?embryo=1 (the app's Test tab);
 // everywhere else the earlier fetus model stays
 const embryoEnabled = new URLSearchParams(location.search).get('embryo') === '1';
-const embryoWeekAt = (ga) => (!embryoEnabled || ga >= 10 ? 0 : ga < 9 ? 8 : 9);
+const embryoWeekAt = (ga) => (!embryoEnabled || ga >= 11 ? 0 : ga < 9 ? 8 : ga < 10 ? 9 : 10);
 
 // where the head's vessels fan out from, and the middle of the skull (from the model's rig)
 const embryoUniforms = { uVesselC: { value: new THREE.Vector3(0.2, 0.3, -0.1) }, uSkullC: { value: new THREE.Vector3(0, 0.27, 0) } };
@@ -2075,7 +2076,7 @@ noOrgans.format = THREE.RedFormat;
 noOrgans.needsUpdate = true;
 Object.assign(embryoUniforms, {
   uOrgans: { value: noOrgans }, uOrgMin: { value: new THREE.Vector3() }, uOrgSize: { value: new THREE.Vector3(1, 1, 1) },
-  uOrgScale: { value: 0 }, uCamObj: { value: new THREE.Vector3() },
+  uOrgScale: { value: 0 }, uOrgStep: { value: 0.026 }, uCamObj: { value: new THREE.Vector3() },
 });
 // The heart shows through the thin skin of the upper chest as a soft, brownish shade that beats: only
 // faintly in week 8, clearly from week 9 (rig.heart: its centre, radii and strength; uHeartBeat follows
@@ -2180,6 +2181,7 @@ function embryoShading(shader) {
       uniform vec3 uOrgMin;
       uniform vec3 uOrgSize;
       uniform float uOrgScale;
+      uniform float uOrgStep;
       uniform vec3 uCamObj;
       // how much of the light coming through the body the organs on the line of sight block
       float eInside = 0.0;
@@ -2278,15 +2280,16 @@ function embryoShading(shader) {
           return max(m, 0.28 * (1.0 - smoothstep(0.0, 0.012, r)));
         }
       #endif
-      // the organs on the line of sight, from the skin a little way into the body
+      // the organs on the line of sight, from the skin a little way into the body (12 steps of
+      // uOrgStep: from week 10 a shorter way, so the spine at the back doesn't show through the chin)
       float eOrgans(vec3 p) {
         vec3 dir = normalize(p - uCamObj);
         float sum = 0.0;
         for (int i = 0; i < 12; i++) {
-          vec3 q = p + dir * (0.026 * (float(i) + 0.5));
+          vec3 q = p + dir * (uOrgStep * (float(i) + 0.5));
           sum += texture(uOrgans, (q - uOrgMin) / uOrgSize).r;
         }
-        return 1.0 - exp(-sum * uOrgScale * 0.026);
+        return 1.0 - exp(-sum * uOrgScale * uOrgStep);
       }
       #ifdef EMBRYO_BONES
         // the same for the long bones of the arms and legs (the second channel), which only the
@@ -2295,10 +2298,10 @@ function embryoShading(shader) {
           vec3 dir = normalize(p - uCamObj);
           vec2 sum = vec2(0.0);
           for (int i = 0; i < 12; i++) {
-            vec3 q = p + dir * (0.026 * (float(i) + 0.5));
+            vec3 q = p + dir * (uOrgStep * (float(i) + 0.5));
             sum += texture(uOrgans, (q - uOrgMin) / uOrgSize).rg;
           }
-          return 1.0 - exp(-sum * uOrgScale * 0.026);
+          return 1.0 - exp(-sum * uOrgScale * uOrgStep);
         }
       #endif
       // the heart under the skin of the chest: how close the line of sight passes to it (in its own
@@ -2496,6 +2499,7 @@ function syncBabyModel(ga, moon) {
     const organs = active ? embryo.models[week].organs : null;
     embryoUniforms.uOrgans.value = organs || noOrgans;
     embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
+    embryoUniforms.uOrgStep.value = embryo.rig?.organs?.step ?? 0.026;
     if (organs) {
       embryoUniforms.uOrgMin.value.fromArray(embryo.rig.organs.min);
       embryoUniforms.uOrgSize.value.fromArray(embryo.rig.organs.size);
@@ -2880,11 +2884,13 @@ function updateCord(now, S) {
   // A tube with frames carried along the curve (parallel transport), starting at the placenta,
   // which never moves: the vessel spirals stay put instead of crawling round as the cord sways
   // (the embryo's in its own units: about a leg's thickness, as in the reference)
-  const radius = embryoActive ? 0.05 * emUnit : 0.022 * S + 0.012;
+  // (from week 10 the rig gives its own, relatively thinner one)
+  const tube = embryoActive ? embryo.rig.cordTube ?? 0.05 : 0;
+  const radius = embryoActive ? tube * emUnit : 0.022 * S + 0.012;
   // the embryo's starts exactly as thick as the end of its root, which it starts inside: the two
   // surfaces then cross only at the root's tip, at the root's own slight taper, so no ragged line
   // shows there (further out it slims to its own thickness)
-  const rootK = embryoActive ? (embryo.rig.cordRadius ?? 0.056) / 0.05 : 1;
+  const rootK = embryoActive ? (embryo.rig.cordRadius ?? 0.056) / tube : 1;
   // its cord is smooth skin: the vessels inside don't show as lumps yet
   const lumps = embryoActive ? 0 : 1;
   cordCurve.updateArcLengths();
