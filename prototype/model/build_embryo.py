@@ -361,14 +361,15 @@ class Week8:
 class Week9(Week8):
     """Carnegie stage 20-21: about 7 weeks after conception, crown-rump length about 18-23 mm."""
 
-    # the eye: height and depth on the side of the face (from the front view of the clip: the eyes are
-    # two thirds of the way out from the middle of the head)
-    EYE = (0.09, 0.26)
+    # the eye: height and depth on the side of the face. Measured from the clip's side view against
+    # its forehead (which our silhouette matches): the eye sits well back from the face, so the nose
+    # and the mouth stand out in front of it like a short muzzle
+    EYE = (0.09, 0.225)
     EYE_SQUASH = 1.0
     DETAILS = ((("ear",), 0.01, 0.6), (("hand", "foot"), 0.01, 0.85),
-               (("nose", "ala", "nostril", "mouth", "lip", "jaw", "eyeSocket"), 0.012, 0.75))
+               (("nose", "nostril", "mouth", "lip", "chin", "eyeSocket"), 0.012, 0.75))
     # (only the lips: in the clip the nose and the skin round the mouth are as pale as the rest)
-    WARM = ("lip",)
+    WARM = ("lip", "lipLower")
     HEAD_OPS = ("cranium", "forebrain", "hindbrain")
     VESSEL_Y = (0.1, 0.2)
     CREASES = ("mouth", "nostril", "earBowl", "eyeSocket")
@@ -377,7 +378,7 @@ class Week9(Week8):
             # (and a soft greyish-brown shade on the lids all round the eye, as in the clip)
             (("eyeSocket",), (0.72, 0.62, 0.62), 0.02))
     EYE_ROUND = True
-    FACE_AO = ("nose", "ala", "lip", "jaw", "cheek", "midface", "eyeSocket")
+    FACE_AO = ("nose", "lip", "chin", "cheek", "midface", "eyeSocket")
     CORD_TONE = True
     LIDS = True
     PALE = 0.25
@@ -393,9 +394,10 @@ class Week9(Week8):
 
     def place_eyes(self):
         for s in (1, -1):
-            # its front just under the skin round the hollow
+            # its front just under the skin round the hollow (a little deeper than the hollow alone
+            # needs: the skin under and behind the eye falls back, and the ball must stay under it)
             r = 0.034
-            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r + 0.002), r))
+            self.eyes.append((self.eye_at[s] - self.eye_dir(s) * (r + 0.006), r))
 
     def eye_colours(self, normals, outward):
         """As in the clip: a broad, light grey iris, a big black pupil that darkens into it softly, a
@@ -440,8 +442,10 @@ class Week9(Week8):
     def build(self):
         add, sub = self.add, self.sub
         ops = self.ops
+        # (the head joins the trunk softly at the back and the sides of the neck, as before, but less
+        # so in front: under the chin and the jaw the two meet in a crease, as in the clip)
         ops.junctions = {
-            "head": (vec(0, -0.04, -0.05), 0.2, 0.07),
+            "head": (vec(0, -0.03, -0.08), 0.17, 0.07),
             "armL": (vec(-0.15, -0.07, -0.01), 0.07, 0.04),
             "armR": (vec(0.15, -0.07, -0.01), 0.07, 0.04),
             "legL": (vec(-0.09, -0.45, 0.05), 0.07, 0.045),
@@ -458,32 +462,28 @@ class Week9(Week8):
         # side of the nose; the forehead in front is the forebrain's)
         add("cranium", Ellipsoid(vec(0, 0.22, 0.07), vec(0.185, 0.23, 0.25)), 0.1, "head")
         add("hindbrain", Ellipsoid(vec(0, 0.09, -0.08), vec(0.16, 0.18, 0.15)), 0.1, "head")
-        add("forebrain", Ellipsoid(vec(0, 0.15, 0.185), vec(0.15, 0.12, 0.148)), 0.08, "head")
-        # the face, small and low under the forehead. The nose is its biggest feature: a broad, soft,
-        # rounded snout below and between the eyes, running up into the brow, with the nostrils
-        # under its tip. Under it the face steps back to a broad upper lip, a small mouth (no wider
-        # than the nose) and a small chin that slopes back into the neck
-        add("midface", Ellipsoid(vec(0, 0.03, 0.15), vec(0.088, 0.066, 0.085)), 0.05, "head")
-        add("lowerFace", Ellipsoid(vec(0, -0.005, 0.11), vec(0.1, 0.06, 0.1)), 0.06, "head")
-        add("noseBridge", Ellipsoid(vec(0, 0.085, 0.256), vec(0.036, 0.042, 0.044)), 0.03, "head")
-        # (its tip level with the bottom of the eyes and its underside turning back sharply to the lip,
-        # as the side view of the clip has it: the lip and the chin sit back under it)
-        add("nose", Ellipsoid(vec(0, 0.053, 0.246), vec(0.06, 0.026, 0.04)), 0.016, "head")
-        add("lip", Ellipsoid(vec(0, -0.005, 0.19), vec(0.05, 0.024, 0.037)), 0.026, "head")
-        add("jaw", Ellipsoid(vec(0, -0.036, 0.152), vec(0.04, 0.025, 0.036)), 0.035, "head")
+        add("forebrain", Ellipsoid(vec(0, 0.15, 0.185), vec(0.14, 0.12, 0.148)), 0.08, "head")
+        # the face, small and low under the forehead, as the close-ups of the clip show it: a short
+        # muzzle of nose and mouth in the middle of the lower face, the cheeks set back on either side
+        # of it. The nose is its biggest feature: a bridge running down from between the eyes into a
+        # broad, round tip a little above the mouth, with the nostrils under the tip. Right under it a short upper lip, a small mouth (no wider
+        # than the nose) with a fuller lower lip, and a small, round chin that sits back under it;
+        # below the chin a crease runs back under the jaw into the neck (the head joins the trunk
+        # there with a smaller blend, see junctions)
+        add("midface", Ellipsoid(vec(0, 0.03, 0.13), vec(0.085, 0.066, 0.085)), 0.03, "head")
+        add("lowerFace", Ellipsoid(vec(0, 0.0, 0.11), vec(0.08, 0.058, 0.1)), 0.05, "head")
+        add("noseBridge", Ellipsoid(vec(0, 0.06, 0.24), vec(0.03, 0.032, 0.04)), 0.02, "head")
+        add("nose", Ellipsoid(vec(0, 0.012, 0.19), vec(0.058, 0.036, 0.051)), 0.01, "head")
+        add("lip", Ellipsoid(vec(0, -0.029, 0.18), vec(0.04, 0.013, 0.03)), 0.014, "head")
+        add("lipLower", Ellipsoid(vec(0, -0.048, 0.167), vec(0.028, 0.011, 0.03)), 0.01, "head")
+        add("chin", Ellipsoid(vec(0, -0.07, 0.146), vec(0.034, 0.02, 0.03)), 0.014, "head")
         for s, side in ((1, "R"), (-1, "L")):
-            add(f"cheek{side}", Ellipsoid(vec(0.065 * s, 0.045, 0.19), vec(0.045, 0.045, 0.055)), 0.06, "head")
-        # the wings of the nose: a small round swelling low on each side of it, a soft groove between
-        # it and the cheek (from the front the nose is a broad, rounded button, as in the clip)
-        az = self.surface_z(0.04, 0.036)
+            add(f"cheek{side}", Ellipsoid(vec(0.075 * s, 0.035, 0.145), vec(0.04, 0.04, 0.045)), 0.035, "head")
+        # the mouth and the nostrils cut just under the skin where it is, so they stay shallow
+        sub("mouth", Ellipsoid(vec(0, -0.039, self.surface_z(0.0, -0.039) - 0.004), vec(0.022, 0.0025, 0.007)), 0.004, "head")
+        nz = self.surface_z(0.022, -0.014)
         for s, side in ((1, "R"), (-1, "L")):
-            add(f"ala{side}", Ellipsoid(vec(0.04 * s, 0.036, az - 0.011), vec(0.016, 0.012, 0.0135)), 0.008, "head")
-        # the mouth and the nostrils cut just under the skin where it is, so they stay shallow; the
-        # nostrils well apart, low on the front of the wings
-        sub("mouth", Ellipsoid(vec(0, -0.023, self.surface_z(0.0, -0.023) - 0.004), vec(0.022, 0.0025, 0.007)), 0.004, "head")
-        nz = self.surface_z(0.034, 0.029)
-        for s, side in ((1, "R"), (-1, "L")):
-            sub(f"nostril{side}", Ellipsoid(vec(0.034 * s, 0.029, nz - 0.001), vec(0.0055, 0.003, 0.0035)), 0.004, "head")
+            sub(f"nostril{side}", Ellipsoid(vec(0.022 * s, -0.014, nz - 0.002), vec(0.005, 0.0028, 0.0035)), 0.003, "head")
 
         # ---- trunk: an upright, egg-shaped body, a smooth curve down the back; the liver makes the
         # belly bulge under the arms and the gut still loops into the base of the cord
@@ -499,6 +499,15 @@ class Week9(Week8):
         cord_a, cord_b = vec(0, -0.3, 0.17), vec(0, -0.31, 0.3)
         add("cordRoot", RoundCone(cord_a, cord_b, 0.07, 0.052), 0.05, "torso")
         self.cord_r = 0.052
+        # the neck crease: a soft groove in the trunk just under the jaw, along the line where the
+        # head meets it (found from the two surfaces), deepest under the chin and fading out below
+        # the ears; the jaw overhangs it a little, as in the clip
+        seam = [(0.0, -0.088, 0.148, 0.005), (0.032, -0.071, 0.13, 0.0075), (0.054, -0.047, 0.095, 0.0078),
+                (0.073, -0.03, 0.072, 0.0072), (0.09, -0.014, 0.05, 0.0062), (0.109, -0.003, 0.028, 0.005),
+                (0.128, 0.006, 0.001, 0.003)]
+        for s in (1, -1):
+            pts = [(vec(x * s, y, z), r) for x, y, z, r in seam]
+            sub(f"neckCrease{'R' if s > 0 else 'L'}", Chain([RoundCone(a[0], b[0], a[1], b[1]) for a, b in zip(pts[:-1], pts[1:])]), 0.01, "torso")
 
         # ---- the eyes: set into the side of the face, looking out sideways and forwards, each in an
         # almond-shaped opening (the eye itself is placed in place_eyes())
@@ -507,7 +516,9 @@ class Week9(Week8):
         sx = self.surface_x(y, z)
         self.eye_at = {1: vec(sx, y, z), -1: vec(-sx, y, z)}
         n = unit(gradient(ops, self.eye_at[1][None], eps=0.002)[0])
-        n = unit(n + vec(0, 0.12, 0.42))
+        # (turned well forwards and a little up from the skin there: from the front of the face the
+        # eyes are seen as round, as in the clip, not as slits at its sides)
+        n = unit(n + vec(0, 0.22, 0.65))
         self.eye_out = {1: n, -1: n * vec(-1, 1, 1)}
         for s, side in ((1, "R"), (-1, "L")):
             out = self.eye_dir(s)
@@ -527,7 +538,7 @@ class Week9(Week8):
         # ---- the outer ear: a small oval rim, taller than it is wide and leaning back a little at the
         # top, level with the eye and well behind it. Its hollow is set forwards, so the rim is thick
         # and raised behind and over it and thin in front, where it opens (as in the clip)
-        ear_y, ear_z = 0.125, 0.07
+        ear_y, ear_z = 0.125, 0.035
         ear_x = self.surface_x(ear_y, ear_z)
         lean = -0.17
         Rx = np.array([[1, 0, 0], [0, math.cos(lean), -math.sin(lean)], [0, math.sin(lean), math.cos(lean)]])
@@ -537,7 +548,7 @@ class Week9(Week8):
             sub(f"earBowl{side}", Ellipsoid(c + vec(0.011 * s, -0.002, 0.007), vec(0.008, 0.027, 0.0125), Rx), 0.004, "head")
         self.anchors["ear"] = vec(ear_x + 0.02, ear_y, ear_z)
         # (the vessels of the head fan out from a point well above the ear and a little in front of it)
-        vy, vz = 0.27, 0.105
+        vy, vz = 0.27, 0.07
         self.anchors["vessels"] = vec(self.surface_x(vy, vz), vy, vz)
         self.anchors["skull"] = vec(0, 0.2, 0.08)
 
