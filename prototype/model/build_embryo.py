@@ -778,7 +778,7 @@ class Week10(Week9):
     # as the clip lights it: a strong key light (on the embryo's left, the side of the hand in front
     # of the chest) and little light from all round, so the lit side is a pale, warm peach and the
     # side away from the light glows a deep orange red through the body; a matte skin
-    LOOK = {"key": 2.3, "hemi": 0.45, "indirect": 0.4, "rim": 1.0, "through": [4.2, 12.0, 18.0], "tint": [1.06, 0.87, 0.76],
+    LOOK = {"key": 1.9, "hemi": 0.5, "indirect": 0.45, "rim": 1.0, "through": [4.2, 12.0, 18.0], "tint": [1.07, 0.86, 0.74],
             "roughness": 0.78, "side": -1}
 
     def place_eyes(self):
