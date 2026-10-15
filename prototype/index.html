@@ -2081,6 +2081,14 @@ Object.assign(embryoUniforms, {
 // The heart shows through the thin skin of the upper chest as a soft, brownish shade that beats: only
 // faintly in week 8, clearly from week 9 (rig.heart: its centre, radii and strength; uHeartBeat follows
 // the heart rate, 0 between beats)
+// how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
+// blue and green are soaked up first, so what comes through thick parts is deep red. With the light
+// from all round (EMBRYO_AMBIENT) a week's rig may set its own (rig.look, from week 10)
+Object.assign(embryoUniforms, {
+  uThroughSigma: { value: new THREE.Vector3(2.3, 6.8, 8.6) }, uEmbIndirect: { value: EMBRYO_AMBIENT.indirect },
+});
+const EMBRYO_THROUGH = embryoUniforms.uThroughSigma.value.clone();
+const embryoLookTint = new THREE.Color();
 Object.assign(embryoUniforms, {
   uEmbHeartC: { value: new THREE.Vector3() }, uEmbHeartR: { value: new THREE.Vector3() }, uHeartBeat: { value: 0 },
   uHeartAmount: { value: 0 },
@@ -2132,9 +2140,6 @@ function embryoShading(shader) {
   shader.uniforms.uBoneTint = { value: new THREE.Color('#6b5257') };
   // (what the heart's shade multiplies the skin by: a little darker, browner and less blue, as in the clip)
   shader.uniforms.uHeartTint = { value: new THREE.Color().setRGB(0.72, 0.6, 0.54) };
-  // how fast light dies away through the body, per colour (Beer-Lambert over the baked thickness):
-  // blue and green are soaked up first, so what comes through thick parts is deep red
-  shader.uniforms.uThroughSigma = { value: new THREE.Vector3(2.3, 6.8, 8.6) };
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', `#include <common>
       attribute float _vessel;
@@ -2186,6 +2191,7 @@ function embryoShading(shader) {
       // how much of the light coming through the body the organs on the line of sight block
       float eInside = 0.0;
       uniform vec3 uThroughSigma;
+      uniform float uEmbIndirect;
       uniform vec3 uVesselC;
       uniform vec3 uSkullC;
       // value noise (an arithmetic hash: sin() of big numbers loses precision on phones)
@@ -2391,7 +2397,7 @@ function embryoShading(shader) {
     // the light from all round (EMBRYO_AMBIENT: as much as the fetus gets, so the side away from the key
     // stays light, as in the clips)
     .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-      reflectedLight.indirectDiffuse *= ${EMBRYO_AMBIENT.indirect.toFixed(3)};
+      reflectedLight.indirectDiffuse *= uEmbIndirect;
       reflectedLight.indirectSpecular *= 0.6;`)
     // The whole embryo lets light through, not only its thin edges. Seen from the side away from
     // the light it glows softly: deep red where the body is thick, paler where it is thin (the hands
@@ -2496,6 +2502,12 @@ function syncBabyModel(ga, moon) {
     embryoUniforms.uEmbHeartR.value.fromArray(heart ? heart.radii : [0, 0, 0]);
     embryoUniforms.uHeartAmount.value = heart ? heart.strength ?? 1 : 0;
     embryoUniforms.uPaleAmount.value = embryo.rig?.pale ?? 0.82;
+    // (a week's own look, if its rig has one: how much the light from all round, and how fast the
+    // light through the body dies away per colour)
+    const look = embryo.rig?.look;
+    embryoUniforms.uEmbIndirect.value = look?.indirect ?? EMBRYO_AMBIENT.indirect;
+    if (look?.through) embryoUniforms.uThroughSigma.value.fromArray(look.through);
+    else embryoUniforms.uThroughSigma.value.copy(EMBRYO_THROUGH);
     const organs = active ? embryo.models[week].organs : null;
     embryoUniforms.uOrgans.value = organs || noOrgans;
     embryoUniforms.uOrgScale.value = organs ? embryo.rig.organs.scale : 0;
@@ -4179,9 +4191,9 @@ function viewDirection(view, anchor, out) {
     const side = viewTmp.crossVectors(out, yAxis).normalize();
     if (side.dot(viewTmp2.subVectors(camera.position, anchor)) < 0) side.negate();
     if (embryoActive) {
-      // from the embryo's right, the side the light falls on, turned a little towards its face (three
+      // from the side the light falls on (the embryo's right, or its left where the rig says so), turned a little towards its face (three
       // quarters from the front), so the face, the hands and the cord are on the left of the picture
-      side.set(1, 0, 0).applyQuaternion(embryo.group.getWorldQuaternion(viewQuat));
+      side.set(embryo.rig.look?.side < 0 ? -1 : 1, 0, 0).applyQuaternion(embryo.group.getWorldQuaternion(viewQuat));
       side.addScaledVector(out, -side.dot(out)).normalize();
       return out.multiplyScalar(0.55).addScaledVector(side, 0.83).addScaledVector(yAxis, 0.06).normalize();
     }
@@ -4473,10 +4485,16 @@ function placeLights(m) {
     embryo.group.getWorldQuaternion(embryoQuat);
     keyLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_KEY).applyQuaternion(embryoQuat), 6);
     backLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_RIM).applyQuaternion(embryoQuat), 6);
-    keyLight.intensity = lights.key * 1.2;
-    backLight.intensity = lights.back * 0.08;
+    const look = embryo.rig?.look;
+    // (a week's rig may put the light on the embryo's other side, as its clip has it: look.side -1)
+    if (look?.side < 0) {
+      keyLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_KEY).setX(-EMBRYO_KEY.x).applyQuaternion(embryoQuat), 6);
+      backLight.position.copy(t).addScaledVector(lightDir.copy(EMBRYO_RIM).setX(-EMBRYO_RIM.x).applyQuaternion(embryoQuat), 6);
+    }
+    keyLight.intensity = lights.key * 1.2 * (look?.key ?? 1);
+    backLight.intensity = lights.back * 0.08 * (look?.rim ?? 1);
     headLight.intensity = lights.head * 0.15;
-    hemi.intensity = lights.hemi * EMBRYO_AMBIENT.hemi;
+    hemi.intensity = lights.hemi * EMBRYO_AMBIENT.hemi * (look?.hemi ?? 1);
     return;
   }
   keyLight.position.copy(t).addScaledVector(camBack, 4).addScaledVector(camUp, 5).addScaledVector(camRight, 2.5);
@@ -4610,6 +4628,9 @@ const frameLoop = (timestamp) => {
     for (const mat of [babyMaterial, gltfBaby.material, embryo.material]) if (mat) mat.color.copy(babyBaseColor).multiply(skinMul);
     if (embryoActive) {
       embryo.material.color.multiply(EMBRYO_TINT);
+      if (embryo.rig?.look?.tint) embryo.material.color.multiply(embryoLookTint.fromArray(embryo.rig.look.tint));
+      // (and, from week 10, a more matte skin, as in the clip: no shiny highlight under the strong key light)
+      embryo.material.roughness = embryo.boneMaterial.roughness = Math.max(m.baby.roughness, 0.62, embryo.rig?.look?.roughness ?? 0);
       embryo.cordMaterial.color.copy(embryo.material.color);
       embryo.boneMaterial.color.copy(embryo.material.color);
       embryo.lidMaterial.color.copy(babyBaseColor).multiply(skinMul).multiply(EMBRYO_LID_SHADE);
