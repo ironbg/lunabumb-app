@@ -2871,6 +2871,14 @@ function pushCordOut(radius, S) {
 // a fixed direction across the cord where it leaves the placenta
 const PLACENTA_REF = new THREE.Vector3(1, 0, 0).addScaledVector(placentaNormal, -placentaNormal.x).normalize();
 
+// The embryo's cord leaves the belly forwards, swings out to one side and rises well beside the
+// body: seen from the front it crosses only the lower body and leaves the face and the hands clear
+// (as in the clips). It keeps to the side away from the camera, and drifts across when the camera
+// comes round to its side: 1 is the embryo's own right, -1 its left
+const cordSwing = { now: 1, to: 1, at: 0, set: false };
+const cordSide = new THREE.Vector3();
+const cordFwd = new THREE.Vector3();
+
 function updateCord(now, S) {
   const pts = cordCurve.points;
   babyAnchor('navel', navel);
@@ -2886,6 +2894,22 @@ function updateCord(now, S) {
   pts[4].copy(cordEnd).addScaledVector(placentaNormal, 0.06);
   pts[3].copy(cordEnd).addScaledVector(placentaNormal, -0.7);
   pts[2].lerpVectors(pts[1], pts[3], 0.5);
+  if (embryoActive) {
+    embryo.group.getWorldQuaternion(embryoQuat);
+    cordSide.set(1, 0, 0).applyQuaternion(embryoQuat);
+    cordFwd.set(0, 0, 1).applyQuaternion(embryoQuat);
+    // the camera's bearing round the embryo, from straight in front of it; nearly in front or
+    // behind, the cord stays where it is
+    cordTmp[0].copy(camera.position).sub(navel);
+    const bearing = Math.atan2(cordTmp[0].dot(cordSide), cordTmp[0].dot(cordFwd));
+    if (Math.abs(bearing) > 0.17 && Math.abs(bearing) < Math.PI - 0.17) cordSwing.to = bearing > 0 ? -1 : 1;
+    const step = cordSwing.set && now > cordSwing.at ? Math.min((now - cordSwing.at) * 1.6, 1) : 1;
+    cordSwing.now += (cordSwing.to - cordSwing.now) * step;
+    cordSwing.at = now;
+    cordSwing.set = true;
+    pts[2].copy(pts[1]).addScaledVector(cordSide, cordSwing.now * 0.7 * S);
+    pts[2].y = pts[1].y + 0.4 * S;
+  }
   pts[2].x += Math.sin(now * 0.7) * 0.25;
   pts[2].y += Math.cos(now * 0.5) * 0.18;
   pts[2].z += Math.sin(now * 0.6 + 1.0) * 0.25;
