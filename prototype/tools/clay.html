@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#20242c}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script></head>
+<body><canvas id="c"></canvas><script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 700), H = +(q.get('h') || 700);
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); renderer.setPixelRatio(1);
+const scene = new THREE.Scene();
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 50);
+const rigL = new THREE.Group(); scene.add(rigL);
+const key = new THREE.DirectionalLight(0xffffff, 2.3), fill = new THREE.DirectionalLight(0xbcd0ff, 0.55), rim = new THREE.DirectionalLight(0xffffff, 0.9);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x30343c, 0.55);
+scene.add(hemi); rigL.add(key, fill, rim, key.target, fill.target, rim.target);
+const gltf = await new GLTFLoader().loadAsync(q.get('glb'));
+const meshes = [];
+gltf.scene.traverse((o) => { if (o.isMesh) meshes.push(o); });
+scene.add(gltf.scene);
+const mats = {};
+function setMode(mode) {
+  for (const m of meshes) {
+    const eye = /Eyes/.test(m.name), lid = /Lids/.test(m.name);
+    const col = eye ? 0x3a3038 : lid ? 0xb9a8a0 : 0xcfc7bf;
+    if (mode === 'color') m.material = new THREE.MeshBasicMaterial({ vertexColors: true });
+    else if (mode === 'normal') m.material = new THREE.MeshNormalMaterial();
+    else if (mode === 'flat') m.material = new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, flatShading: true });
+    else if (mode === 'wire') m.material = new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, wireframe: true });
+    else if (mode === 'attr') m.material = mats.attr;
+    else m.material = new THREE.MeshStandardMaterial({ color: col, roughness: 0.62, metalness: 0.0 });
+  }
+}
+window.info = () => meshes.map((m) => { m.geometry.computeBoundingBox(); const b = m.geometry.boundingBox; return { name: m.name, min: b.min.toArray(), max: b.max.toArray(), attrs: Object.keys(m.geometry.attributes) }; });
+window.shot = ({ az = 0, el = 0, mode = 'clay', cx = 0, cy = 0, cz = 0, half = 0.62, attr = null, light = 'cam' }) => {
+  if (attr) {
+    mats.attr = new THREE.ShaderMaterial({ vertexShader: `attribute float ${attr}; varying float v; void main(){ v=${attr}; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+      fragmentShader: 'varying float v; void main(){ gl_FragColor=vec4(vec3(v),1.); }' });
+    mode = 'attr';
+  }
+  setMode(mode);
+  const a = az * Math.PI / 180, e = el * Math.PI / 180;
+  const dir = new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e));
+  const c = new THREE.Vector3(cx, cy, cz);
+  cam.position.copy(c).addScaledVector(dir, 8); cam.up.set(0, 1, 0); if (Math.abs(el) > 89) cam.up.set(0, 0, el > 0 ? -1 : 1);
+  cam.lookAt(c);
+  cam.left = -half * W / H; cam.right = half * W / H; cam.top = half; cam.bottom = -half; cam.updateProjectionMatrix();
+  cam.updateMatrixWorld();
+  // lights fixed to the camera: key upper left, fill right, rim from behind
+  const R = new THREE.Vector3(), U = new THREE.Vector3(), B = new THREE.Vector3();
+  cam.matrixWorld.extractBasis(R, U, B);
+  const put = (L, r, u, b) => { L.position.copy(c).addScaledVector(R, r).addScaledVector(U, u).addScaledVector(B, b); L.target.position.copy(c); L.target.updateMatrixWorld(); };
+  put(key, -3, 4, 5); put(fill, 5, 0.5, 3); put(rim, 2, 3, -6);
+  renderer.render(scene, cam);
+  return canvas.toDataURL('image/png');
+};
+window.ready = true;
+</script></body></html>

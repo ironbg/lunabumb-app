@@ -44,12 +44,15 @@ Week 10 (Week10) is Carnegie stage 23, the end of the embryonic period, about 8 
 conception, crown-rump length about 27-35 mm: a very large, round head sitting low between the
 shoulders, its face small and low; the eyes shut under fused lids (no eye meshes: a large, smooth lid
 with the line where it has closed); a small flat nose, lips, a small chin; a C-shaped outer ear far
-back and low on the head; a narrow neck and sloping shoulders; arms hanging to elbows low and far
-back, long forearms, big hands with five long separate fingers (one at the mouth, the other in front
-of the chest); legs drawn up with the knees high, the shins down to feet low in front of the bottom,
-crossed at the ankles; a full, low bottom and no tail. Measured on the clip's own turn (its camera
-fitted to the silhouettes all round), in the exact front, side and back views. Its rig carries its
-own look for the page (rig.look).
+back and low on the head; a narrow neck and sloping shoulders; arms of even length hanging beside the
+chest to elbows low and back, hands with a palm, a thumb and four jointed fingers (one resting under
+the chin, the other in front of the chest); legs drawn up, the thighs lying against the lower belly,
+the knees high, the shins down to feet with a heel and five toes low in front of the bottom; a full,
+low bottom and no tail. The outline of the head and body and where the limbs are were measured on
+the clip's own turn (its camera fitted to the silhouettes all round), in the exact front, side and
+back views. The trunk is one body of smooth sections (Loft), narrower than the whole silhouette
+where the arms and thighs lie beside it, so the limbs read as limbs. Its rig carries its own look
+for the page (rig.look).
 
 Run (needs Blender's `bpy` module, numpy, scipy and scikit-image):
   python build_embryo.py --week 8 --out ../models/embryo-w08.glb --rig ../models/embryo-w08.json
@@ -76,6 +79,84 @@ def frame(normal, up):
     v = unit(v)
     u = np.cross(v, n)
     return np.stack([u, v, n], axis=1)
+
+
+class Loft:
+    """A body of elliptical sections stacked along y: its back and its front (z) and its half width
+    (x) at each height are smooth curves through the given rows, and it closes to a rounded end at
+    the first and the last row (which give only the height and the middle of the section there).
+    So the outline from the side and from the front is set row by row, and the surface in between
+    has no bumps where separate shapes would meet."""
+    kind = "loft"
+
+    def __init__(self, rows, cap_bottom=0.15, cap_top=0.2, n=4000):
+        from scipy.interpolate import CubicSpline
+        rows = sorted(rows)   # (y, back z, front z, half width)
+        y = np.array([r[0] for r in rows], float)
+        self.y0, self.y1 = float(y[0]), float(y[-1])
+        self.caps = (cap_bottom, cap_top)
+        hw = np.array([r[3] for r in rows], float)
+        hd = np.array([(r[2] - r[1]) / 2 for r in rows], float)
+        hw[0] = hw[-1] = hd[0] = hd[-1] = 0.0
+        # the squares of the half width and half depth are the smooth curves: they run through
+        # zero at the ends, so the ends are round (not pointed) and need no separate cap
+        ys = np.linspace(self.y0, self.y1, n + 1)
+        ga = np.maximum(CubicSpline(y, hw * hw)(ys), 0.0)
+        gb = np.maximum(CubicSpline(y, hd * hd)(ys), 0.0)
+        cz = CubicSpline(y, [(r[1] + r[2]) / 2 for r in rows], bc_type="clamped")(ys)
+        # for the distance each end is treated as half an ellipsoid, a tall one (see sdf): the
+        # sections are kept as the ellipsoid's own, times a factor that is smooth all the way
+        ub = np.clip((self.y0 + cap_bottom - ys) / cap_bottom, 0.0, 1.0)
+        ut = np.clip((ys - (self.y1 - cap_top)) / cap_top, 0.0, 1.0)
+        f2 = 1.0 - ub * ub - ut * ut
+        f2[0], f2[-1] = f2[1], f2[-2]
+        A, B = np.sqrt(ga / f2), np.sqrt(gb / f2)
+        A[0], A[-1], B[0], B[-1] = 2 * A[1] - A[2], 2 * A[-2] - A[-3], 2 * B[1] - B[2], 2 * B[-2] - B[-3]
+        self.ys, self.h = ys, float(ys[1] - ys[0])
+        self.tab = [(v, np.gradient(v, self.h)) for v in (A, B, cz)]
+        self.lo = np.array([-hw.max(), self.y0, min(r[1] for r in rows)]) - 0.02
+        self.hi = np.array([hw.max(), self.y1, max(r[2] for r in rows)]) + 0.02
+        self.r_min = float(min(hw[1:-1].min(), hd[1:-1].min()))
+
+    def _at(self, y):
+        """The sections' half width, half depth and middle at the heights y, and their slopes;
+        beyond the ends they carry on a little way and level off (smoothly, so the distance has
+        no step anywhere)."""
+        yc = np.clip(y, self.y0, self.y1)
+        t = (y - yc) / 0.05
+        ease, slope = 0.05 * np.tanh(t), 1.0 / np.cosh(np.clip(t, -20.0, 20.0)) ** 2
+        out = []
+        for v, dv in self.tab:
+            d = np.interp(yc, self.ys, dv)
+            out.append((np.interp(yc, self.ys, v) + d * ease, d * slope))
+        return out
+
+    def sdf(self, p):
+        """As for an ellipsoid (the implicit value over the length of its gradient), with the
+        sections' own change along y in the gradient; each end closes like half an ellipsoid."""
+        x, y, z = p[:, 0], p[:, 1], p[:, 2]
+        (a, da), (b, db), (c, dc) = self._at(y)
+        a, b = np.maximum(a, 1e-3), np.maximum(b, 1e-3)
+        hb, ht = self.caps
+        ub = np.maximum((self.y0 + hb - y) / hb, 0.0)
+        ut = np.maximum((y - (self.y1 - ht)) / ht, 0.0)
+        qx, qz = x / a, (z - c) / b
+        k0 = np.sqrt(qx * qx + qz * qz + ub * ub + ut * ut)
+        gy = qx * (-x * da / (a * a)) + qz * (-dc / b - (z - c) * db / (b * b)) - ub / hb + ut / ht
+        k1 = np.sqrt((qx / a) ** 2 + (qz / b) ** 2 + gy * gy)
+        return k0 * (k0 - 1.0) / np.maximum(k1, 1e-9)
+
+    def aabb(self):
+        return self.lo, self.hi
+
+    def size(self):
+        return self.r_min
+
+
+def bend(d, m, angle):
+    """Turn the direction d (and its own 'up', m) by the angle towards -m."""
+    c, s = math.cos(angle), math.sin(angle)
+    return d * c - m * s, m * c + d * s
 
 
 class Week8:
@@ -781,8 +862,136 @@ class Week10(Week9):
     LOOK = {"key": 1.9, "hemi": 0.5, "indirect": 0.45, "rim": 1.0, "through": [4.2, 12.0, 18.0], "tint": [1.07, 0.86, 0.74],
             "roughness": 0.78, "side": -1}
 
+    # the trunk row by row: height, back (z), front (z), half width (see Loft: the first and the
+    # last row are where it ends)
+    TRUNK = ((0.045, -0.3, -0.18, 0.0), (0.0, -0.36, -0.125, 0.12), (-0.05, -0.39, -0.083, 0.153), (-0.1, -0.394, -0.06, 0.164), (-0.15, -0.39, -0.035, 0.16),
+             (-0.2, -0.372, 0.0, 0.16), (-0.25, -0.35, 0.038, 0.165), (-0.3, -0.332, 0.052, 0.168),
+             (-0.35, -0.315, 0.048, 0.162), (-0.4, -0.288, 0.045, 0.148), (-0.45, -0.256, 0.04, 0.132),
+             (-0.5, -0.215, 0.018, 0.115), (-0.548, -0.16, -0.04, 0.0))
+    # the lengths of the upper arm and the forearm
+    UPPER_ARM, FOREARM = 0.19, 0.185
+
     def place_eyes(self):
         pass
+
+    @staticmethod
+    def elbow(sh, wr, s, out, upper, fore):
+        """Where the elbow is: upper from the shoulder and fore from the wrist, hanging down and
+        held out to its own side (s) by the angle out, in degrees."""
+        ax = wr - sh
+        reach = float(np.linalg.norm(ax))
+        ax = ax / reach
+        along = (upper * upper - fore * fore + reach * reach) / (2 * reach)
+        r = math.sqrt(max(upper * upper - along * along, 1e-8))
+        down = unit(vec(0, -1, 0) - ax * (vec(0, -1, 0) @ ax))
+        side = unit(np.cross(ax, down))
+        if side[0] * s < 0:
+            side = -side
+        a = math.radians(out)
+        return sh + ax * along + (down * math.cos(a) + side * math.sin(a)) * r
+
+    def arm(self, add, side, sh, el, wr):
+        """An arm from the shoulder to the wrist: a round shoulder, an upper arm that slims to the
+        elbow, and a forearm fullest just below the elbow that tapers to the wrist."""
+        arm = f"arm{side}"
+        u, f = el - sh, wr - el
+        add(f"shoulder{side}", Ellipsoid(sh + u * 0.06, vec(0.04, 0.043, 0.043)), 0.02, arm)
+        pts = [sh, sh + u * 0.4, sh + u * 0.8, el, el + f * 0.22, el + f * 0.6, wr]
+        radii = [0.036, 0.0335, 0.029, 0.0275, 0.0285, 0.0235, 0.0185]
+        add(f"armBud{side}", Chain([RoundCone(a, b, ra, rb) for a, b, ra, rb in zip(pts[:-1], pts[1:], radii[:-1], radii[1:])]), 0.012, arm)
+
+    def hand(self, add, name, group, wrist, axis, back, first, curl=1.0, spread=1.0, size=1.0):
+        """A hand: a broad palm with the pads of the thumb and the little finger, four fingers of
+        three joints each, a little curled and fanned, and a short thumb set off from the side of
+        the palm. back points out of the back of the hand, first towards the thumb's side. Returns
+        the tip of the middle finger."""
+        a = unit(np.asarray(axis, float))
+        n = np.asarray(back, float)
+        n = unit(n - a * (n @ a))
+        u = unit(np.cross(n, a))
+        if u @ first < 0:
+            u = -u
+        R = np.stack([u, a, n], axis=1)
+
+        def P(su, sa, sn):
+            return wrist + (u * su + a * sa + n * sn) * size
+
+        def E(c, r):
+            return Ellipsoid(c, vec(*r) * size, R)
+        add(f"{name}Wrist", E(P(0, 0.012, 0), (0.021, 0.022, 0.0135)), 0.01, group)
+        add(f"{name}Palm", E(P(-0.001, 0.036, 0.0005), (0.0305, 0.027, 0.0118)), 0.012, group)
+        add(f"{name}Thenar", E(P(0.019, 0.022, -0.005), (0.013, 0.018, 0.0095)), 0.008, group)
+        add(f"{name}Hypothenar", E(P(-0.021, 0.027, -0.004), (0.0105, 0.021, 0.0085)), 0.008, group)
+        # (side, where it leaves the palm, length, thickness, fan in degrees)
+        fingers = ((0.0215, 0.056, 0.046, 0.0080, 7.0), (0.0073, 0.06, 0.052, 0.0082, 1.5),
+                   (-0.0068, 0.058, 0.048, 0.0078, -4.0), (-0.0198, 0.052, 0.038, 0.0069, -11.0))
+        tips = []
+        for i, (su, sa, L, r, fan) in enumerate(fingers):
+            fan = math.radians(fan * spread)
+            d, m = math.cos(fan) * a + math.sin(fan) * u, n
+            p = P(su, sa - 0.006, -0.001)
+            cones = []
+            # (the three joints: each bends a little more than the last, the little finger most)
+            for k, (part, ang, taper) in enumerate(((0.45, 12.0, 0.95), (0.31, 26.0, 0.88), (0.24, 16.0, 0.8))):
+                d, m = bend(d, m, math.radians(ang * curl * (1.0 + 0.12 * i)))
+                q = p + d * (L * part + (0.006 if k == 0 else 0.0)) * size
+                r0 = r * (1.0 if k == 0 else (0.95, 0.88)[k - 1])
+                cones.append(RoundCone(p, q, r0 * size, r * taper * size))
+                p = q
+            add(f"{name}Digit{i}", Chain(cones), 0.0045, group)
+            tips.append(p)
+        d, m = unit(0.6 * u + 0.76 * a - 0.25 * n), unit(n + 0.3 * u)
+        m = unit(m - d * (m @ d))
+        p = P(0.024, 0.014, -0.004)
+        cones = []
+        for part, ang, r0, r1 in ((0.02, 6.0, 0.0092, 0.0085), (0.016, 18.0, 0.0085, 0.0074)):
+            d, m = bend(d, m, math.radians(ang * curl))
+            q = p + d * part * size
+            cones.append(RoundCone(p, q, r0 * size, r1 * size))
+            p = q
+        add(f"{name}Thumb", Chain(cones), 0.006, group)
+        return tips[1]
+
+    def leg(self, add, side, hip, kn, an):
+        """A leg from the hip to the ankle: a full thigh that slims to the knee, a calf fullest
+        below the knee on the back of the shin, and a slim ankle."""
+        leg = f"leg{side}"
+        t, sh = kn - hip, an - kn
+        calf = unit(np.cross(np.cross(sh, t), sh))
+        pts = [hip, hip + t * 0.35, hip + t * 0.75, kn, kn + sh * 0.3 + calf * 0.004, kn + sh * 0.7 + calf * 0.002, an]
+        radii = [0.055, 0.053, 0.0445, 0.038, 0.0355, 0.0275, 0.0225]
+        add(f"legBud{side}", Chain([RoundCone(a, b, ra, rb) for a, b, ra, rb in zip(pts[:-1], pts[1:], radii[:-1], radii[1:])]), 0.012, leg)
+
+    def foot(self, add, name, group, ankle, axis, dorsum, first, size=0.86):
+        """A foot: a round heel behind and below the ankle, the instep sloping down from the ankle
+        to the ball of the foot, and five toes in an arc, the big toe the thickest. dorsum points
+        out of the top of the foot, first towards the big toe's side. Returns the tip of the
+        middle toe."""
+        a = unit(np.asarray(axis, float))
+        n = np.asarray(dorsum, float)
+        n = unit(n - a * (n @ a))
+        u = unit(np.cross(n, a))
+        if u @ first < 0:
+            u = -u
+        R = np.stack([u, a, n], axis=1)
+
+        def P(su, sa, sn):
+            return ankle + (u * su + a * sa + n * sn) * size
+        add(f"{name}Heel", Ellipsoid(P(0, -0.012, -0.013), vec(0.0165, 0.019, 0.0165) * size, R), 0.012, group)
+        add(f"{name}Instep", RoundCone(P(0, 0.0, 0.0), P(0.001, 0.042, -0.008), 0.0215 * size, 0.0165 * size), 0.012, group)
+        add(f"{name}Sole", Ellipsoid(P(0.001, 0.046, -0.0125), vec(0.0265, 0.031, 0.0105) * size, R), 0.012, group)
+        # (side, where it leaves the foot, length, thickness, fan in degrees)
+        toes = ((0.0178, 0.07, 0.019, 0.0088, 4.0), (0.0052, 0.075, 0.016, 0.0068, 1.0), (-0.0052, 0.074, 0.0145, 0.0063, -3.0),
+                (-0.0146, 0.07, 0.013, 0.0059, -8.0), (-0.0228, 0.063, 0.0115, 0.0055, -14.0))
+        tips = []
+        for i, (su, sa, L, r, fan) in enumerate(toes):
+            fan = math.radians(fan)
+            d, m = bend(math.cos(fan) * a + math.sin(fan) * u, n, math.radians(14.0))
+            p = P(su, sa - 0.006, -0.0125)
+            q = p + d * (L + 0.006) * size
+            add(f"{name}Digit{i}", RoundCone(p, q, r * size, r * 0.92 * size), 0.0045, group)
+            tips.append(q)
+        return tips[2]
 
     def skin_along(self, c, d, hi=0.45):
         """How far from c along the direction d the skin is (the sculpt so far; c inside it)."""
@@ -805,7 +1014,7 @@ class Week10(Week9):
         # and the sculpt matched to them row by row; the face, ears and limbs were read off the same
         # frames on a model-unit grid
         ops.junctions = {
-            "head": (vec(0, -0.02, -0.33), 0.18, 0.07),
+            "head": (vec(0, 0.0, -0.33), 0.2, 0.085),
             "armL": (vec(-0.16, -0.06, -0.28), 0.07, 0.035),
             "armR": (vec(0.16, -0.06, -0.29), 0.07, 0.035),
             "legL": (vec(-0.08, -0.43, -0.1), 0.075, 0.04),
@@ -825,10 +1034,10 @@ class Week10(Week9):
         # the face, low and small: eyes at a fifth of the head's height above the chin, a short,
         # narrow lower face (no full cheeks), a small nose, a small mouth and a little chin that sits
         # back; under it the jaw runs back nearly level into the neck
-        add("midface", Ellipsoid(vec(0, 0.05, -0.06), vec(0.085, 0.07, 0.09)), 0.04, "head")
-        add("lowerFace", Ellipsoid(vec(0, 0.002, -0.065), vec(0.06, 0.035, 0.07)), 0.035, "head")
+        add("midface", Ellipsoid(vec(0, 0.05, -0.06), vec(0.085, 0.07, 0.09)), 0.055, "head")
+        add("lowerFace", Ellipsoid(vec(0, 0.002, -0.065), vec(0.06, 0.035, 0.07)), 0.05, "head")
         for s, side in ((1, "R"), (-1, "L")):
-            add(f"cheek{side}", Ellipsoid(vec(0.055 * s, 0.05, -0.04), vec(0.036, 0.034, 0.04)), 0.035, "head")
+            add(f"cheek{side}", Ellipsoid(vec(0.055 * s, 0.045, -0.04), vec(0.036, 0.036, 0.04)), 0.05, "head")
         # (a broad, low, flat little nose with a round tip)
         add("noseBridge", Ellipsoid(vec(0, 0.066, 0.006), vec(0.018, 0.026, 0.02)), 0.022, "head")
         add("nose", Ellipsoid(vec(0, 0.037, 0.014), vec(0.026, 0.016, 0.019)), 0.012, "head")
@@ -845,11 +1054,11 @@ class Week10(Week9):
         # ---- the shut eyes: large, smooth, rounded lids, wide apart, low on the face (just above
         # the nose), and the line where the lids have closed across their lower part
         for s, side in ((1, "R"), (-1, "L")):
-            ex, ey = 0.072 * s, 0.095
+            ex, ey = 0.07 * s, 0.095
             out = unit(vec(0.38 * s, -0.08, 1.0))
-            c = vec(ex, ey, self.surface_z(ex, ey) - 0.019)
+            c = vec(ex, ey, self.surface_z(ex, ey) - 0.02)
             R = frame(out, vec(0, 1, 0))
-            add(f"eyeLid{side}", Ellipsoid(c, vec(0.048, 0.03, 0.026), R), 0.02, "head")
+            add(f"eyeLid{side}", Ellipsoid(c, vec(0.044, 0.029, 0.025), R), 0.022, "head")
             u, v = R[:, 0] * (1 if R[:, 0][0] * s > 0 else -1), R[:, 1]
             pts = []
             for t in np.linspace(-1, 1, 9):
@@ -865,10 +1074,14 @@ class Week10(Week9):
         ear_x = self.surface_x(ear_y, ear_z)
         rim = [(0.029, 0.01, 0.0065), (0.032, -0.003, 0.0082), (0.024, -0.015, 0.0096), (0.007, -0.02, 0.0102),
                (-0.012, -0.0185, 0.0102), (-0.026, -0.011, 0.0098), (-0.034, 0.0, 0.009)]
+        # (the rim as a smooth curve through those points, not a line with corners)
+        from scipy.interpolate import CubicSpline
+        t = np.linspace(0, 1, len(rim))
+        fine = CubicSpline(t, np.array(rim))(np.linspace(0, 1, 25))
         for s, side in ((1, "R"), (-1, "L")):
             c = vec((ear_x - 0.002) * s, ear_y, ear_z)
             add(f"earBase{side}", Ellipsoid(c + vec(-0.004 * s, -0.002, -0.002), vec(0.012, 0.038, 0.026)), 0.012, "head")
-            pts = [(c + vec(0.005 * s, dy, dz), r) for dy, dz, r in rim]
+            pts = [(c + vec(0.005 * s, dy, dz), r) for dy, dz, r in fine]
             add(f"ear{side}", Chain([RoundCone(a[0], b[0], a[1], b[1]) for a, b in zip(pts[:-1], pts[1:])]), 0.007, "head")
             sub(f"earBowl{side}", Ellipsoid(c + vec(0.007 * s, 0.0, 0.002), vec(0.007, 0.019, 0.01)), 0.004, "head")
             add(f"earTragus{side}", Ellipsoid(c + vec(0.002 * s, -0.01, 0.015), vec(0.006, 0.008, 0.005)), 0.004, "head")
@@ -880,17 +1093,19 @@ class Week10(Week9):
         # ---- trunk: a long egg under the head, broad at the shoulders (the neck shows only from
         # behind, narrower than the head), its back a smooth, nearly straight line that rounds off
         # into a low, full bottom with the buttocks
-        add("neck", Ellipsoid(vec(0, 0.0, -0.24), vec(0.125, 0.1, 0.13)), 0.05, "torso")
-        add("upperBack", Ellipsoid(vec(0, -0.11, -0.235), vec(0.18, 0.15, 0.16)), 0.06, "torso")
+        # (one body of smooth sections, row by row: height, back, front, half width. The outline is
+        # the one measured on the clip; the trunk itself is narrower than the whole silhouette
+        # where the arms hang beside it and the thighs lie against it, so they read as limbs on a
+        # body and not as tubes growing out of a sack)
+        add("trunk", Loft(self.TRUNK), 0.05, "torso")
+        # (the neck carries on up inside the head, slimming: the back of the head runs straight
+        # down into the back, and the join shows no line)
+        add("neck", RoundCone(vec(0, -0.03, -0.25), vec(0, 0.16, -0.21), 0.128, 0.035), 0.05, "torso")
         # (the shoulders slope down from the neck to the arms: round, not a straight bar)
-        add("shoulders", Ellipsoid(vec(0, -0.1, -0.22), vec(0.175, 0.09, 0.13)), 0.07, "torso")
-        add("chest", Ellipsoid(vec(0, -0.17, -0.165), vec(0.175, 0.11, 0.115)), 0.06, "torso")
-        add("midBack", Ellipsoid(vec(0, -0.28, -0.175), vec(0.175, 0.15, 0.16)), 0.07, "torso")
-        add("belly", Ellipsoid(vec(0, -0.3, -0.115), vec(0.17, 0.13, 0.15)), 0.07, "torso")
-        add("pelvis", Ellipsoid(vec(0, -0.43, -0.1), vec(0.155, 0.11, 0.15)), 0.07, "torso")
         for s, side in ((1, "R"), (-1, "L")):
-            add(f"buttock{side}", Ellipsoid(vec(0.055 * s, -0.495, -0.1), vec(0.08, 0.07, 0.09)), 0.05, "torso")
-        sub("cleft", Ellipsoid(vec(0, -0.55, -0.155), vec(0.006, 0.05, 0.065)), 0.012, "torso")
+            add(f"shoulderSlope{side}", Ellipsoid(vec(0.118 * s, -0.07, -0.25), vec(0.066, 0.052, 0.06)), 0.04, "torso")
+            add(f"buttock{side}", Ellipsoid(vec(0.055 * s, -0.495, -0.105), vec(0.078, 0.07, 0.088)), 0.05, "torso")
+        sub("cleft", Ellipsoid(vec(0, -0.55, -0.16), vec(0.006, 0.05, 0.065)), 0.012, "torso")
         cord_a, cord_b = vec(0, -0.27, -0.03), vec(0.02, -0.285, 0.07)
         add("cordRoot", RoundCone(cord_a, cord_b, 0.048, 0.038), 0.04, "torso")
         self.cord_r = 0.038
@@ -898,46 +1113,41 @@ class Week10(Week9):
 
         back = [(float(y), self.back_z(0.0, y)) for y in np.arange(0.0, -0.52, -0.05)]
 
-        # ---- limbs, as the clip has them. The shoulders are set well back; each upper arm hangs
-        # down the side of the chest to an elbow low and far back, near the back; the long forearm
-        # comes forwards and up. The right hand is at the mouth (fingertips on the lips, the back of
-        # the hand forwards), the left one in front of the chest, fingers up. The hands are big, with
-        # long, separate fingers. The legs are drawn up: the knees high and forwards, the shins
-        # going down to the feet low in front of the bottom, crossed at the ankles
+        # ---- limbs, where the clip has them. The shoulders are set well back; each upper arm hangs
+        # down the side of the chest to an elbow low and back, and the forearm comes forwards and
+        # up. The right hand rests under the chin (fingertips on it, the back of the hand
+        # forwards), the left one is in front of the chest, fingers up. The legs are drawn up: the
+        # thighs lie against the lower belly from hips at its sides, the knees high and forwards,
+        # the shins going down to the feet low in front of the bottom, crossed at the ankles
         self.joints = {}
         up = vec(0, 1, 0)
-        arms = {1: (vec(0.16, -0.06, -0.29), vec(0.195, -0.205, -0.245), vec(0.11, -0.085, -0.075),
-                    unit(vec(-0.11, 0.07, 0.105)), vec(0.4, 0.1, 1.0), vec(0, 1, 0)),
-                -1: (vec(-0.16, -0.06, -0.28), vec(-0.24, -0.24, -0.17), vec(-0.165, -0.13, 0.0),
-                     unit(vec(0.045, 0.09, 0.085)), vec(-0.5, 0.0, 1.0), vec(-1, 0, -0.3))}
-        legs = {1: (vec(0.08, -0.43, -0.1), vec(0.1, -0.3, 0.13), vec(0.07, -0.5, 0.15),
+        # (shoulder, how far out the elbow is held (degrees from hanging straight down), wrist, the
+        # way the hand points, the back of the hand, the thumb's side, how far the fingers curl and
+        # fan). Both arms are the same length, upper arm and forearm nearly equal: the elbow is
+        # found from the shoulder and the wrist, held just far enough out for the arm to lie on
+        # the side of the chest and not in it
+        arms = {1: (vec(0.16, -0.06, -0.29), 18.0, vec(0.126, -0.101, -0.045),
+                    unit(vec(-0.77, 0.544, 0.333)), vec(0.4, 0.1, 1.6), vec(0, 1, 0), 0.45, 0.6),
+                -1: (vec(-0.16, -0.06, -0.28), 18.0, vec(-0.165, -0.13, 0.0),
+                     unit(vec(0.045, 0.09, 0.085)), vec(-0.5, 0.0, 1.0), vec(-1, 0, -0.3), 0.9, 1.0)}
+        # (hip, knee, ankle, the way the foot points, the top of the foot)
+        legs = {1: (vec(0.1, -0.435, -0.08), vec(0.1, -0.3, 0.13), vec(0.07, -0.5, 0.15),
                     unit(vec(-0.35, -0.4, 0.8)), vec(0.3, 0.9, 0.2)),
-                -1: (vec(-0.08, -0.43, -0.1), vec(-0.075, -0.28, 0.08), vec(-0.01, -0.48, 0.2),
+                -1: (vec(-0.1, -0.435, -0.08), vec(-0.075, -0.28, 0.08), vec(-0.01, -0.48, 0.2),
                      unit(vec(0.2, -0.3, 0.9)), vec(-0.3, 0.9, 0.2))}
         for s, side in ((1, "R"), (-1, "L")):
             arm = f"arm{side}"
-            sh, el, wr, axis, back_of_hand, first = arms[s]
-            add(f"armBud{side}", Chain([RoundCone(sh, el, 0.035, 0.026), RoundCone(el, wr, 0.026, 0.02)]), 0.012, arm)
-            add(f"forearm{side}", RoundCone(el + (wr - el) * 0.1, el + (wr - el) * 0.5, 0.027, 0.023), 0.01, arm)
-            tips = self.digits(add, f"hand{side}", arm, wr, axis, back_of_hand, first=first, hand=True,
-                               palm=(0.034, 0.03, 0.011), reach=0.058, web=0.009,
-                               lengths=(0.034, 0.056, 0.062, 0.056, 0.045), r=(0.0076, 0.0063),
-                               spread=0.35 if s > 0 else 0.75, blend=0.005)
+            sh, out, wr, axis, back_of_hand, first, curl, spread = arms[s]
+            el = self.elbow(sh, wr, s, out, self.UPPER_ARM, self.FOREARM)
+            self.arm(add, side, sh, el, wr)
+            tips = self.hand(add, f"hand{side}", arm, wr, axis, back_of_hand, first, curl=curl, spread=spread)
             self.bones += [(RoundCone(sh + (el - sh) * 0.15, el - (el - sh) * 0.1, 0.0075, 0.007), 40.0)]
             fa = unit(np.cross(wr - el, up)) * 0.006
             self.bones += [(RoundCone(el + (wr - el) * 0.1 + d, wr - (wr - el) * 0.08 + d, 0.005, 0.0045), 40.0) for d in (fa, -fa)]
             leg = f"leg{side}"
             hip, kn, an, faxis, dorsum = legs[s]
-            add(f"legBud{side}", Chain([RoundCone(hip, kn, 0.05, 0.036), RoundCone(kn, an, 0.036, 0.022)]), 0.012, leg)
-            add(f"thigh{side}", RoundCone(hip + (kn - hip) * 0.15, hip + (kn - hip) * 0.65, 0.054, 0.042), 0.015, leg)
-            calf = unit(np.cross(np.cross(an - kn, kn - hip), an - kn))
-            add(f"calf{side}", RoundCone(kn + (an - kn) * 0.18 + calf * 0.005, kn + (an - kn) * 0.6 + calf * 0.004, 0.035, 0.027), 0.01, leg)
-            dorsum = unit(dorsum - faxis * (dorsum @ faxis))
-            add(f"footHeel{side}", Ellipsoid(an - dorsum * 0.01 - faxis * 0.004, vec(0.016, 0.016, 0.016)), 0.012, leg)
-            ftips = self.digits(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(-s, 0, 0), hand=False,
-                                palm=(0.025, 0.034, 0.012), reach=0.05, web=0.007,
-                                lengths=(0.02, 0.017, 0.015, 0.0135, 0.012), r=(0.0058, 0.0066), spread=0.9, rows=1,
-                                blend=0.009)
+            self.leg(add, side, hip, kn, an)
+            ftips = self.foot(add, f"foot{side}", leg, an, faxis, dorsum, first=vec(-s, 0, 0))
             self.bones += [(RoundCone(hip + (kn - hip) * 0.2, kn - (kn - hip) * 0.08, 0.009, 0.008), 40.0)]
             fl = unit(np.cross(an - kn, up)) * 0.006
             self.bones += [(RoundCone(kn + (an - kn) * 0.12 + d, an - (an - kn) * 0.08 + d, 0.0055, 0.005), 40.0) for d in (fl, -fl * 0.6)]
