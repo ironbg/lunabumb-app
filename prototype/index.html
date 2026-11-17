@@ -2857,13 +2857,66 @@ function placeCordObstacles(ga) {
   }
 }
 
-function pushCordOut(radius, S) {
+function pushCordOut(pts, radius, S) {
   for (let i = Math.round(CORD_SEG * 0.06); i < CORD_SEG; i++) {
-    const p = cordPts[i];
+    const p = pts[i];
     for (const o of CORD_OBSTACLES) {
       const reach = o.r * S + radius;
       const d = p.distanceTo(o.c);
       if (d < reach) p.sub(o.c).setLength(reach).add(o.c);
+    }
+  }
+}
+
+// What the view is of (the face, a hand, a foot) and how big it is: the cord is kept out of the
+// line of sight to it, so it never hides the face in the face view, or a foot in the feet view.
+// The cord is shaped twice, as it hangs and kept clear, and eases between the two, so it moves
+// aside smoothly as the camera comes round (and back when the camera has passed)
+const cordSight = { c: new THREE.Vector3(), axis: new THREE.Vector3(), D: 0, r: 0 };
+const cordSightTmp = new THREE.Vector3();
+const cordClear = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
+const cordShift = Array.from({ length: CORD_SEG + 1 }, () => new THREE.Vector3());
+let cordShiftAt = -1;
+
+function aimCordSight(S) {
+  const s = cordSight;
+  if (state.view === 'hands') { babyAnchor('hand', s.c); s.r = 0.13 * S; }
+  else if (state.view === 'feet') { babyAnchor(viewCam.foot, s.c); s.r = 0.13 * S; }
+  else { babyAnchor(hasFace() ? 'face' : 'head', s.c); s.r = (embryoActive ? 0.17 : 0.2) * S; }
+  s.axis.subVectors(camera.position, s.c);
+  s.D = Math.max(s.axis.length(), 1e-6);
+  s.axis.multiplyScalar(1 / s.D);
+}
+
+function pushCordOutOfSight(pts, radius) {
+  const { c, axis, D, r } = cordSight;
+  for (let i = 1; i < CORD_SEG; i++) {
+    // (not at the root, which stays in the belly, nor where it goes into the placenta)
+    const u = i / CORD_SEG;
+    const w = THREE.MathUtils.smoothstep(u, 0.06, 0.18) * (1 - THREE.MathUtils.smoothstep(u, 0.85, 0.95));
+    if (w <= 0) continue;
+    const p = pts[i];
+    const t = cordSightTmp.subVectors(p, c).dot(axis);
+    if (t <= 0 || t >= 0.95 * D) continue;
+    // how far off the line it must be, there, not to cover any of what the view is of
+    const need = r * (1 - t / D) + 1.3 * radius;
+    const dist = cordSightTmp.addScaledVector(axis, -t).length();
+    if (dist >= need) continue;
+    if (dist < 1e-5) cordSightTmp.copy(camRight);
+    else cordSightTmp.multiplyScalar(1 / dist);
+    p.addScaledVector(cordSightTmp, (need - dist) * w);
+  }
+}
+
+// keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
+// would fold through itself (or through a leg), and the fold changes every frame as it sways
+function shapeCord(pts, obstacles, sight, radius, S) {
+  for (let pass = 0; pass < 3; pass++) {
+    if (obstacles) pushCordOut(pts, radius, S);
+    if (sight) pushCordOutOfSight(pts, radius);
+    for (let it = 0; it < (pass === 0 ? 12 : 4); it++) {
+      for (let i = 1; i < CORD_SEG; i++) cordTmp[i].copy(pts[i - 1]).add(pts[i + 1]).multiplyScalar(0.25).addScaledVector(pts[i], 0.5);
+      for (let i = 1; i < CORD_SEG; i++) pts[i].copy(cordTmp[i]);
     }
   }
 }
@@ -2935,16 +2988,19 @@ function updateCord(now, S) {
   const hold = embryoActive ? Math.min(0.4, (0.16 * emUnit) / cordLen) : 0;
   const slim = embryoActive ? Math.min(0.4, (0.4 * emUnit) / cordLen) : 0.05;
   for (let i = 0; i <= CORD_SEG; i++) cordCurve.getPointAt(i / CORD_SEG, cordPts[i]);
-  // keep it out of the legs, and smooth out bends tighter than the cord is thick: there the tube
-  // would fold through itself (or through a leg), and the fold changes every frame as it sways
+  for (let i = 0; i <= CORD_SEG; i++) cordClear[i].copy(cordPts[i]);
   const obstacles = gltfBaby.ready && !embryoActive;
   if (obstacles) placeCordObstacles(gaOf(state.days));
-  for (let pass = 0; pass < 3; pass++) {
-    if (obstacles) pushCordOut(radius, S);
-    for (let it = 0; it < (pass === 0 ? 12 : 4); it++) {
-      for (let i = 1; i < CORD_SEG; i++) cordTmp[i].copy(cordPts[i - 1]).add(cordPts[i + 1]).multiplyScalar(0.25).addScaledVector(cordPts[i], 0.5);
-      for (let i = 1; i < CORD_SEG; i++) cordPts[i].copy(cordTmp[i]);
-    }
+  aimCordSight(S);
+  shapeCord(cordPts, obstacles, false, radius, S);
+  shapeCord(cordClear, obstacles, true, radius, S);
+  // (eased over about a sixth of a second, by the clock: the cord is not rebuilt every frame)
+  const shiftDt = cordShiftAt < 0 ? 1 : THREE.MathUtils.clamp(elapsed - cordShiftAt, 0, 0.25);
+  cordShiftAt = elapsed;
+  const ease = 1 - Math.exp(-6 * shiftDt);
+  for (let i = 0; i <= CORD_SEG; i++) {
+    cordShift[i].lerp(cordTmp[0].subVectors(cordClear[i], cordPts[i]), ease);
+    cordPts[i].add(cordShift[i]);
   }
   cordT.subVectors(cordPts[CORD_SEG], cordPts[CORD_SEG - 1]).normalize();
   cordN.copy(PLACENTA_REF).addScaledVector(cordT, -PLACENTA_REF.dot(cordT)).normalize();
